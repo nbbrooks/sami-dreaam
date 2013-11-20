@@ -58,6 +58,8 @@ public class DREAAM extends javax.swing.JFrame {
      * Creates new form DREAAM
      */
     public DREAAM() {
+        LOGGER.info("java.version: " + System.getProperty("java.version"));
+        LOGGER.info("sun.arch.data.model: " + System.getProperty("sun.arch.data.model"));
         LOGGER.info("java.class.path: " + System.getProperty("java.class.path"));
         LOGGER.info("java.library.path: " + System.getProperty("java.library.path"));
         LOGGER.info("java.ext.dirs: " + System.getProperty("java.ext.dirs"));
