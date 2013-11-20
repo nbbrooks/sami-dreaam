@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
 import javax.swing.tree.*;
+import sami.config.DomainConfigManager;
 import sami.gui.GuiConfig;
 import sami.mission.MissionPlanSpecification;
 import sami.mission.RequirementSpecification;
@@ -57,6 +58,13 @@ public class DREAAM extends javax.swing.JFrame {
      * Creates new form DREAAM
      */
     public DREAAM() {
+        LOGGER.info("java.class.path: " + System.getProperty("java.class.path"));
+        LOGGER.info("java.library.path: " + System.getProperty("java.library.path"));
+        LOGGER.info("java.ext.dirs: " + System.getProperty("java.ext.dirs"));
+        LOGGER.info("java.util.logging.config.file: " + System.getProperty("java.util.logging.config.file"));
+        LOGGER.info("domainConfiguration:\n" + DomainConfigManager.getInstance().domainConfiguration.toString());
+        LOGGER.info("domainConfiguration:\n" + DomainConfigManager.getInstance().domainConfiguration.toVerboseString());
+
         initComponents();
         platform = new Platform();
         checkerAgents = platform.getCheckerAgents();
