@@ -827,10 +827,10 @@ public class TaskModelEditor extends JPanel {
                                 }
 
                                 for (ReflectedEventSpecification eventSpec : eventDiag.selectedEventSpecs) {
-                                    SelectMarkupD markupDiag = new SelectMarkupD(null, true, eventSpec);
+                                    SelectMarkupD markupDiag = new SelectMarkupD(null, true, eventSpec.getMarkupSpecs());
                                     markupDiag.setVisible(true);
 //                                    // This part won't run until the Frame closes
-                                    eventSpec.setMarkups(markupDiag.selectedMarkups);
+                                    eventSpec.setMarkupSpecs(markupDiag.getSelectedMarkupSpecs());
                                     vertex.updateTag();
                                     vv.repaint();
                                 }

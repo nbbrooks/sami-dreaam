@@ -11,7 +11,6 @@ import java.awt.Font;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.MouseEvent;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.EventObject;
@@ -22,6 +21,7 @@ import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.tree.*;
+import sami.markup.ReflectedMarkupSpecification;
 
 /**
  * Dialog window that lets you select InputEvents and OutputEvents for SAMI
@@ -243,12 +243,23 @@ public class SelectEventD extends javax.swing.JDialog {
     }
 
     public void getDefinitionsForEvent(ReflectedEventSpecification eventSpec) {
-        // Get definitions for event fields
-        ArrayList<Field> requiredFields = eventSpec.getRequiredFields();
-        if (requiredFields.size() > 0) {
-            // If there are fields for the event that can be filled, create dialog
-            ReflectedEventD diag = new ReflectedEventD(eventSpec, null, true);
-            diag.setVisible(true);
+        try {
+            Class eventClass = Class.forName(eventSpec.getClassName());
+            // Get definitions for event fields
+            ArrayList<String> fieldNames = (ArrayList<String>) (eventClass.getField("fieldNames").get(null));
+            if (fieldNames.size() > 0) {
+                // If there are fields for the event that can be filled, create dialog
+                ReflectedEventD diag = new ReflectedEventD(eventSpec, null, true);
+                diag.setVisible(true);
+            } else {
+                LOGGER.info("Event class \"" + eventClass.getName() + "\" has no fields");
+            }
+        } catch (ClassNotFoundException ex) {
+            ex.printStackTrace();
+        } catch (IllegalAccessException ex) {
+            Logger.getLogger(ReflectedMarkupSpecification.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchFieldException ex) {
+            Logger.getLogger(ReflectedMarkupSpecification.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 

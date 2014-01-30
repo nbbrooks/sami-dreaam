@@ -5,14 +5,16 @@ import sami.event.ReflectedEventSpecification;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.ScrollPane;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -20,6 +22,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 
 /**
  * Used to receive parameters from operator needed by an Output event
@@ -32,22 +35,22 @@ public class ReflectedEventD extends javax.swing.JDialog {
 
         INPUT, OUTPUT
     };
-        private final static Logger LOGGER = Logger.getLogger(ReflectedEventD.class.getName());
-    final static int BUTTON_WIDTH = 100;
-    final static int BUTTON_HEIGHT = 50;
-    final static int BORDER = 5;
-    int maxComponentWidth = 100;
+    private final static Logger LOGGER = Logger.getLogger(ReflectedEventD.class.getName());
+    private final static int BUTTON_HEIGHT = 50;
+    private final static int BORDER = 5;
+    private int maxComponentWidth = 100;
     private ScrollPane scrollPane;
     private JPanel paramsPanel;
     private JButton okButton;
+    // Class held by event spec
+    private Class eventClass = null;
+    private EventType eventType;
     // Maps each field in the event to a variable string name or value
-    HashMap<String, Object> fieldNameToDefinition;
-    HashMap<Field, JComponent> fieldToValueComponent;
-    HashMap<Field, JComboBox> fieldToVariableComboBox;
-    HashMap<Field, JTextField> fieldToVariableTextField;
-    private ReflectedEventD.EventType eventType;
+    private HashMap<String, Object> fieldNameToDefinition;
+    private HashMap<Field, JComponent> fieldToValueComponent;
+    private HashMap<Field, JComboBox> fieldToVariableComboBox;
+    private HashMap<Field, JTextField> fieldToVariableTextField;
     private final ReflectedEventSpecification eventSpec;
-    public static final int MAX_RECURSION_DEPTH = 2;
 
     /**
      * Creates new form ReflectedEventD
@@ -71,36 +74,74 @@ public class ReflectedEventD extends javax.swing.JDialog {
         fieldToVariableComboBox = new HashMap<Field, JComboBox>();
         fieldToVariableTextField = new HashMap<Field, JTextField>();
 
+        try {
+            eventClass = Class.forName(eventSpec.getClassName());
+        } catch (ClassNotFoundException ex) {
+            ex.printStackTrace();
+        }
+
         initComponents();
         setTitle("ReflectedEventD");
     }
 
-    protected void addParamComponents(ReflectedEventSpecification eventSpec, HashMap<String, Object> fieldNameToDefinition) {
-        LOGGER.log(Level.FINE, "ReflectedEventD adding fields for " + eventSpec + ", fields: " + eventSpec.getRequiredFields());
+    protected void addParamComponents() {
+        try {
+            ArrayList<String> fieldNames = (ArrayList<String>) (eventClass.getField("fieldNames").get(null));
+            HashMap<String, String> fieldNameToDescription = (HashMap<String, String>) (eventClass.getField("fieldNameToDescription").get(null));
+            LOGGER.log(Level.INFO, "ReflectedEventD adding fields for " + eventSpec + ", fields: " + fieldNames.toString());
 
-        for (Field field : eventSpec.getRequiredFields()) {
-            JPanel fieldPanel = new JPanel();
-            BoxLayout layout = new BoxLayout(fieldPanel, BoxLayout.Y_AXIS);
-            fieldPanel.setLayout(layout);
-            fieldPanel.setBorder(BorderFactory.createMatteBorder(BORDER, BORDER, BORDER, BORDER, (Color.BLACK)));
-            if (!Modifier.isPublic(field.getModifiers())) {
-                field.setAccessible(true);
+            for (String fieldName : fieldNames) {
+                System.out.println("eventClass: " + eventClass + "\tfieldName: " + fieldName);
+                final Field field = eventClass.getField(fieldName);
+                JPanel fieldPanel = new JPanel();
+                fieldPanel.setLayout(new GridBagLayout());
+                fieldPanel.setBorder(BorderFactory.createLineBorder(Color.black));
+
+                GridBagConstraints constraints = new GridBagConstraints();
+                constraints.fill = GridBagConstraints.HORIZONTAL;
+                constraints.gridy = 0;
+                constraints.gridx = 0;
+                constraints.weightx = 1.0;
+
+                // Add description for this field
+                JLabel description = new JLabel(fieldNameToDescription.get(fieldName), SwingConstants.LEFT);
+                description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
+                fieldPanel.add(description, constraints);
+                constraints.gridy = constraints.gridy + 1;
+
+                // Field definition components
+                if (eventType == ReflectedEventD.EventType.INPUT) {
+                    // Add text field for setting variable
+                    addVariableTextField(field, fieldNameToDefinition, fieldPanel, constraints);
+                    constraints.gridy = constraints.gridy + 1;
+                } else if (eventType == ReflectedEventD.EventType.OUTPUT) {
+                    // Add combo box for selecting variable name
+                    addVariableComboBox(field, fieldNameToDefinition, fieldPanel, constraints);
+                    constraints.gridy = constraints.gridy + 1;
+                    // Add component for defining value
+                    addValueComponent(field, fieldNameToDefinition, fieldPanel, constraints);
+                    constraints.gridy = constraints.gridy + 1;
+                }
+
+                maxComponentWidth = Math.max(maxComponentWidth, fieldPanel.getPreferredSize().width);
+                paramsPanel.add(fieldPanel, constraints);
+                constraints.gridy = constraints.gridy + 1;
+
+                // Add space between each enum's interaction area
+                paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)), constraints);
+                constraints.gridy = constraints.gridy + 1;
             }
-            fieldPanel.add(new JLabel(field.getName() + " (" + field.getType().getSimpleName() + ")"));
-            if (eventType == ReflectedEventD.EventType.INPUT) {
-                // Add text field for setting variable
-                addVariableTextField(field, fieldNameToDefinition, fieldPanel);
-            } else if (eventType == ReflectedEventD.EventType.OUTPUT) {
-                // Add combo box for selecting variable name
-                addVariableComboBox(field, fieldNameToDefinition, fieldPanel);
-                // Add component for defining value
-                addValueComponent(field, fieldNameToDefinition, fieldPanel);
-            }
-            paramsPanel.add(fieldPanel);
+
+        } catch (NoSuchFieldException ex) {
+            Logger.getLogger(ReflectedEventD.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SecurityException ex) {
+            Logger.getLogger(ReflectedEventD.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            Logger.getLogger(ReflectedEventD.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    protected void addVariableTextField(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel) {
+    protected void addVariableTextField(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel, GridBagConstraints constraints) {
         JTextField textField = new JTextField();
 
         Object fieldDefinition = fieldNameToDefinition.get(field.getName());
@@ -109,10 +150,11 @@ public class ReflectedEventD extends javax.swing.JDialog {
             textField.setText((String) fieldDefinition);
         }
         fieldToVariableTextField.put(field, textField);
-        panel.add(textField);
+        maxComponentWidth = Math.max(maxComponentWidth, textField.getPreferredSize().width);
+        panel.add(textField, constraints);
     }
 
-    protected void addVariableComboBox(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel) {
+    protected void addVariableComboBox(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel, GridBagConstraints constraints) {
         ArrayList<String> existingVariables = null;
         try {
             existingVariables = (ArrayList<String>) (new Mediator()).getAllVariables().clone();
@@ -130,10 +172,11 @@ public class ReflectedEventD extends javax.swing.JDialog {
             }
         }
         fieldToVariableComboBox.put(field, comboBox);
-        panel.add(comboBox);
+        maxComponentWidth = Math.max(maxComponentWidth, comboBox.getPreferredSize().width);
+        panel.add(comboBox, constraints);
     }
 
-    protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel) {
+    protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel, GridBagConstraints constraints) {
         JComponent component = UiComponentGenerator.getInstance().getCreationComponent(field.getType());
         Object definition = fieldNameToDefinition.get(field.getName());
         if (component != null && definition != null) {
@@ -152,23 +195,24 @@ public class ReflectedEventD extends javax.swing.JDialog {
             // There is no component that can be used to define a value for this field
             // The field can only be set to a variable name
             // Show a message for now, may remove this later...
-            component = new JLabel("No component");
+            component = new JLabel("No component", SwingConstants.LEFT);
         }
         maxComponentWidth = Math.max(maxComponentWidth, component.getPreferredSize().width);
-        panel.add(component);
+        maxComponentWidth = Math.max(maxComponentWidth, component.getPreferredSize().width);
+        panel.add(component, constraints);
     }
 
     private void initComponents() {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
+        // Get previously set field definitions
         fieldNameToDefinition = eventSpec.getFieldDefinitions();
         if (fieldNameToDefinition == null) {
             fieldNameToDefinition = new HashMap<String, Object>();
         }
         paramsPanel = new javax.swing.JPanel();
-        BoxLayout paramsLayout = new BoxLayout(paramsPanel, BoxLayout.Y_AXIS);
-        paramsPanel.setLayout(paramsLayout);
-        addParamComponents(eventSpec, fieldNameToDefinition);
+        paramsPanel.setLayout(new GridBagLayout());
+        addParamComponents();
         paramsPanel.revalidate();
 
         scrollPane = new ScrollPane();
@@ -209,9 +253,9 @@ public class ReflectedEventD extends javax.swing.JDialog {
 
     private HashMap<String, Object> getDefinitionsFromComponents() {
         HashMap<String, Object> fieldNameToObject = new HashMap<String, Object>();
-        for (Field field : eventSpec.getRequiredFields()) {
-            Object definition = null;
-            if (eventType == ReflectedEventD.EventType.INPUT) {
+        if (eventType == ReflectedEventD.EventType.INPUT) {
+            for (Field field : fieldToVariableTextField.keySet()) {
+                Object definition = null;
                 JTextField variableTextField = fieldToVariableTextField.get(field);
                 if (variableTextField != null) {
                     String variable = variableTextField.getText().trim();
@@ -223,7 +267,11 @@ public class ReflectedEventD extends javax.swing.JDialog {
                         definition = variable;
                     }
                 }
-            } else if (eventType == ReflectedEventD.EventType.OUTPUT) {
+                fieldNameToObject.put(field.getName(), definition);
+            }
+        } else if (eventType == ReflectedEventD.EventType.OUTPUT) {
+            for (Field field : fieldToVariableComboBox.keySet()) {
+                Object definition = null;
                 JComboBox variableComboBox = fieldToVariableComboBox.get(field);
                 if (!variableComboBox.getSelectedItem().toString().equalsIgnoreCase(ReflectedEventSpecification.NONE)) {
                     // User selected a variable other than NONE to define the field
@@ -236,9 +284,10 @@ public class ReflectedEventD extends javax.swing.JDialog {
                         definition = UiComponentGenerator.getInstance().getComponentValue(valueComponent, field);
                     }
                 }
+                fieldNameToObject.put(field.getName(), definition);
             }
-            fieldNameToObject.put(field.getName(), definition);
         }
+
         return fieldNameToObject;
     }
 
@@ -246,7 +295,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
 
-                ReflectedEventD dialog = new ReflectedEventD(new ReflectedEventSpecification("events.output.uiDirectives.DisplayMessage"), null, true);
+                ReflectedEventD dialog = new ReflectedEventD(new ReflectedEventSpecification("crw.event.output.ui.DisplayMessage"), null, true);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         System.exit(0);

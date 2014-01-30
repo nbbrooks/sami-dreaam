@@ -1,16 +1,13 @@
 package dreaam.developer;
 
-import sami.event.ReflectedEventSpecification;
 import sami.markup.Markup;
 import sami.config.DomainConfigManager;
-import sami.config.DomainConfig;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.MouseEvent;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.EventObject;
@@ -21,6 +18,8 @@ import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.tree.*;
+import sami.config.DomainConfig.LeafNode;
+import sami.markup.ReflectedMarkupSpecification;
 
 /**
  *
@@ -29,34 +28,31 @@ import javax.swing.tree.*;
 public class SelectMarkupD extends javax.swing.JDialog {
 
     private static final Logger LOGGER = Logger.getLogger(SelectMarkupD.class.getName());
-    DefaultMutableTreeNode treeRoot = null;
+    DefaultMutableTreeNode treeRoot, existingMarkupsNode;
     CheckBoxNodeRenderer renderer = new CheckBoxNodeRenderer();
     // This insanity is required because CheckBox node is replacing the event spec with a string.
-    private Hashtable<ToolTipTreeNode, Markup> nodeMapping = new Hashtable<ToolTipTreeNode, Markup>();
-    ReflectedEventSpecification eventSpec = null;
-    ArrayList<Markup> selectedMarkups = null;
+    private Hashtable<ToolTipTreeNode, ReflectedMarkupSpecification> nodeMapping = new Hashtable<ToolTipTreeNode, ReflectedMarkupSpecification>();
+    // This contains the events that are selected for caller class to pull out
+    ArrayList<ReflectedMarkupSpecification> existingMarkupSpecs;
 
-    /**
-     * Creates new form SelectEvent
-     *
-     * @todo selected events could be cleaned up. here we are clearing in
-     * mission spec, cloning in constructor and re-adding. Cleaner to hold the
-     * list here and edit
-     *
-     */
-    public SelectMarkupD(java.awt.Frame parent, boolean modal, ReflectedEventSpecification eventSpec) {
+    public SelectMarkupD(java.awt.Frame parent, boolean modal, ArrayList<ReflectedMarkupSpecification> existingMarkupSpecs) {
         super(parent, modal);
         initComponents();
         setTitle("SelectMarkupD");
-
-        this.eventSpec = eventSpec;
-        selectedMarkups = eventSpec.getMarkups();
+        this.existingMarkupSpecs = existingMarkupSpecs;
 
         eventT.setCellRenderer(renderer);
         eventT.setCellEditor(new CheckBoxNodeEditor(eventT));
         treeRoot = new javax.swing.tree.DefaultMutableTreeNode("JTree");
 
-        // Work out events from flie
+        // Work out markups from file
+        if (this.existingMarkupSpecs != null && this.existingMarkupSpecs.size() > 0) {
+            existingMarkupsNode = new DefaultMutableTreeNode("Existing events");
+            treeRoot.add(existingMarkupsNode);
+            for (ReflectedMarkupSpecification eventSpec : this.existingMarkupSpecs) {
+                addExistingMarkup(eventSpec, "", existingMarkupsNode);
+            }
+        }
         addDomainMarkups(treeRoot);
 
         // Expand the tree for easier viewing
@@ -68,6 +64,14 @@ public class SelectMarkupD extends javax.swing.JDialog {
         ToolTipManager.sharedInstance().registerComponent(eventT);
     }
 
+    public void addExistingMarkup(ReflectedMarkupSpecification markupSpec, String toolText, DefaultMutableTreeNode parentNode) {
+        // Store spec in a ToolTipTreeNode, which is stored in the tree and a lookup table
+        ToolTipTreeNode node = new ToolTipTreeNode(markupSpec, toolText);
+        // Make node checked
+        nodeMapping.put(node, markupSpec);
+        parentNode.add(node);
+    }
+
     public void addDomainMarkups(DefaultMutableTreeNode treeRoot) {
         DefaultMutableTreeNode eventTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().domainConfiguration.markupTree;
         for (int i = 0; i < eventTree.getChildCount(); i++) {
@@ -76,10 +80,10 @@ public class SelectMarkupD extends javax.swing.JDialog {
     }
 
     public void addNode(TreeNode aliasNode, DefaultMutableTreeNode parent) {
-        if (aliasNode instanceof DomainConfig.LeafNode) {
+        if (aliasNode instanceof LeafNode) {
             // At a event, add as CheckBox and return
-            DomainConfig.LeafNode leafNode = (DomainConfig.LeafNode) aliasNode;
-            addMarkup(leafNode.className, leafNode.displayName, leafNode.detailedDescription, parent);
+            LeafNode leafNode = (LeafNode) aliasNode;
+            addEmptyMarkup(leafNode.className, leafNode.displayName, leafNode.detailedDescription, parent);
         } else if (aliasNode instanceof DefaultMutableTreeNode) {
             // At a category, add and recurse
             DefaultMutableTreeNode categoryNode = new DefaultMutableTreeNode(aliasNode.toString());
@@ -95,23 +99,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
         }
     }
 
-    private String[] splitOnString(String string, String split) {
-        ArrayList<String> list = new ArrayList<String>();
-        int startIndex = 0;
-        int endIndex = string.indexOf(split, startIndex);
-        while (endIndex != -1) {
-            list.add(string.substring(startIndex, endIndex));
-            startIndex = endIndex + 1;
-            endIndex = string.indexOf(split, startIndex);
-        }
-        String[] ret = new String[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            ret[i] = list.get(i);
-        }
-        return ret;
-    }
-
-    private void addMarkup(String className, String displayName, String toolText, DefaultMutableTreeNode parentNode) {
+    private void addEmptyMarkup(String className, String displayName, String toolText, DefaultMutableTreeNode parentNode) {
         try {
             if (!Markup.class.isAssignableFrom(Class.forName(className))) {
                 // Don't add this to the menu
@@ -122,30 +110,11 @@ public class SelectMarkupD extends javax.swing.JDialog {
             ex.printStackTrace();
         }
 
-        Markup markup = null;
+        ReflectedMarkupSpecification markupSpec = new ReflectedMarkupSpecification(className);
 
-        // Check to see if we have an instance of this class from a previous selection - this works because the the ReflectedEventSpecification.equals definition
-        if (selectedMarkups != null) {
-            Markup existingInstance = instanceExists(className, selectedMarkups);
-            if (existingInstance != null) {
-                markup = existingInstance;
-            }
-            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Found value from previous to use" + markup, this);
-        }
-        if (markup == null) {
-            try {
-                markup = (Markup) Class.forName(className).newInstance();
-            } catch (ClassNotFoundException cnfe) {
-                cnfe.printStackTrace();
-            } catch (InstantiationException ie) {
-                ie.printStackTrace();
-            } catch (IllegalAccessException iae) {
-                iae.printStackTrace();
-            }
-        }
         // Store spec in a ToolTipTreeNode, which is stored in the tree and a lookup table
-        ToolTipTreeNode node = new ToolTipTreeNode(markup, toolText);
-        nodeMapping.put(node, markup);
+        ToolTipTreeNode node = new ToolTipTreeNode(markupSpec, toolText);
+        nodeMapping.put(node, markupSpec);
         parentNode.add(node);
     }
 
@@ -217,7 +186,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void okBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okBActionPerformed
-        ArrayList<Markup> newSelectedMarkups = new ArrayList<Markup>();
+        ArrayList<ReflectedMarkupSpecification> newSelectedMarkups = new ArrayList<ReflectedMarkupSpecification>();
 
         Enumeration e = treeRoot.breadthFirstEnumeration();
         while (e.hasMoreElements()) {
@@ -231,35 +200,34 @@ public class SelectMarkupD extends javax.swing.JDialog {
                     CheckBoxNode node = (CheckBoxNode) userObject;
                     boolean isSelected = node.isSelected();
                     if (isSelected) {
-                        // This only triggers if the checkbox went from "unchecked" to "checked"
                         // Add the spec to our new list
                         newSelectedMarkups.add(nodeMapping.get(n));
-                        Markup markup = nodeMapping.get(n);
-
-                        ArrayList<Field> rfs = markup.getRequiredFields();
-                        if (rfs.size() > 0) {
-                            // Save and retrieve any previously set params
-                            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Need to set fields: " + markup);
-                            ReflectedMarkupD diag = new ReflectedMarkupD(markup, null, true);
-                            diag.setVisible(true);
-                        } else {
-                            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "No fields to set for " + markup);
-                        }
+                        ReflectedMarkupSpecification eventSpec = nodeMapping.get(n);
+                        getDefinitionsForMarkup(eventSpec);
                     }
                     // Event was previously selected, need 
-                } else if (userObject instanceof Markup) {
+                } else if (userObject instanceof ReflectedMarkupSpecification) {
                     // Check if the spec in the tree (added by simpleAdd) is in the spec list
-                    Markup markup = (Markup) userObject;
-                    if (selectedMarkups != null && selectedMarkups.contains(markup)) {
+                    ReflectedMarkupSpecification markupSpec = (ReflectedMarkupSpecification) userObject;
+                    if (existingMarkupSpecs != null && existingMarkupSpecs.contains(markupSpec)) {
                         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Was previously selected, readding to events list!");
-                        newSelectedMarkups.add(markup);
+                        newSelectedMarkups.add(markupSpec);
+                        getDefinitionsForMarkup(markupSpec);
                     }
                 }
             }
         }
-        selectedMarkups = newSelectedMarkups;
-
+        existingMarkupSpecs = newSelectedMarkups;
         setVisible(false);
+    }
+
+    public ArrayList<ReflectedMarkupSpecification> getSelectedMarkupSpecs() {
+        return existingMarkupSpecs;
+    }
+
+    public void getDefinitionsForMarkup(ReflectedMarkupSpecification markupSpec) {
+        ReflectedMarkupD diag = new ReflectedMarkupD(markupSpec, null, true);
+        diag.setVisible(true);
     }//GEN-LAST:event_okBActionPerformed
 
     // Adapted from http://www.java2s.com/Code/Java/Swing-JFC/CheckBoxNodeTreeSample.htm
@@ -298,27 +266,21 @@ public class SelectMarkupD extends javax.swing.JDialog {
 
             Component returnValue;
             if (leaf) {
-                // Add an event class checkbox
+                // Add an markup class checkbox
                 // This is the text that will appear before the "checkbox" is manipulated which causes an actual CheckBoxNode to be created from the ToolTipTreeNode...I think
                 leafRenderer.setText(value.toString());
-                // Should the checkbox be marked as checked?
-                boolean previouslySelected = false;
                 if (nodeMapping.containsKey(value)) {
-                    Markup r = nodeMapping.get(value);
-                    if (selectedMarkups != null && selectedMarkups.indexOf(r) >= 0) {
-                        previouslySelected = true;
+                    ReflectedMarkupSpecification eventSpec = nodeMapping.get(value);
+                    if (existingMarkupSpecs != null && existingMarkupSpecs.contains(eventSpec)) {
+                        leafRenderer.setSelected(true);
+                    } else {
+                        leafRenderer.setSelected(false);
                     }
-                } else {
-                    //System.out.println("No sign of " + value + " " + value.getClass() + " in " + nodeMapping.keySet());
                 }
-
-                leafRenderer.setSelected(previouslySelected);
-
                 leafRenderer.setEnabled(tree.isEnabled());
-                // Input/Output coloring
+
                 if ((value != null) && (value instanceof ToolTipTreeNode)) {
                     ToolTipTreeNode tttn = (ToolTipTreeNode) value;
-
                     leafRenderer.setToolTipText(tttn.getToolTipText());
                     leafRenderer.setBorder(new LineBorder(Color.BLACK));
                     Object userObject = tttn.getUserObject();
@@ -374,16 +336,10 @@ public class SelectMarkupD extends javax.swing.JDialog {
                     Object node = path.getLastPathComponent();
                     if ((node != null) && (node instanceof ToolTipTreeNode)) {
                         ToolTipTreeNode treeNode = (ToolTipTreeNode) node;
-                        Object userObject = treeNode.getUserObject();
-                        // returnValue = ((treeNode.isLeaf()) && (userObject instanceof CheckBoxNode));
                         returnValue = treeNode.isLeaf();
-
-                        // System.out.println("Is editable returning " + returnValue + " " + treeNode.isLeaf() + " " + (userObject instanceof CheckBoxNode));
                     }
                 }
             }
-
-
             return returnValue;
         }
 
@@ -462,7 +418,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                SelectMarkupD dialog = new SelectMarkupD(new javax.swing.JFrame(), true, new ReflectedEventSpecification("events.output.uiDirectives"));
+                SelectMarkupD dialog = new SelectMarkupD(new javax.swing.JFrame(), true, null);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         System.exit(0);
