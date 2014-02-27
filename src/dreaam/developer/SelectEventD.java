@@ -21,7 +21,6 @@ import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.tree.*;
-import sami.markup.ReflectedMarkupSpecification;
 
 /**
  * Dialog window that lets you select InputEvents and OutputEvents for SAMI
@@ -257,9 +256,9 @@ public class SelectEventD extends javax.swing.JDialog {
         } catch (ClassNotFoundException ex) {
             ex.printStackTrace();
         } catch (IllegalAccessException ex) {
-            Logger.getLogger(ReflectedMarkupSpecification.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         } catch (NoSuchFieldException ex) {
-            Logger.getLogger(ReflectedMarkupSpecification.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         }
     }
 

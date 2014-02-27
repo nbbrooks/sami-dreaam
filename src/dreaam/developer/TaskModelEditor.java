@@ -169,99 +169,99 @@ public class TaskModelEditor extends JPanel {
         // VERTEX
         vv.getRenderContext()
                 .setVertexDrawPaintTransformer(new Transformer<Vertex, Paint>() {
-            @Override
-            public Paint transform(Vertex vertex) {
-                switch (vertex.getVisibilityMode()) {
-                    case Full:
-                        if (vertex.getBeingModified()) {
-                            return GuiConfig.SEL_VERTEX_COLOR;
-                        } else {
-                            return GuiConfig.VERTEX_COLOR;
+                    @Override
+                    public Paint transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                                if (vertex.getBeingModified()) {
+                                    return GuiConfig.SEL_VERTEX_COLOR;
+                                } else {
+                                    return GuiConfig.VERTEX_COLOR;
+                                }
+                            case Background:
+                                if (vertex.getBeingModified()) {
+                                    return GuiConfig.SEL_VERTEX_COLOR;
+                                } else {
+                                    return GuiConfig.BKGND_VERTEX_COLOR;
+                                }
+                            case None:
+                            default:
+                                return null;
                         }
-                    case Background:
-                        if (vertex.getBeingModified()) {
-                            return GuiConfig.SEL_VERTEX_COLOR;
-                        } else {
-                            return GuiConfig.BKGND_VERTEX_COLOR;
-                        }
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
+                    }
+                });
 
         vv.getRenderContext()
                 .setVertexFillPaintTransformer(new Transformer<Vertex, Paint>() {
-            @Override
-            public Paint transform(Vertex vertex) {
-                switch (vertex.getVisibilityMode()) {
-                    case Full:
-                        if (vertex instanceof Place) {
-                            Place place = (Place) vertex;
-                            if (place.isStart()) {
-                                return GuiConfig.START_PLACE_COLOR;
-                            } else if (place.isEnd()) {
-                                return GuiConfig.END_PLACE_COLOR;
-                            } else {
-                                return GuiConfig.PLACE_COLOR;
-                            }
-                        } else if (vertex instanceof Transition) {
-                            return GuiConfig.TRANSITION_COLOR;
+                    @Override
+                    public Paint transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                                if (vertex instanceof Place) {
+                                    Place place = (Place) vertex;
+                                    if (place.isStart()) {
+                                        return GuiConfig.START_PLACE_COLOR;
+                                    } else if (place.isEnd()) {
+                                        return GuiConfig.END_PLACE_COLOR;
+                                    } else {
+                                        return GuiConfig.PLACE_COLOR;
+                                    }
+                                } else if (vertex instanceof Transition) {
+                                    return GuiConfig.TRANSITION_COLOR;
+                                }
+                                return null;
+                            case Background:
+                                return GuiConfig.BKGND_VERTEX_COLOR;
+                            case None:
+                            default:
+                                return null;
                         }
-                        return null;
-                    case Background:
-                        return GuiConfig.BKGND_VERTEX_COLOR;
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
+                    }
+                });
 
         vv.getRenderContext()
                 .setVertexFontTransformer(new Transformer<Vertex, Font>() {
-            @Override
-            public Font transform(Vertex vertex) {
-                switch (vertex.getVisibilityMode()) {
-                    case Full:
-                    case Background:
-                        return new java.awt.Font("Dialog", Font.PLAIN, 14);
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
+                    @Override
+                    public Font transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                            case Background:
+                                return new java.awt.Font("Dialog", Font.PLAIN, 14);
+                            case None:
+                            default:
+                                return null;
+                        }
+                    }
+                });
 
         vv.getRenderContext()
                 .setVertexLabelTransformer(new Transformer<Vertex, String>() {
-            @Override
-            public String transform(Vertex vertex) {
-                switch (vertex.getVisibilityMode()) {
-                    case Full:
-                        return vertex.getShortTag();
-                    case Background:
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
+                    @Override
+                    public String transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                                return vertex.getShortTag();
+                            case Background:
+                            case None:
+                            default:
+                                return null;
+                        }
+                    }
+                });
 
         vv.getRenderContext()
                 .setVertexShapeTransformer(new Transformer<Vertex, Shape>() {
-            @Override
-            public Shape transform(Vertex vertex) {
-                if (vertex instanceof Transition) {
-                    return ((Transition) vertex).getShape();
-                } else if (vertex instanceof Place) {
-                    return ((Place) vertex).getShape();
-                } else {
-                    return null;
-                }
-            }
-        });
+                    @Override
+                    public Shape transform(Vertex vertex) {
+                        if (vertex instanceof Transition) {
+                            return ((Transition) vertex).getShape();
+                        } else if (vertex instanceof Place) {
+                            return ((Place) vertex).getShape();
+                        } else {
+                            return null;
+                        }
+                    }
+                });
 
         vv.getRenderContext().setVertexStrokeTransformer(new Transformer<Vertex, Stroke>() {
             @Override
@@ -792,7 +792,7 @@ public class TaskModelEditor extends JPanel {
                             public void actionPerformed(ActionEvent e) {
                                 // Write things out to make sure that we have variables.
                                 writeModel();
-                                System.out.println("b spec list: " + mSpec.getEventSpecList(vertex));
+//                                System.out.println("b spec list: " + mSpec.getEventSpecList(vertex));
                                 SelectEventD diag = new SelectEventD(null, true, mSpec.getEventSpecList(vertex), vertex instanceof Transition, vertex instanceof Place);
 
                                 // Remove event specs that were mapped to this transition
@@ -811,7 +811,7 @@ public class TaskModelEditor extends JPanel {
                                     vertex.setEventSpecs(selectedEventSpecs);
                                 }
                                 vv.repaint();
-                                System.out.println("a spec list: " + mSpec.getEventSpecList(vertex));
+//                                System.out.println("a spec list: " + mSpec.getEventSpecList(vertex));
                             }
                         });
                         popup.add(new AbstractAction("Edit Markups") {

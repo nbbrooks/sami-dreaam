@@ -23,6 +23,9 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import sami.event.Event;
+import sami.markup.Markup;
+import sami.uilanguage.MarkupComponent;
 
 /**
  * Used to receive parameters from operator needed by an Output event
@@ -47,7 +50,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     private EventType eventType;
     // Maps each field in the event to a variable string name or value
     private HashMap<String, Object> fieldNameToDefinition;
-    private HashMap<Field, JComponent> fieldToValueComponent;
+    private HashMap<Field, MarkupComponent> fieldToValueComponent;
     private HashMap<Field, JComboBox> fieldToVariableComboBox;
     private HashMap<Field, JTextField> fieldToVariableTextField;
     private final ReflectedEventSpecification eventSpec;
@@ -70,7 +73,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
         } catch (ClassNotFoundException cnfe) {
             cnfe.printStackTrace();
         }
-        fieldToValueComponent = new HashMap<Field, JComponent>();
+        fieldToValueComponent = new HashMap<Field, MarkupComponent>();
         fieldToVariableComboBox = new HashMap<Field, JComboBox>();
         fieldToVariableTextField = new HashMap<Field, JTextField>();
 
@@ -91,7 +94,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
             LOGGER.log(Level.INFO, "ReflectedEventD adding fields for " + eventSpec + ", fields: " + fieldNames.toString());
 
             for (String fieldName : fieldNames) {
-                System.out.println("eventClass: " + eventClass + "\tfieldName: " + fieldName);
                 final Field field = eventClass.getField(fieldName);
                 JPanel fieldPanel = new JPanel();
                 fieldPanel.setLayout(new GridBagLayout());
@@ -161,7 +163,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
         } catch (NullPointerException e) {
             existingVariables = new ArrayList<String>();
         }
-        existingVariables.add(0, ReflectedEventSpecification.NONE);
+        existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 
         Object fieldObject = fieldNameToDefinition.get(field.getName());
@@ -177,29 +179,32 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel, GridBagConstraints constraints) {
-        JComponent component = UiComponentGenerator.getInstance().getCreationComponent(field.getType());
-        Object definition = fieldNameToDefinition.get(field.getName());
-        if (component != null && definition != null) {
-            // This field already has been defined with a value
-            // Earlier we had to replace primitive fields with their wrapper object, take that into account here
-            if (definition.getClass().equals(field.getType())
-                    || (definition.getClass().equals(Double.class) && field.getType().equals(double.class))
-                    || (definition.getClass().equals(Float.class) && field.getType().equals(float.class))
-                    || (definition.getClass().equals(Integer.class) && field.getType().equals(int.class))
-                    || (definition.getClass().equals(Long.class) && field.getType().equals(long.class))) {
-                UiComponentGenerator.getInstance().setComponentValue(definition, component);
+        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent(field.getType(), new ArrayList<Markup>());
+        JComponent visualization = null;
+        if (markupComponent != null && markupComponent.getComponent() != null) {
+            visualization = markupComponent.getComponent();
+            Object definition = fieldNameToDefinition.get(field.getName());
+            if (definition != null) {
+                // This field already has been defined with a value
+                // Earlier we had to replace primitive fields with their wrapper object, take that into account here
+                if (definition.getClass().equals(field.getType())
+                        || (definition.getClass().equals(Double.class) && field.getType().equals(double.class))
+                        || (definition.getClass().equals(Float.class) && field.getType().equals(float.class))
+                        || (definition.getClass().equals(Integer.class) && field.getType().equals(int.class))
+                        || (definition.getClass().equals(Long.class) && field.getType().equals(long.class))) {
+                    UiComponentGenerator.getInstance().setComponentValue(markupComponent, definition);
+                }
             }
-        }
-        fieldToValueComponent.put(field, component);
-        if (component == null) {
+            fieldToValueComponent.put(field, markupComponent);
+        } else {
             // There is no component that can be used to define a value for this field
             // The field can only be set to a variable name
             // Show a message for now, may remove this later...
-            component = new JLabel("No component", SwingConstants.LEFT);
+            visualization = new JLabel("No component", SwingConstants.LEFT);
         }
-        maxComponentWidth = Math.max(maxComponentWidth, component.getPreferredSize().width);
-        maxComponentWidth = Math.max(maxComponentWidth, component.getPreferredSize().width);
-        panel.add(component, constraints);
+        maxComponentWidth = Math.max(maxComponentWidth, visualization.getPreferredSize().width);
+        maxComponentWidth = Math.max(maxComponentWidth, visualization.getPreferredSize().width);
+        panel.add(visualization, constraints);
     }
 
     private void initComponents() {
@@ -273,15 +278,15 @@ public class ReflectedEventD extends javax.swing.JDialog {
             for (Field field : fieldToVariableComboBox.keySet()) {
                 Object definition = null;
                 JComboBox variableComboBox = fieldToVariableComboBox.get(field);
-                if (!variableComboBox.getSelectedItem().toString().equalsIgnoreCase(ReflectedEventSpecification.NONE)) {
+                if (!variableComboBox.getSelectedItem().toString().equalsIgnoreCase(Event.NONE)) {
                     // User selected a variable other than NONE to define the field
                     definition = variableComboBox.getSelectedItem().toString();
                 } else {
                     // User selected NONE for variable, now see if they created a value definition
-                    JComponent valueComponent = fieldToValueComponent.get(field);
-                    if (valueComponent != null) {
+                    MarkupComponent markupComponent = fieldToValueComponent.get(field);
+                    if (markupComponent != null) {
                         // Store the value from the component
-                        definition = UiComponentGenerator.getInstance().getComponentValue(valueComponent, field);
+                        definition = UiComponentGenerator.getInstance().getComponentValue(markupComponent, field);
                     }
                 }
                 fieldNameToObject.put(field.getName(), definition);

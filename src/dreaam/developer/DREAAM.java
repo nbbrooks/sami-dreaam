@@ -274,14 +274,29 @@ public class DREAAM extends javax.swing.JFrame {
         });
         repaint();
 
-
         // Try to load the last used DRM file
         Preferences p = Preferences.userRoot();
         try {
             String lastDrmPath = p.get(LAST_DRM_FILE, null);
             if (lastDrmPath != null) {
                 if (mediator.open(new File(lastDrmPath))) {
+                    // Succeeded loading last used specification
                     _open();
+                } else {
+                    // Failed to load last used specification
+                    Object[] options = {"Load", "New"};
+                    int answer = JOptionPane.showOptionDialog(null, "Could not load last used plan specification: create new DCF or load a different DCF?", "Load or new?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+                    if (answer == JOptionPane.YES_OPTION) {
+                        // Get a different specification to try and load
+                        if (mediator.open()) {
+                            _open();
+                        } else {
+                            // Couldn't load this one either, create a new specification
+                            JOptionPane.showMessageDialog(null, "Could not load plan specification, creating a new specification");
+                        }
+                    } else {
+                        // New specification
+                    }
                 }
             }
         } catch (AccessControlException e) {
@@ -566,7 +581,6 @@ public class DREAAM extends javax.swing.JFrame {
 //                requirementsRoot.add(new DefaultMutableTreeNode(requirementSpecification));
 //            }
 //        }
-
         // Redraw tree
         ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(treeRoot);
         // Reset view

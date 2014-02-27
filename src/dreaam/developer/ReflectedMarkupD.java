@@ -1,6 +1,5 @@
 package dreaam.developer;
 
-import sami.event.ReflectedEventSpecification;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -23,10 +22,11 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import sami.event.Event;
 import sami.markup.Markup;
 import sami.markup.MarkupOption;
-import sami.markup.ReflectedMarkupOptionSpecification;
 import sami.markup.ReflectedMarkupSpecification;
+import sami.uilanguage.MarkupComponent;
 
 /**
  * Used to receive parameters from operator needed by an Output event
@@ -44,11 +44,11 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
     private JButton okButton;
     HashMap<String, JPanel> enumFieldNameToPanel;
     HashMap<String, JComboBox> enumFieldNameToCombo;
-    HashMap<String, HashMap<String, JPanel>> enumToValueToPanel;
-    HashMap<String, HashMap<String, Class>> enumToValueToClass;
-    HashMap<String, HashMap<String, HashMap<Field, JComponent>>> enumToValueToFieldToComp;
-    HashMap<String, HashMap<String, HashMap<Field, JComboBox>>> enumToValueToFieldToCombo;
-    HashMap<String, HashMap<String, HashMap<Field, Object>>> enumToValueToFieldToDefinition;
+    HashMap<String, HashMap<String, JPanel>> enumToConstantToPanel;
+    HashMap<String, HashMap<String, Class>> enumToConstantToClass;
+    HashMap<String, HashMap<String, HashMap<Field, MarkupComponent>>> enumToConstantToFieldToComp;
+    HashMap<String, HashMap<String, HashMap<Field, JComboBox>>> enumToConstantToFieldToCombo;
+    HashMap<String, HashMap<String, HashMap<Field, Object>>> enumToConstantToFieldToDefinition;
     private final ReflectedMarkupSpecification markupSpec;
     public static final int RECURSION_DEPTH = 2;
     // Serializable variable definition storage using HashMaps and Strings to represent object
@@ -67,11 +67,11 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
 
         enumFieldNameToPanel = new HashMap<String, JPanel>();
         enumFieldNameToCombo = new HashMap<String, JComboBox>();
-        enumToValueToPanel = new HashMap<String, HashMap<String, JPanel>>();
-        enumToValueToClass = new HashMap<String, HashMap<String, Class>>();
-        enumToValueToFieldToComp = new HashMap<String, HashMap<String, HashMap<Field, JComponent>>>();
-        enumToValueToFieldToCombo = new HashMap<String, HashMap<String, HashMap<Field, JComboBox>>>();
-        enumToValueToFieldToDefinition = new HashMap<String, HashMap<String, HashMap<Field, Object>>>();
+        enumToConstantToPanel = new HashMap<String, HashMap<String, JPanel>>();
+        enumToConstantToClass = new HashMap<String, HashMap<String, Class>>();
+        enumToConstantToFieldToComp = new HashMap<String, HashMap<String, HashMap<Field, MarkupComponent>>>();
+        enumToConstantToFieldToCombo = new HashMap<String, HashMap<String, HashMap<Field, JComboBox>>>();
+        enumToConstantToFieldToDefinition = new HashMap<String, HashMap<String, HashMap<Field, Object>>>();
 
         try {
             markupClass = Class.forName(markupSpec.getClassName());
@@ -89,133 +89,162 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
     }
 
     /**
-     * Create JComponents to hold the values of parameters
+     * Create JComponents for Enum values selection a
      *
      * @param obj
      * @param existingValues
      */
-    protected void addEnumComponents() {
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.gridy = 0;
-        constraints.gridx = 0;
-        constraints.weightx = 1.0;
+    protected void addComponents() {
+        try {
+            ArrayList<String> enumFieldNames = (ArrayList<String>) (markupClass.getField("enumFieldNames").get(null));
+            HashMap<String, String> enumNameToDescription = (HashMap<String, String>) (markupClass.getField("enumNameToDescription").get(null));
 
-        for (String enumFieldName : markupInstance.enumFieldNames) {
-            try {
-                final Field enumField = markupClass.getField(enumFieldName);
-                if (enumField.getType().isEnum()) {
-                    // Initialize hashmaps
-                    enumToValueToPanel.put(enumFieldName, new HashMap<String, JPanel>());
-                    enumToValueToClass.put(enumFieldName, new HashMap<String, Class>());
-                    HashMap<String, HashMap<Field, JComponent>> valueToFieldToComp = new HashMap<String, HashMap<Field, JComponent>>();
-                    HashMap<String, HashMap<Field, JComboBox>> valueToFieldToCombo = new HashMap<String, HashMap<Field, JComboBox>>();
-                    HashMap<String, HashMap<Field, Object>> valueToFieldToDefinition = new HashMap<String, HashMap<Field, Object>>();
-                    for (Object enumValue : enumField.getType().getEnumConstants()) {
-                        valueToFieldToComp.put(enumValue.toString(), new HashMap<Field, JComponent>());
-                        valueToFieldToCombo.put(enumValue.toString(), new HashMap<Field, JComboBox>());
-                        valueToFieldToDefinition.put(enumValue.toString(), new HashMap<Field, Object>());
-                    }
-                    enumToValueToFieldToComp.put(enumFieldName, valueToFieldToComp);
-                    enumToValueToFieldToCombo.put(enumFieldName, valueToFieldToCombo);
-                    enumToValueToFieldToDefinition.put(enumFieldName, valueToFieldToDefinition);
+            GridBagConstraints constraints = new GridBagConstraints();
+            constraints.fill = GridBagConstraints.HORIZONTAL;
+            constraints.gridy = 0;
+            constraints.gridx = 0;
+            constraints.weightx = 1.0;
 
-                    // Add description for this enum
-                    JLabel description = new JLabel(markupInstance.enumNameToDescription.get(enumField.getName()), SwingConstants.LEFT);
-                    description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
-                    maxComponentWidth = Math.max(maxComponentWidth, description.getPreferredSize().width);
-                    paramsPanel.add(description, constraints);
-                    constraints.gridy = constraints.gridy + 1;
-
-                    // Add combo box of the enum's possible values
-                    JComboBox comboBox = new JComboBox(enumField.getType().getEnumConstants());
-                    maxComponentWidth = Math.max(maxComponentWidth, comboBox.getPreferredSize().width);
-                    paramsPanel.add(comboBox, constraints);
-                    constraints.gridy = constraints.gridy + 1;
-                    enumFieldNameToCombo.put(enumFieldName, comboBox);
-
-                    // Add panel for handling interaction for the selected enum value
-                    for (Object enumValue : enumField.getType().getEnumConstants()) {
-                        JPanel markupValuePanel = constructEnumValuePanel(enumField, enumValue);
-                        maxComponentWidth = Math.max(maxComponentWidth, markupValuePanel.getPreferredSize().width);
-                        paramsPanel.add(markupValuePanel, constraints);
-                        constraints.gridy = constraints.gridy + 1;
-                    }
-
-                    // Add space between each enum's interaction area
-                    paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)), constraints);
-                    constraints.gridy = constraints.gridy + 1;
-
-                    // Indicate that there is no markup value panel currently visible 
-                    enumFieldNameToPanel.put(enumFieldName, null);
-
-                    // Add listener to enum combo box
-                    comboBox.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(ActionEvent ae) {
-                            enumValueSelected(enumField);
+            // Add components for each Markup enums
+            for (String enumFieldName : enumFieldNames) {
+                try {
+                    final Field enumField = markupClass.getField(enumFieldName);
+                    if (enumField.getType().isEnum()) {
+                        // Initialize hashmaps
+                        enumToConstantToPanel.put(enumFieldName, new HashMap<String, JPanel>());
+                        enumToConstantToClass.put(enumFieldName, new HashMap<String, Class>());
+                        HashMap<String, HashMap<Field, MarkupComponent>> valueToFieldToComp = new HashMap<String, HashMap<Field, MarkupComponent>>();
+                        HashMap<String, HashMap<Field, JComboBox>> valueToFieldToCombo = new HashMap<String, HashMap<Field, JComboBox>>();
+                        HashMap<String, HashMap<Field, Object>> constantToFieldToDefinition = new HashMap<String, HashMap<Field, Object>>();
+                        for (Object constant : enumField.getType().getEnumConstants()) {
+                            valueToFieldToComp.put(constant.toString(), new HashMap<Field, MarkupComponent>());
+                            valueToFieldToCombo.put(constant.toString(), new HashMap<Field, JComboBox>());
+                            constantToFieldToDefinition.put(constant.toString(), new HashMap<Field, Object>());
                         }
-                    });
+                        enumToConstantToFieldToComp.put(enumFieldName, valueToFieldToComp);
+                        enumToConstantToFieldToCombo.put(enumFieldName, valueToFieldToCombo);
+                        enumToConstantToFieldToDefinition.put(enumFieldName, constantToFieldToDefinition);
 
-                    if (fieldNameToDefinition.containsKey(enumField.getName())) {
-                        System.out.println("Have previous enum value");
-                        comboBox.setSelectedItem(fieldNameToDefinition.get(enumField.getName()));
+                        // Add description for this enum to panel
+                        JLabel description = new JLabel(enumNameToDescription.get(enumField.getName()), SwingConstants.LEFT);
+                        description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
+                        maxComponentWidth = Math.max(maxComponentWidth, description.getPreferredSize().width);
+                        paramsPanel.add(description, constraints);
+                        constraints.gridy = constraints.gridy + 1;
+
+                        // Add combo box of the enum's possible values
+                        JComboBox comboBox = new JComboBox(enumField.getType().getEnumConstants());
+                        maxComponentWidth = Math.max(maxComponentWidth, comboBox.getPreferredSize().width);
+                        paramsPanel.add(comboBox, constraints);
+                        constraints.gridy = constraints.gridy + 1;
+                        enumFieldNameToCombo.put(enumFieldName, comboBox);
+
+                        // Add panel for each enum constant to handle the associated MarkupOption (if there is one)
+                        for (Object constant : enumField.getType().getEnumConstants()) {
+                            JPanel constantPanel = constructConstantPanel(enumField, constant);
+                            maxComponentWidth = Math.max(maxComponentWidth, constantPanel.getPreferredSize().width);
+                            paramsPanel.add(constantPanel, constraints);
+                            constraints.gridy = constraints.gridy + 1;
+                        }
+
+                        // Add space between each enum's interaction area
+                        paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)), constraints);
+                        constraints.gridy = constraints.gridy + 1;
+
+                        // Indicate that there is no markup value panel currently visible 
+                        enumFieldNameToPanel.put(enumFieldName, null);
+
+                        // Add listener to enum combo box
+                        comboBox.addActionListener(new ActionListener() {
+                            @Override
+                            public void actionPerformed(ActionEvent ae) {
+                                constantSelected(enumField);
+                            }
+                        });
+
+                        if (fieldNameToDefinition.containsKey(enumField.getName())) {
+                            comboBox.setSelectedItem(fieldNameToDefinition.get(enumField.getName()));
+                        } else {
+                            comboBox.setSelectedIndex(0);
+                        }
+
                     } else {
-                        comboBox.setSelectedIndex(0);
+                        LOGGER.severe("Markup class field " + enumField.getName() + " is not an enum");
+                    }
+                } catch (NoSuchFieldException ex) {
+                    ex.printStackTrace();
+                } catch (SecurityException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        } catch (IllegalArgumentException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchFieldException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    /**
+     * Create panel to handle the MarkupOption associated with an enum constant
+     * (if there is one)
+     *
+     * @param enumField
+     * @param constant
+     * @return
+     */
+    protected JPanel constructConstantPanel(Field enumField, Object constant) {
+        JPanel constantPanel = new JPanel();
+        constantPanel.setLayout(new GridBagLayout());
+        try {
+            HashMap<Enum, String> constantToFieldName = (HashMap<Enum, String>) (markupClass.getField("enumValueToFieldName").get(null));
+            HashMap<String, JPanel> constantToPanel = enumToConstantToPanel.get(enumField.getName());
+            HashMap<String, Class> constantToClass = enumToConstantToClass.get(enumField.getName());
+            HashMap<String, HashMap<Field, MarkupComponent>> constantToFieldToComp = enumToConstantToFieldToComp.get(enumField.getName());
+            HashMap<String, HashMap<Field, JComboBox>> constantToFieldToCombo = enumToConstantToFieldToCombo.get(enumField.getName());
+            HashMap<String, HashMap<Field, Object>> constantToFieldToDefinition = enumToConstantToFieldToDefinition.get(enumField.getName());
+
+            // Add entry to enum constant to panel hash
+            constantToPanel.put(constant.toString(), constantPanel);
+            constantPanel.setVisible(false);
+            if (constantToFieldName.containsKey((Enum) constant)) {
+                String fieldName = constantToFieldName.get((Enum) constant);
+                if (fieldName != null) {
+                    try {
+                        // Field for MarkupOption associated with the enum constant
+                        Field field = markupClass.getField(fieldName);
+                        constantToClass.put(constant.toString(), field.getType());
+                    } catch (NoSuchFieldException ex) {
+                        Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (SecurityException ex) {
+                        Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
                     }
 
-                } else {
-                    LOGGER.severe("Markup class field " + enumField.getName() + " is not an enum");
+                    // Make the field to comp hash
+                    constantToFieldToComp.put(constant.toString(), new HashMap<Field, MarkupComponent>());
+                    // Make the field to combo hash
+                    constantToFieldToCombo.put(constant.toString(), new HashMap<Field, JComboBox>());
+                    // Make the field to definition
+                    constantToFieldToDefinition.put(constant.toString(), new HashMap<Field, Object>());
+
+                    // Construct the panel for this enum value
+                    addConstantComponents(enumField, constant);
                 }
-            } catch (NoSuchFieldException ex) {
-                ex.printStackTrace();
-            } catch (SecurityException ex) {
-                ex.printStackTrace();
+            } else {
+                LOGGER.severe("No field name linked to enum \"" + enumField.getName() + "\" value \"" + constant + "\"");
             }
+        } catch (IllegalArgumentException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchFieldException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
         }
+        return constantPanel;
     }
 
-    protected JPanel constructEnumValuePanel(Field enumField, Object enumValue) {
-        JPanel enumValuePanel = new JPanel();
-        enumValuePanel.setLayout(new GridBagLayout());
-
-        HashMap<String, JPanel> valueToPanel = enumToValueToPanel.get(enumField.getName());
-        HashMap<String, Class> valueToClass = enumToValueToClass.get(enumField.getName());
-        HashMap<String, HashMap<Field, JComponent>> valueToFieldToComp = enumToValueToFieldToComp.get(enumField.getName());
-        HashMap<String, HashMap<Field, JComboBox>> valueToFieldToCombo = enumToValueToFieldToCombo.get(enumField.getName());
-        HashMap<String, HashMap<Field, Object>> valueToFieldToDefinition = enumToValueToFieldToDefinition.get(enumField.getName());
-
-        // Store the class?
-        String enumValueFieldName = markupInstance.enumValueToFieldName.get((Enum) enumValue);
-        // Make the value to panel hash
-        valueToPanel.put(enumValue.toString(), enumValuePanel);
-        enumValuePanel.setVisible(false);
-        if (enumValueFieldName != null) {
-            try {
-                Field enumValueField = markupClass.getField(enumValueFieldName);
-                valueToClass.put(enumValue.toString(), enumValueField.getType());
-            } catch (NoSuchFieldException ex) {
-                Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (SecurityException ex) {
-                Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
-            // Make the field to comp hash
-            valueToFieldToComp.put(enumValue.toString(), new HashMap<Field, JComponent>());
-            // Make the field to combo hash
-            valueToFieldToCombo.put(enumValue.toString(), new HashMap<Field, JComboBox>());
-            // Make the field to definition
-            valueToFieldToDefinition.put(enumValue.toString(), new HashMap<Field, Object>());
-
-            // Construct the panel for this enum value
-            addMarkupOptionComponents(enumField, enumValue, enumValuePanel);
-        } else {
-            LOGGER.severe("No field name linked to enum \"" + enumField.getName() + "\" value \"" + enumValue + "\"");
-        }
-        return enumValuePanel;
-    }
-
-    protected void enumValueSelected(Field enumField) {
+    protected void constantSelected(Field enumField) {
         // Retrieve the panel for this enum value
         Object enumValue = enumFieldNameToCombo.get(enumField.getName()).getSelectedItem();
         if (enumFieldNameToPanel.get(enumField.getName()) != null) {
@@ -223,7 +252,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
             oldEnumValuePanel.setVisible(false);
             oldEnumValuePanel.setBorder(null);
         }
-        JPanel enumValuePanel = enumToValueToPanel.get(enumField.getName()).get(enumValue.toString());
+        JPanel enumValuePanel = enumToConstantToPanel.get(enumField.getName()).get(enumValue.toString());
         enumValuePanel.setVisible(true);
         if (enumValuePanel.getComponentCount() > 0) {
             enumValuePanel.setBorder(BorderFactory.createLineBorder(Color.black));
@@ -232,91 +261,143 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
         paramsPanel.revalidate();
     }
 
-    protected void addMarkupOptionComponents(Field enumField, Object enumValue, JPanel enumValuePanel2asdfasdf) {
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.gridy = 0;
-        constraints.gridx = 0;
-        constraints.weightx = 1.0;
-
-        // Get JPanel, class, and values for this value of the enum
-        JPanel enumValuePanel = enumToValueToPanel.get(enumField.getName()).get(enumValue.toString());
-        Class enumValueClass = enumToValueToClass.get(enumField.getName()).get(enumValue.toString());
-        HashMap<Field, Object> fieldToDefinition = enumToValueToFieldToDefinition.get(enumField.getName()).get(enumValue.toString());
-
-        // Get stored reflected option spec for the MarkupOption field associated with this value of the enum
-        String enumValueFieldName = markupInstance.enumValueToFieldName.get((Enum) enumValue);
-        Object temp = fieldNameToDefinition.get(enumValueFieldName);
-        ReflectedMarkupOptionSpecification optionSpec = null;
-        if (temp != null && temp instanceof ReflectedMarkupOptionSpecification) {
-            optionSpec = (ReflectedMarkupOptionSpecification) temp;
-        }
-
+    /**
+     * Fill out the panel for a particular enum value constant
+     *
+     * @param enumField
+     * @param constant
+     */
+    protected void addConstantComponents(Field enumField, Object constant) {
         try {
-            if (MarkupOption.class.isAssignableFrom(enumValueClass)) {
-                // Get instance of markup option
-                MarkupOption markupOptionInstance = (MarkupOption) (enumValueClass.newInstance());
+            // Get JPanel, class, and values for this value of the enum
+            // Get the JPanel that shows up when this constant is selected in the enum combo box
+            JPanel constantPanel = enumToConstantToPanel.get(enumField.getName()).get(constant.toString());
+            // Get the MarkupOption class linked to this enum constant value
+            Class optionClass = enumToConstantToClass.get(enumField.getName()).get(constant.toString());
 
-                for (String optionFieldName : markupOptionInstance.fieldNames) {
-                    // Get corresponding field
-                    Field optionField = markupOptionInstance.getClass().getField(optionFieldName);
-                    // Add description for this field of the markup option
-                    JLabel description = new JLabel(markupOptionInstance.fieldNameToDescription.get(optionFieldName), SwingConstants.LEFT);
-                    description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
-                    enumValuePanel.add(description, constraints);
-                    constraints.gridy = constraints.gridy + 1;
-                    // Add combo box for selecting variable name
-                    addVariableComboBox(enumField.getName(), enumValue.toString(), optionField, fieldToDefinition, enumValuePanel, constraints, optionSpec);
-                    constraints.gridy = constraints.gridy + 1;
-                    // Add component for defining value
-                    addValueComponent(enumField.getName(), enumValue.toString(), optionField, fieldToDefinition, enumValuePanel, constraints, optionSpec);
-                    constraints.gridy = constraints.gridy + 1;
+            if (optionClass == null) {
+                return;
+            }
+
+            // Get the lookup for storing the MarkupOption's fields and definitions
+            HashMap<Field, Object> optionFieldToDefinition = enumToConstantToFieldToDefinition.get(enumField.getName()).get(constant.toString());
+
+            // Field retrieval 
+            // Get the lookup from enum constant to associated MarkupOption
+            HashMap<Enum, String> enumValueToFieldName = (HashMap<Enum, String>) (markupClass.getField("enumValueToFieldName").get(null));
+            // Get the MarkupOption's field names
+            ArrayList<String> optionFieldNames = (ArrayList<String>) (optionClass.getField("fieldNames").get(null));
+            // Get the MarkupOption's field descriptions
+            HashMap<String, String> optionFieldNameToDescription = (HashMap<String, String>) (optionClass.getField("fieldNameToDescription").get(null));
+
+            GridBagConstraints constraints = new GridBagConstraints();
+            constraints.fill = GridBagConstraints.HORIZONTAL;
+            constraints.gridy = 0;
+            constraints.gridx = 0;
+            constraints.weightx = 1.0;
+
+            // Get stored reflected option spec for the MarkupOption field associated with this value of the enum
+            String fieldNameForConstant = enumValueToFieldName.get((Enum) constant);
+            Object temp = fieldNameToDefinition.get(fieldNameForConstant);
+            MarkupOption option = null;
+            if (temp != null && temp instanceof MarkupOption) {
+                option = (MarkupOption) temp;
+            } else {
+                try {
+                    option = (MarkupOption) (optionClass.newInstance());
+                } catch (InstantiationException ex) {
+                    Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (IllegalAccessException ex) {
+                    Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-        } catch (NoSuchFieldException ex) {
-            ex.printStackTrace();
-        } catch (SecurityException ex) {
-            ex.printStackTrace();
-        } catch (InstantiationException ex) {
-            ex.printStackTrace();
+            for (String optionFieldName : optionFieldNames) {
+                // Get corresponding field
+                Field optionField = optionClass.getField(optionFieldName);
+                // Add description for this field of the markup option
+                JLabel description = new JLabel(optionFieldNameToDescription.get(optionFieldName), SwingConstants.LEFT);
+                description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
+                constantPanel.add(description, constraints);
+                constraints.gridy = constraints.gridy + 1;
+                // Add combo box for selecting variable name
+                addVariableComboBox(enumField.getName(), constant.toString(), optionField, constantPanel, constraints, option);
+                constraints.gridy = constraints.gridy + 1;
+                // Add component for defining value
+                addValueComponent(enumField.getName(), constant.toString(), optionField, constantPanel, constraints, option);
+                constraints.gridy = constraints.gridy + 1;
+            }
+        } catch (IllegalArgumentException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            ex.printStackTrace();
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchFieldException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    protected void addVariableComboBox(String enumName, String enumValueName, Field optionField, HashMap<Field, Object> fieldToDefinition, JPanel panel, GridBagConstraints constraints, ReflectedMarkupOptionSpecification optionSpec) {
+    /**
+     * Add combo box for selecting variable name for a MarkupOption field
+     *
+     * @param enumName
+     * @param enumValueName
+     * @param optionField
+     * @param optionFieldToDefinition
+     * @param constantPanel
+     * @param constraints
+     * @param option
+     */
+    protected void addVariableComboBox(String enumName, String enumValueName, Field optionField, JPanel constantPanel, GridBagConstraints constraints, MarkupOption option) {
         ArrayList<String> existingVariables = null;
         try {
             existingVariables = (ArrayList<String>) (new Mediator()).getAllVariables().clone();
         } catch (NullPointerException e) {
             existingVariables = new ArrayList<String>();
         }
-        existingVariables.add(0, ReflectedEventSpecification.NONE);
+        existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 
-        if (optionSpec != null) {
-            Object optionFieldValue = optionSpec.getFieldDefinitions().get(optionField.getName());
-            if (optionFieldValue != null && optionFieldValue instanceof String && ((String) optionFieldValue).startsWith("@")) {
+        if (option != null) {
+            String variableName = option.getVariableForField(optionField);
+            if (variableName != null && variableName.startsWith("@")) {
                 // This field is already defined with a variable name
-                if (existingVariables.contains((String) optionFieldValue)) {
-                    comboBox.setSelectedItem((String) optionFieldValue);
+                if (existingVariables.contains(variableName)) {
+                    comboBox.setSelectedItem(variableName);
                 } else {
-                    LOGGER.severe("Nonexistent variable name referenced: " + (String) optionFieldValue);
+                    LOGGER.severe("Nonexistent variable name referenced: " + variableName);
                 }
             }
         }
         maxComponentWidth = Math.max(maxComponentWidth, comboBox.getPreferredSize().width);
-        panel.add(comboBox, constraints);
-        enumToValueToFieldToCombo.get(enumName).get(enumValueName).put(optionField, comboBox);
+        constantPanel.add(comboBox, constraints);
+        enumToConstantToFieldToCombo.get(enumName).get(enumValueName).put(optionField, comboBox);
     }
 
-    protected void addValueComponent(String enumName, String enumValueName, Field optionField, HashMap<Field, Object> fieldToDefinition, JPanel panel, GridBagConstraints constraints, ReflectedMarkupOptionSpecification optionSpec) {
-        JComponent component = UiComponentGenerator.getInstance().getCreationComponent(optionField.getType());
+    /**
+     * Add component for creating a value for a MarkupOption field
+     *
+     * @param enumName
+     * @param constantName
+     * @param optionField
+     * @param fieldToDefinition
+     * @param constantPanel
+     * @param constraints
+     * @param option
+     */
+    protected void addValueComponent(String enumName, String constantName, Field optionField, JPanel constantPanel, GridBagConstraints constraints, MarkupOption option) {
+        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent(optionField.getType(), new ArrayList<Markup>());
+        JComponent visualization = null;
         Object definition = null;
-        if (optionSpec != null) {
-            definition = optionSpec.getFieldDefinitions().get(optionField.getName());
+        if (option != null) {
+            //            definition = option.getFieldDefinitions().get(optionField.getName());
+            try {
+                definition = optionField.get(option);
+            } catch (IllegalArgumentException ex) {
+                Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IllegalAccessException ex) {
+                Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
-        if (component != null && definition != null) {
+        if (markupComponent != null && definition != null) {
             // This field already has been defined with a value
             // Earlier we had to replace primitive fields with their wrapper object, take that into account here
             if (definition.getClass().equals(optionField.getType())
@@ -324,18 +405,20 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
                     || (definition.getClass().equals(Float.class) && optionField.getType().equals(float.class))
                     || (definition.getClass().equals(Integer.class) && optionField.getType().equals(int.class))
                     || (definition.getClass().equals(Long.class) && optionField.getType().equals(long.class))) {
-                UiComponentGenerator.getInstance().setComponentValue(definition, component);
+                UiComponentGenerator.getInstance().setComponentValue(markupComponent, definition);
             }
         }
-        if (component == null) {
+        if (markupComponent == null) {
             // There is no component that can be used to define a value for this field
             // The field can only be set to a variable name
             // Show a message for now, may remove this later...
-            component = new JLabel("No component", SwingConstants.LEFT);
+            visualization = new JLabel("No component", SwingConstants.LEFT);
+        } else {
+            enumToConstantToFieldToComp.get(enumName).get(constantName).put(optionField, markupComponent);
+            visualization = markupComponent.getComponent();
         }
-        maxComponentWidth = Math.max(maxComponentWidth, component.getPreferredSize().width);
-        panel.add(component, constraints);
-        enumToValueToFieldToComp.get(enumName).get(enumValueName).put(optionField, component);
+        maxComponentWidth = Math.max(maxComponentWidth, visualization.getPreferredSize().width);
+        constantPanel.add(visualization, constraints);
     }
 
     private void initComponents() {
@@ -345,12 +428,11 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
         if (fieldNameToDefinition == null) {
             fieldNameToDefinition = new HashMap<String, Object>();
         }
-        System.out.println("fieldNameToDefinition:\n" + fieldNameToDefinition.toString());
         paramsPanel = new javax.swing.JPanel();
         BoxLayout paramsLayout = new BoxLayout(paramsPanel, BoxLayout.Y_AXIS);
         paramsPanel.setLayout(paramsLayout);
         paramsPanel.setLayout(new GridBagLayout());
-        addEnumComponents();
+        addComponents();
         paramsPanel.revalidate();
 
         scrollPane = new ScrollPane();
@@ -396,39 +478,49 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
             fieldNameToDefinition.put(enumName, enumFieldNameToCombo.get(enumName).getSelectedItem());
         }
 
-        // Store enum value field values
-        for (String enumName : enumFieldNameToCombo.keySet()) {
-            // Get the markup option class associated with the enum value
-            Object enumValue = enumFieldNameToCombo.get(enumName).getSelectedItem();
-            Class enumValueClass = enumToValueToClass.get(enumName).get(enumValue.toString());
-
-            if (enumValueClass != null) {
-                ReflectedMarkupOptionSpecification optionSpec = new ReflectedMarkupOptionSpecification(enumValueClass.getName());
+        try {
+            HashMap<Enum, String> constantToFieldName = (HashMap<Enum, String>) (markupClass.getField("enumValueToFieldName").get(null));
+            // Store enum value field values
+            for (String enumName : enumFieldNameToCombo.keySet()) {
                 // Save values in reflected markup option spec
-                HashMap<Field, JComponent> valueComponentLookup = enumToValueToFieldToComp.get(enumName).get(enumValue.toString());
-                HashMap<Field, JComboBox> variableComboBoxLookup = enumToValueToFieldToCombo.get(enumName).get(enumValue.toString());
+                // Get the markup option class associated with the enum value
+                Object constant = enumFieldNameToCombo.get(enumName).getSelectedItem();
+                Class optionClass = enumToConstantToClass.get(enumName).get(constant.toString());
+                if (optionClass == null) {
+                    continue;
+                }
+                HashMap<Field, MarkupComponent> valueComponentLookup = enumToConstantToFieldToComp.get(enumName).get(constant.toString());
+                HashMap<Field, JComboBox> variableComboBoxLookup = enumToConstantToFieldToCombo.get(enumName).get(constant.toString());
+                MarkupOption option = (MarkupOption) optionClass.newInstance();
+
                 for (Field optionField : variableComboBoxLookup.keySet()) {
                     Object definition = null;
                     JComboBox variableComboBox = variableComboBoxLookup.get(optionField);
-                    if (!variableComboBox.getSelectedItem().toString().equalsIgnoreCase(ReflectedEventSpecification.NONE)) {
+                    if (!variableComboBox.getSelectedItem().toString().equalsIgnoreCase(Event.NONE)) {
                         // User selected a variable other than NONE to define the field - store the variable name
-                        definition = variableComboBox.getSelectedItem().toString();
+                        option.addVariable(variableComboBox.getSelectedItem().toString(), optionField);
                     } else {
                         // User selected NONE for variable, now see if they created a value definition
-                        JComponent valueComponent = valueComponentLookup.get(optionField);
+                        MarkupComponent valueComponent = valueComponentLookup.get(optionField);
                         if (valueComponent != null) {
                             // Store the value from the component
                             definition = UiComponentGenerator.getInstance().getComponentValue(valueComponent, optionField);
+                            optionField.set(option, definition);
                         }
                     }
-                    optionSpec.addFieldDefinition(optionField.getName(), definition);
                 }
                 // Store refl markup option spec
-                String markupValueFieldName = markupInstance.enumValueToFieldName.get((Enum) enumValue);
-                fieldNameToDefinition.put(markupValueFieldName, optionSpec);
-            } else {
-                LOGGER.severe("No class associated with enum \"" + enumName + "\" value \"" + enumValue + "\"");
+                String markupValueFieldName = constantToFieldName.get((Enum) constant);
+                fieldNameToDefinition.put(markupValueFieldName, option);
             }
+        } catch (IllegalArgumentException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchFieldException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         return fieldNameToDefinition;

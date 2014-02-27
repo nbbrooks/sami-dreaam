@@ -132,7 +132,7 @@ public class Platform {
             String line;
             while ((line = br.readLine()) != null) {
                 if (line.matches(pattern.toString())) {
-                    line.trim();
+                    line = line.trim();
                     String[] pairing = splitOnString(line, "\"");
                     if (pairing.length == 4) {
                         uiClass = pairing[1];

@@ -15,6 +15,7 @@ import java.util.prefs.Preferences;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import sami.event.Event;
 import sami.event.ReflectedEventSpecification;
 import sami.gui.GuiElementSpec;
 import sami.mission.MissionPlanSpecification;
@@ -173,7 +174,6 @@ public class Mediator {
                 projectSpec = (ProjectSpecification) ois.readObject();
 
                 if (projectSpec == null) {
-                    JOptionPane.showMessageDialog(null, "Specification failed load");
                     return false;
                 } else {
                     projectSpecLocation = location;
@@ -186,22 +186,20 @@ public class Mediator {
                     }
                     return true;
                 }
-
-            } catch (ClassNotFoundException ex) {
-                Logger.getLogger(DREAAM.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(DREAAM.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (Exception ex) {
+                LOGGER.severe("Exception in DRM open - incompatible file");
             }
 
             return false;
         }
 
         private void newSpec() {
-
             if (projectSpec != null && projectSpec.needsSaving()) {
-                JOptionPane.showOptionDialog(null, "Save current specification?", "Save first?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+                int answer = JOptionPane.showOptionDialog(null, "Save current specification?", "Save first?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+                if (answer == JOptionPane.YES_OPTION) {
+                    save();
+                }
             }
-
             projectSpec = new ProjectSpecification();
             projectSpec.getNewMissionPlanSpecification("Anonymous");
         }
@@ -238,7 +236,7 @@ public class Mediator {
                                     // This is in place of actually working out whether this is an input or output event
                                     if (eventSpec.getFieldDefinitions() != null && eventSpec.getFieldDefinitions().size() > 0) {
                                         for (Object object : eventSpec.getFieldDefinitions().values()) {
-                                            if (object instanceof String && ((String) object).startsWith("@") && !((String) object).equals(ReflectedEventSpecification.NONE)) {
+                                            if (object instanceof String && ((String) object).startsWith("@") && !((String) object).equals(Event.NONE)) {
                                                 ret.add((String) object);
                                                 Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Adding " + (String) object + " to variable list");
                                             }
