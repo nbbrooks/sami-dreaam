@@ -9,6 +9,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.ScrollPane;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
@@ -179,7 +180,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel, GridBagConstraints constraints) {
-        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent(field.getType(), new ArrayList<Markup>());
+        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((Type)field.getType(), new ArrayList<Markup>());
         JComponent visualization = null;
         if (markupComponent != null && markupComponent.getComponent() != null) {
             visualization = markupComponent.getComponent();
