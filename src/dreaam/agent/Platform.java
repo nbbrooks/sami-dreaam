@@ -44,7 +44,7 @@ public class Platform {
             checkerAgents.add(new AbortMissionChecker());
             checkerAgents.add(new ProxyAbortMissionChecker());
             helperAgents.add(new AbortMissionHelper());
-            helperAgents.add(new ProxyAbortMissionHelper());
+//            helperAgents.add(new ProxyAbortMissionHelper());
 //            agents.add(new GUIComponentAnalysisAgent());
             // Load domain specific agents
             try {

@@ -94,45 +94,53 @@ public class ReflectedEventD extends javax.swing.JDialog {
             HashMap<String, String> fieldNameToDescription = (HashMap<String, String>) (eventClass.getField("fieldNameToDescription").get(null));
             LOGGER.log(Level.INFO, "ReflectedEventD adding fields for " + eventSpec + ", fields: " + fieldNames.toString());
 
+            GridBagConstraints paramsConstraints = new GridBagConstraints();
+            paramsConstraints.fill = GridBagConstraints.HORIZONTAL;
+            paramsConstraints.gridy = 0;
+            paramsConstraints.gridx = 0;
+            paramsConstraints.weightx = 1.0;
+                
             for (String fieldName : fieldNames) {
                 final Field field = eventClass.getField(fieldName);
                 JPanel fieldPanel = new JPanel();
                 fieldPanel.setLayout(new GridBagLayout());
                 fieldPanel.setBorder(BorderFactory.createLineBorder(Color.black));
 
-                GridBagConstraints constraints = new GridBagConstraints();
-                constraints.fill = GridBagConstraints.HORIZONTAL;
-                constraints.gridy = 0;
-                constraints.gridx = 0;
-                constraints.weightx = 1.0;
+                GridBagConstraints fieldConstraints = new GridBagConstraints();
+                fieldConstraints.fill = GridBagConstraints.HORIZONTAL;
+                fieldConstraints.gridy = 0;
+                fieldConstraints.gridx = 0;
+                fieldConstraints.weightx = 1.0;
 
                 // Add description for this field
                 JLabel description = new JLabel(fieldNameToDescription.get(fieldName), SwingConstants.LEFT);
                 description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
-                fieldPanel.add(description, constraints);
-                constraints.gridy = constraints.gridy + 1;
+                fieldPanel.add(description, fieldConstraints);
+                fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 // Field definition components
                 if (eventType == ReflectedEventD.EventType.INPUT) {
                     // Add text field for setting variable
-                    addVariableTextField(field, fieldNameToDefinition, fieldPanel, constraints);
-                    constraints.gridy = constraints.gridy + 1;
+                    addVariableTextField(field, fieldNameToDefinition, fieldPanel, fieldConstraints);
+                    fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 } else if (eventType == ReflectedEventD.EventType.OUTPUT) {
                     // Add combo box for selecting variable name
-                    addVariableComboBox(field, fieldNameToDefinition, fieldPanel, constraints);
-                    constraints.gridy = constraints.gridy + 1;
+                    addVariableComboBox(field, fieldNameToDefinition, fieldPanel, fieldConstraints);
+                    fieldConstraints.gridy = fieldConstraints.gridy + 1;
                     // Add component for defining value
-                    addValueComponent(field, fieldNameToDefinition, fieldPanel, constraints);
-                    constraints.gridy = constraints.gridy + 1;
+                    addValueComponent(field, fieldNameToDefinition, fieldPanel, fieldConstraints);
+                    fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 }
 
                 maxComponentWidth = Math.max(maxComponentWidth, fieldPanel.getPreferredSize().width);
-                paramsPanel.add(fieldPanel, constraints);
-                constraints.gridy = constraints.gridy + 1;
+                paramsPanel.add(fieldPanel);
+                paramsPanel.add(fieldPanel, paramsConstraints);
+                paramsConstraints.gridy = paramsConstraints.gridy + 1;
 
                 // Add space between each enum's interaction area
-                paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)), constraints);
-                constraints.gridy = constraints.gridy + 1;
+                paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)));
+                paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)), paramsConstraints);
+                paramsConstraints.gridy = paramsConstraints.gridy + 1;
             }
 
         } catch (NoSuchFieldException ex) {
