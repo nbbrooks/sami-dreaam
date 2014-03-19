@@ -8,6 +8,8 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.ScrollPane;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -51,9 +53,11 @@ public class ReflectedEventD extends javax.swing.JDialog {
     private EventType eventType;
     // Maps each field in the event to a variable string name or value
     private HashMap<String, Object> fieldNameToDefinition;
+    private HashMap<String, Boolean> fieldNameToEditable;
     private HashMap<Field, MarkupComponent> fieldToValueComponent;
     private HashMap<Field, JComboBox> fieldToVariableComboBox;
     private HashMap<Field, JTextField> fieldToVariableTextField;
+    private HashMap<Field, JButton> fieldToEditable;
     private final ReflectedEventSpecification eventSpec;
 
     /**
@@ -77,6 +81,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
         fieldToValueComponent = new HashMap<Field, MarkupComponent>();
         fieldToVariableComboBox = new HashMap<Field, JComboBox>();
         fieldToVariableTextField = new HashMap<Field, JTextField>();
+        fieldToEditable = new HashMap<Field, JButton>();
 
         try {
             eventClass = Class.forName(eventSpec.getClassName());
@@ -99,7 +104,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
             paramsConstraints.gridy = 0;
             paramsConstraints.gridx = 0;
             paramsConstraints.weightx = 1.0;
-                
+
             for (String fieldName : fieldNames) {
                 final Field field = eventClass.getField(fieldName);
                 JPanel fieldPanel = new JPanel();
@@ -131,6 +136,10 @@ public class ReflectedEventD extends javax.swing.JDialog {
                     addValueComponent(field, fieldNameToDefinition, fieldPanel, fieldConstraints);
                     fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 }
+
+                // Add toggle button for setting ability to edit field at run-time
+                addEditableButton(field, fieldNameToEditable, fieldPanel, fieldConstraints);
+                fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 maxComponentWidth = Math.max(maxComponentWidth, fieldPanel.getPreferredSize().width);
                 paramsPanel.add(fieldPanel);
@@ -188,7 +197,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel, GridBagConstraints constraints) {
-        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((Type)field.getType(), new ArrayList<Markup>());
+        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((Type) field.getType(), new ArrayList<Markup>());
         JComponent visualization = null;
         if (markupComponent != null && markupComponent.getComponent() != null) {
             visualization = markupComponent.getComponent();
@@ -216,6 +225,37 @@ public class ReflectedEventD extends javax.swing.JDialog {
         panel.add(visualization, constraints);
     }
 
+    protected void addEditableButton(Field field, HashMap<String, Boolean> fieldNameToEditable, JPanel panel, GridBagConstraints constraints) {
+        final JButton enableEditB = new JButton();
+        if (fieldNameToEditable.containsKey(field.getName())
+                && !fieldNameToEditable.get(field.getName())) {
+            // Field was previously defined and locked
+            enableEditB.setText("Locked");
+            enableEditB.setSelected(false);
+        } else {
+            enableEditB.setText("Editable");
+            enableEditB.setSelected(true);
+        }
+        enableEditB.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                //@todo only allow field to be locked if a definition exists
+                if (enableEditB.isSelected()) {
+                    enableEditB.setText("Locked");
+                    enableEditB.setSelected(false);
+                } else {
+                    enableEditB.setText("Editable");
+                    enableEditB.setSelected(true);
+                }
+            }
+        });
+        fieldToEditable.put(field, enableEditB);
+        maxComponentWidth = Math.max(maxComponentWidth, enableEditB.getPreferredSize().width);
+        maxComponentWidth = Math.max(maxComponentWidth, enableEditB.getPreferredSize().width);
+        panel.add(enableEditB, constraints);
+    }
+
     private void initComponents() {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -223,6 +263,11 @@ public class ReflectedEventD extends javax.swing.JDialog {
         fieldNameToDefinition = eventSpec.getFieldDefinitions();
         if (fieldNameToDefinition == null) {
             fieldNameToDefinition = new HashMap<String, Object>();
+        }
+        // Get previously set field editability
+        fieldNameToEditable = eventSpec.getEditableFields();
+        if (fieldNameToEditable == null) {
+            fieldNameToEditable = new HashMap<String, Boolean>();
         }
         paramsPanel = new javax.swing.JPanel();
         paramsPanel.setLayout(new GridBagLayout());
@@ -263,6 +308,8 @@ public class ReflectedEventD extends javax.swing.JDialog {
         setVisible(false);
         HashMap<String, Object> fieldNameToDefinition = getDefinitionsFromComponents();
         eventSpec.setFieldDefinitions(fieldNameToDefinition);
+        HashMap<String, Boolean> fieldNameToEditable = getEditableFromComponents(fieldNameToDefinition);
+        eventSpec.setEditableFields(fieldNameToEditable);
     }
 
     private HashMap<String, Object> getDefinitionsFromComponents() {
@@ -303,6 +350,23 @@ public class ReflectedEventD extends javax.swing.JDialog {
         }
 
         return fieldNameToObject;
+    }
+
+    private HashMap<String, Boolean> getEditableFromComponents(HashMap<String, Object> fieldNameToDefinition) {
+        HashMap<String, Boolean> fieldNameToEditable = new HashMap<String, Boolean>();
+        for (Field field : fieldToEditable.keySet()) {
+            if (fieldNameToDefinition.containsKey(field.getName())
+                    && fieldNameToDefinition.get(field.getName()) != null
+                    && !fieldToEditable.get(field).isSelected()) {
+                // Field is defined and locked
+                fieldNameToEditable.put(field.getName(), false);
+            } else {
+                // Field is not defined and/or is not locked
+                fieldNameToEditable.put(field.getName(), true);
+            }
+        }
+
+        return fieldNameToEditable;
     }
 
     public static void main(String argv[]) {
