@@ -141,7 +141,7 @@ public class DREAAM extends javax.swing.JFrame {
                                 if (result != null) {
                                     MissionPlanSpecification mps = (MissionPlanSpecification) ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject();
                                     mps.setName(result);
-                                    repaint();
+                                    ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(playsRoot);
                                 }
                             }
                         });
