@@ -1,12 +1,14 @@
 package dreaam.agent.checker;
 
-import dreaam.agent.checker.CheckerAgent;
 import sami.mission.MissionPlanSpecification;
 import sami.mission.Place;
 import sami.mission.Transition;
 import sami.mission.Vertex;
 import edu.uci.ics.jung.graph.Graph;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+import sami.mission.Edge;
 
 /**
  *
@@ -67,5 +69,115 @@ public class ReachabilityChecker extends CheckerAgent {
         }
 
         return msgs;
+    }
+
+    public void removeIllegalConnections() {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getMissions()) {
+            for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
+                // Check for in/out transition/place with no matching edge
+                ArrayList<Vertex> verticesToRemove = new ArrayList<Vertex>();
+                if (vertex instanceof Place) {
+                    Place thisPlace = (Place) vertex;
+
+                    // Check for duplicate entries in connected vertices
+                    Set<Transition> set = new HashSet<Transition>(thisPlace.getInTransitions());
+                    int numDuplicates = thisPlace.getInTransitions().size() - set.size();
+                    if (numDuplicates > 0) {
+                        System.out.println("Found " + numDuplicates + " dupplicates in inTransitions");
+                    }
+                    ArrayList<Transition> list = new ArrayList<Transition>();
+                    list.addAll(set);
+                    thisPlace.setIntransitions(list);
+
+                    // Check for duplicate entries in connected vertices
+                    set = new HashSet<Transition>(thisPlace.getOutTransitions());
+                    numDuplicates = thisPlace.getOutTransitions().size() - set.size();
+                    if (numDuplicates > 0) {
+                        System.out.println("Found " + numDuplicates + " dupplicates in outTransitions");
+                    }
+                    list = new ArrayList<Transition>();
+                    list.addAll(set);
+                    thisPlace.setOutTransitions(list);
+
+                    // Check for connected vertices with no corresponding edge
+                    for (Transition t : thisPlace.getInTransitions()) {
+                        Edge edge = missionPlanSpecification.getGraph().findEdge(t, vertex);
+                        if (edge == null) {
+                            System.out.println("Missing edge in vertex: " + vertex.getTag()
+                                    + "\n\t " + t.getTag()
+                                    + "\n\t " + vertex.getTag());
+                            verticesToRemove.add(t);
+                        }
+                    }
+                    for (Vertex v : verticesToRemove) {
+                        ((Place) vertex).removeInTransition((Transition) v);
+                    }
+
+                    verticesToRemove = new ArrayList<Vertex>();
+                    for (Transition t : thisPlace.getOutTransitions()) {
+                        Edge edge = missionPlanSpecification.getGraph().findEdge(vertex, t);
+                        if (edge == null) {
+                            System.out.println("Missing edge in vertex: " + vertex.getTag()
+                                    + "\n\t " + vertex.getTag()
+                                    + "\n\t " + t.getTag());
+                            verticesToRemove.add(t);
+                        }
+
+                    }
+                    for (Vertex v : verticesToRemove) {
+                        ((Place) vertex).removeOutTransition((Transition) v);
+                    }
+                } else if (vertex instanceof Transition) {
+                    Transition thisTransition = (Transition) vertex;
+
+                    // Check for duplicate entries in connected vertices
+                    Set<Place> set = new HashSet<Place>(thisTransition.getInPlaces());
+                    int numDuplicates = thisTransition.getInPlaces().size() - set.size();
+                    if (numDuplicates > 0) {
+                        System.out.println("Found " + numDuplicates + " dupplicates in inPlaces");
+                    }
+                    ArrayList<Place> list = new ArrayList<Place>();
+                    list.addAll(set);
+                    thisTransition.setInPlaces(list);
+
+                    // Check for duplicate entries in connected vertices
+                    set = new HashSet<Place>(thisTransition.getOutPlaces());
+                    numDuplicates = thisTransition.getOutPlaces().size() - set.size();
+                    if (numDuplicates > 0) {
+                        System.out.println("Found " + numDuplicates + " dupplicates in outPlaces");
+                    }
+                    list = new ArrayList<Place>();
+                    list.addAll(set);
+                    thisTransition.setOutPlaces(list);
+
+                    for (Place p : thisTransition.getInPlaces()) {
+                        Edge edge = missionPlanSpecification.getGraph().findEdge(p, vertex);
+                        if (edge == null) {
+                            System.out.println("Missing edge in vertex: " + vertex.getTag()
+                                    + "\n\t " + p.getTag()
+                                    + "\n\t " + vertex.getTag());
+                            verticesToRemove.add(p);
+                        }
+                    }
+                    for (Vertex v : verticesToRemove) {
+                        ((Transition) vertex).removeInPlace((Place) v);
+                    }
+
+                    verticesToRemove = new ArrayList<Vertex>();
+                    for (Place p : thisTransition.getOutPlaces()) {
+                        Edge edge = missionPlanSpecification.getGraph().findEdge(vertex, p);
+                        if (edge == null) {
+                            System.out.println("Missing edge in vertex: " + vertex.getTag()
+                                    + "\n\t " + vertex.getTag()
+                                    + "\n\t " + p.getTag());
+                            verticesToRemove.add(p);
+                        }
+                    }
+                    for (Vertex v : verticesToRemove) {
+                        ((Transition) vertex).removeOutPlace((Place) v);
+                    }
+                }
+            }
+        }
     }
 }

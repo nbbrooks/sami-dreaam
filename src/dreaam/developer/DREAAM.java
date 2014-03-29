@@ -585,6 +585,8 @@ public class DREAAM extends javax.swing.JFrame {
         ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(treeRoot);
         // Reset view
         taskModelEditor.vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
+        
+        setTitle(Preferences.userRoot().get(LAST_DRM_FILE, null));
     }
 
     private void saveMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveMActionPerformed
@@ -705,6 +707,7 @@ public class DREAAM extends javax.swing.JFrame {
                 taskModelEditor.writeModel();
                 taskModelEditor.setGraph((MissionPlanSpecification) nodeInfo);
                 taskModelEditor.setMode(FunctionMode.Nominal);
+                ((MissionPlanSpecification) nodeInfo).printGraph();
             }
         }
         repaint();

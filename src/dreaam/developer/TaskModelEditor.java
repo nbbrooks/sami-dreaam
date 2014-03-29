@@ -858,24 +858,11 @@ public class TaskModelEditor extends JPanel {
                                     }
                                 }
                                 if (reallyRemove) {
-                                    // First remove edges from the connected Vertex
-                                    ArrayList<Edge> list = (ArrayList<Edge>) vertex.getInEdges().clone();
-                                    for (Edge edge : list) {
-                                        edge.prepareForRemoval();
-                                        mSpec.removeTokenSpecList(edge);
-                                        graph.removeEdge(edge);
+                                    if (vertex instanceof Place) {
+                                        removePlace((Place) vertex);
+                                    } else if (vertex instanceof Transition) {
+                                        removeTransition((Transition) vertex);
                                     }
-                                    list = (ArrayList<Edge>) vertex.getOutEdges().clone();
-                                    for (Edge edge : list) {
-                                        edge.prepareForRemoval();
-                                        mSpec.removeTokenSpecList(edge);
-                                        graph.removeEdge(edge);
-                                    }
-                                    // Now we can remove the vertex
-                                    vertex.prepareForRemoval();
-                                    mSpec.removeEventSpecList(vertex);
-                                    graph.removeVertex(vertex);
-                                    vv.repaint();
                                 }
                             }
                         });
@@ -968,12 +955,7 @@ public class TaskModelEditor extends JPanel {
                         popup.add(new AbstractAction("Delete") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
-                                // Remove this edge from its start and end Vertex     
-                                edge.prepareForRemoval();
-                                // Now we can remove the edge from the graph
-                                mSpec.removeTokenSpecList(edge);
-                                graph.removeEdge(edge);
-                                vv.repaint();
+                                removeEdge(edge);
                             }
                         });
                         popup.show(vv, me.getX(), me.getY());
@@ -1243,5 +1225,53 @@ public class TaskModelEditor extends JPanel {
         } else {
             System.out.println(">>>>>>>>>>> Not writing graph ..... ");
         }
+    }
+
+    public void removePlace(Place place) {
+        // First remove the transition and its edges from our copy of the graph so we don't have to reload the whole thing
+        ArrayList<Edge> list = (ArrayList<Edge>) place.getInEdges();
+        for (Edge inEdge : list) {
+            graph.removeEdge(inEdge);
+        }
+        list = (ArrayList<Edge>) place.getOutEdges();
+        for (Edge outEdge : list) {
+            graph.removeEdge(outEdge);
+        }
+        // Now we can remove the vertex
+        graph.removeVertex(place);
+
+        // Now we can remove the transition and its edges from the mission spec and then the actual data structures
+        mSpec.removePlace(place);
+
+        vv.repaint();
+    }
+
+    public void removeTransition(Transition transition) {
+        // First remove the transition and its edges from our copy of the graph so we don't have to reload the whole thing
+        ArrayList<Edge> list = (ArrayList<Edge>) transition.getInEdges();
+        for (Edge inEdge : list) {
+            graph.removeEdge(inEdge);
+        }
+        list = (ArrayList<Edge>) transition.getOutEdges();
+        for (Edge outEdge : list) {
+            graph.removeEdge(outEdge);
+        }
+        // Now we can remove the vertex
+        graph.removeVertex(transition);
+
+        // Now we can remove the transition and its edges from the mission spec and then the actual data structures
+        mSpec.removeTransition(transition);
+
+        vv.repaint();
+    }
+
+    public void removeEdge(Edge edge) {
+        // First remove the edge from our copy of the graph so we don't have to reload the whole thing
+        graph.removeEdge(edge);
+
+        // Now we can remove the edge from the mission spec and then the actual data structure
+        mSpec.removeEdge(edge);
+
+        vv.repaint();
     }
 }

@@ -137,12 +137,7 @@ public class AbortMissionHelper extends HelperAgent {
             }
             for (Place place : placesToDisconnect) {
                 Edge edge = missionPlanSpecification.getGraph().findEdge(place, endTransition);
-                place.removeOutEdge(edge);
-                endTransition.removeInEdge(edge);
-                place.removeOutTransition(endTransition);
-                endTransition.removeInPlace(place);
-                missionPlanSpecification.removeTokenSpecList(edge);
-                missionPlanSpecification.getGraph().removeEdge(edge);
+                missionPlanSpecification.removeEdge(edge);
             }
         }
     }

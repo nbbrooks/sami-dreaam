@@ -152,25 +152,8 @@ public class ProxyAbortMissionHelper extends HelperAgent {
                         transitionsToRemove.add(transitionLookup.get(place));
                     }
                 }
-                for (int i = 0; i < transitionsToRemove.size(); i++) {
-                    Transition transition = transitionsToRemove.get(i);
-                    // First remove edges from the connected Vertex
-                    ArrayList<Edge> list = (ArrayList<Edge>) transition.getInEdges().clone();
-                    for (Edge edge : list) {
-                        edge.prepareForRemoval();
-                        missionPlanSpecification.removeTokenSpecList(edge);
-                        missionPlanSpecification.getGraph().removeEdge(edge);
-                    }
-                    list = (ArrayList<Edge>) transition.getOutEdges().clone();
-                    for (Edge edge : list) {
-                        edge.prepareForRemoval();
-                        missionPlanSpecification.removeTokenSpecList(edge);
-                        missionPlanSpecification.getGraph().removeEdge(edge);
-                    }
-                    // Now we can remove the vertex
-                    transition.prepareForRemoval();
-                    missionPlanSpecification.removeEventSpecList(transition);
-                    missionPlanSpecification.getGraph().removeVertex(transition);
+                for (Transition transition : transitionsToRemove) {
+                    missionPlanSpecification.removeTransition(transition);
                 }
             } else {
                 if (endPlace != null) {
