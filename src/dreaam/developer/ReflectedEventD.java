@@ -97,7 +97,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
         try {
             ArrayList<String> fieldNames = (ArrayList<String>) (eventClass.getField("fieldNames").get(null));
             HashMap<String, String> fieldNameToDescription = (HashMap<String, String>) (eventClass.getField("fieldNameToDescription").get(null));
-            LOGGER.log(Level.INFO, "ReflectedEventD adding fields for " + eventSpec + ", fields: " + fieldNames.toString());
+            LOGGER.fine("ReflectedEventD adding fields for " + eventSpec + ", fields: " + fieldNames.toString());
 
             GridBagConstraints paramsConstraints = new GridBagConstraints();
             paramsConstraints.fill = GridBagConstraints.HORIZONTAL;

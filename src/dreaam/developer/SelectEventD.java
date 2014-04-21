@@ -251,7 +251,7 @@ public class SelectEventD extends javax.swing.JDialog {
                 ReflectedEventD diag = new ReflectedEventD(eventSpec, null, true);
                 diag.setVisible(true);
             } else {
-                LOGGER.info("Event class \"" + eventClass.getName() + "\" has no fields");
+//                LOGGER.info("Event class \"" + eventClass.getName() + "\" has no fields");
             }
         } catch (ClassNotFoundException ex) {
             ex.printStackTrace();

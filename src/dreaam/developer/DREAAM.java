@@ -707,7 +707,7 @@ public class DREAAM extends javax.swing.JFrame {
                 taskModelEditor.writeModel();
                 taskModelEditor.setGraph((MissionPlanSpecification) nodeInfo);
                 taskModelEditor.setMode(FunctionMode.Nominal);
-                ((MissionPlanSpecification) nodeInfo).printGraph();
+//                ((MissionPlanSpecification) nodeInfo).printGraph();
             }
         }
         repaint();
