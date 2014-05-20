@@ -8,6 +8,7 @@ import edu.uci.ics.jung.graph.Graph;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 import sami.mission.Edge;
 
 /**
@@ -15,6 +16,8 @@ import sami.mission.Edge;
  * @author pscerri
  */
 public class ReachabilityChecker extends CheckerAgent {
+
+    private static final Logger LOGGER = Logger.getLogger(ReachabilityChecker.class.getName());
 
     public ReachabilityChecker() {
     }
@@ -58,11 +61,11 @@ public class ReachabilityChecker extends CheckerAgent {
                 }
                 if (!graphVertices.isEmpty()) {
                     Object[] os = graphVertices.toArray();
-                    System.out.println("Adding unreachable message");
+                    LOGGER.info("Adding unreachable message");
                     AgentMessage m = new AgentMessage(this, "Unreachable states", os);
                     msgs.add(m);
                 } else {
-                    System.out.println("All states were reachable");
+                    LOGGER.info("All states were reachable");
                 }
             }
 
@@ -83,17 +86,17 @@ public class ReachabilityChecker extends CheckerAgent {
                     Set<Transition> set = new HashSet<Transition>(thisPlace.getInTransitions());
                     int numDuplicates = thisPlace.getInTransitions().size() - set.size();
                     if (numDuplicates > 0) {
-                        System.out.println("Found " + numDuplicates + " dupplicates in inTransitions");
+                        LOGGER.info("Found " + numDuplicates + " dupplicates in inTransitions");
                     }
                     ArrayList<Transition> list = new ArrayList<Transition>();
                     list.addAll(set);
-                    thisPlace.setIntransitions(list);
+                    thisPlace.setInTransitions(list);
 
                     // Check for duplicate entries in connected vertices
                     set = new HashSet<Transition>(thisPlace.getOutTransitions());
                     numDuplicates = thisPlace.getOutTransitions().size() - set.size();
                     if (numDuplicates > 0) {
-                        System.out.println("Found " + numDuplicates + " dupplicates in outTransitions");
+                        LOGGER.info("Found " + numDuplicates + " dupplicates in outTransitions");
                     }
                     list = new ArrayList<Transition>();
                     list.addAll(set);
@@ -103,7 +106,7 @@ public class ReachabilityChecker extends CheckerAgent {
                     for (Transition t : thisPlace.getInTransitions()) {
                         Edge edge = missionPlanSpecification.getGraph().findEdge(t, vertex);
                         if (edge == null) {
-                            System.out.println("Missing edge in vertex: " + vertex.getTag()
+                            LOGGER.info("Missing edge in vertex: " + vertex.getTag()
                                     + "\n\t " + t.getTag()
                                     + "\n\t " + vertex.getTag());
                             verticesToRemove.add(t);
@@ -117,7 +120,7 @@ public class ReachabilityChecker extends CheckerAgent {
                     for (Transition t : thisPlace.getOutTransitions()) {
                         Edge edge = missionPlanSpecification.getGraph().findEdge(vertex, t);
                         if (edge == null) {
-                            System.out.println("Missing edge in vertex: " + vertex.getTag()
+                            LOGGER.info("Missing edge in vertex: " + vertex.getTag()
                                     + "\n\t " + vertex.getTag()
                                     + "\n\t " + t.getTag());
                             verticesToRemove.add(t);
@@ -134,7 +137,7 @@ public class ReachabilityChecker extends CheckerAgent {
                     Set<Place> set = new HashSet<Place>(thisTransition.getInPlaces());
                     int numDuplicates = thisTransition.getInPlaces().size() - set.size();
                     if (numDuplicates > 0) {
-                        System.out.println("Found " + numDuplicates + " dupplicates in inPlaces");
+                        LOGGER.info("Found " + numDuplicates + " dupplicates in inPlaces");
                     }
                     ArrayList<Place> list = new ArrayList<Place>();
                     list.addAll(set);
@@ -144,7 +147,7 @@ public class ReachabilityChecker extends CheckerAgent {
                     set = new HashSet<Place>(thisTransition.getOutPlaces());
                     numDuplicates = thisTransition.getOutPlaces().size() - set.size();
                     if (numDuplicates > 0) {
-                        System.out.println("Found " + numDuplicates + " dupplicates in outPlaces");
+                        LOGGER.info("Found " + numDuplicates + " dupplicates in outPlaces");
                     }
                     list = new ArrayList<Place>();
                     list.addAll(set);
@@ -153,7 +156,7 @@ public class ReachabilityChecker extends CheckerAgent {
                     for (Place p : thisTransition.getInPlaces()) {
                         Edge edge = missionPlanSpecification.getGraph().findEdge(p, vertex);
                         if (edge == null) {
-                            System.out.println("Missing edge in vertex: " + vertex.getTag()
+                            LOGGER.info("Missing edge in vertex: " + vertex.getTag()
                                     + "\n\t " + p.getTag()
                                     + "\n\t " + vertex.getTag());
                             verticesToRemove.add(p);
@@ -167,7 +170,7 @@ public class ReachabilityChecker extends CheckerAgent {
                     for (Place p : thisTransition.getOutPlaces()) {
                         Edge edge = missionPlanSpecification.getGraph().findEdge(vertex, p);
                         if (edge == null) {
-                            System.out.println("Missing edge in vertex: " + vertex.getTag()
+                            LOGGER.info("Missing edge in vertex: " + vertex.getTag()
                                     + "\n\t " + vertex.getTag()
                                     + "\n\t " + p.getTag());
                             verticesToRemove.add(p);

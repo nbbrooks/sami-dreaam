@@ -11,10 +11,8 @@ import java.awt.ScrollPane;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -153,11 +151,11 @@ public class ReflectedEventD extends javax.swing.JDialog {
             }
 
         } catch (NoSuchFieldException ex) {
-            Logger.getLogger(ReflectedEventD.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         } catch (SecurityException ex) {
-            Logger.getLogger(ReflectedEventD.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         } catch (IllegalAccessException ex) {
-            Logger.getLogger(ReflectedEventD.class.getName()).log(Level.SEVERE, null, ex);
+            ex.printStackTrace();
         }
     }
 

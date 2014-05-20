@@ -7,10 +7,13 @@ import java.util.logging.Logger;
 import sami.event.ProxyAbortMissionReceived;
 import sami.event.ReflectedEventSpecification;
 import sami.event.SendAbortMission;
-import sami.mission.Edge;
+import sami.mission.InEdge;
+import sami.mission.InTokenRequirement;
 import sami.mission.MissionPlanSpecification;
+import sami.mission.OutEdge;
+import sami.mission.OutTokenRequirement;
 import sami.mission.Place;
-import sami.mission.TokenSpecification;
+import sami.mission.TokenRequirement;
 import sami.mission.Transition;
 import sami.mission.Vertex;
 import sami.mission.Vertex.FunctionMode;
@@ -31,8 +34,8 @@ public class ProxyAbortMissionHelper extends HelperAgent {
 
     @Override
     public void run() {
-        TokenSpecification takeNoneTokenSpec = new TokenSpecification("Take None", TokenSpecification.TokenType.TakeNone, null);
-        TokenSpecification takeRelProxyTokenSpec = new TokenSpecification("Take RP", TokenSpecification.TokenType.TakeRelevantProxy, null);
+        OutTokenRequirement takeNoneTokenReq = new OutTokenRequirement(TokenRequirement.MatchCriteria.None, TokenRequirement.MatchQuantity.None, TokenRequirement.MatchAction.Take);
+        InTokenRequirement relProxyTokenReq = new InTokenRequirement(TokenRequirement.MatchCriteria.RelevantToken, TokenRequirement.MatchQuantity.All);
 
         for (MissionPlanSpecification missionPlanSpecification : mediator.getMissions()) {
             // First check that we actually need an end place (ie have a place that is neither a start nor a stop place)
@@ -122,9 +125,8 @@ public class ProxyAbortMissionHelper extends HelperAgent {
                     transitionLookup.put(place, newTransition);
 
                     // Add edge from nominal place to created transition with Proxy token spec
-                    Edge inEdge = new Edge(place, newTransition, FunctionMode.Recovery);
-                    missionPlanSpecification.updateEdgeToTokenSpecListMap(inEdge, takeRelProxyTokenSpec);
-                    inEdge.addTokenName(takeRelProxyTokenSpec.toString());
+                    InEdge inEdge = new InEdge(place, newTransition, FunctionMode.Recovery);
+                    inEdge.addTokenRequirement(relProxyTokenReq);
                     place.addOutEdge(inEdge);
                     newTransition.addInEdge(inEdge);
                     missionPlanSpecification.getGraph().addEdge(inEdge, place, newTransition);
@@ -132,9 +134,8 @@ public class ProxyAbortMissionHelper extends HelperAgent {
                     (newTransition).addInPlace(place);
 
                     // Add edge from created transition to end place
-                    Edge outEdge = new Edge(newTransition, endPlace, FunctionMode.Recovery);
-                    missionPlanSpecification.updateEdgeToTokenSpecListMap(outEdge, takeNoneTokenSpec);
-                    outEdge.addTokenName(takeNoneTokenSpec.toString());
+                    OutEdge outEdge = new OutEdge(newTransition, endPlace, FunctionMode.Recovery);
+                    outEdge.addTokenRequirement(takeNoneTokenReq);
                     newTransition.addOutEdge(outEdge);
                     endPlace.addInEdge(outEdge);
                     missionPlanSpecification.getGraph().addEdge(outEdge, newTransition, endPlace);

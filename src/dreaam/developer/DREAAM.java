@@ -127,13 +127,13 @@ public class DREAAM extends javax.swing.JFrame {
                             && ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject() instanceof MissionPlanSpecification) {
                         // Plan spec under Plays menu
                         JPopupMenu menu = new JPopupMenu();
-                        menu.add(new AbstractAction("Use as Template") {
-                            @Override
-                            public void actionPerformed(ActionEvent ae) {
-                                MissionPlanSpecification mps = (MissionPlanSpecification) ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject();
-                                taskModelEditor.addTemplate(mps);
-                            }
-                        });
+//                        menu.add(new AbstractAction("Use as Template") {
+//                            @Override
+//                            public void actionPerformed(ActionEvent ae) {
+//                                MissionPlanSpecification mps = (MissionPlanSpecification) ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject();
+//                                taskModelEditor.addTemplate(mps);
+//                            }
+//                        });
                         menu.add(new AbstractAction("Rename") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
@@ -176,11 +176,11 @@ public class DREAAM extends javax.swing.JFrame {
                                     ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(playsRoot);
                                     mediator.remove(mps);
 
-                                    if (playsRoot.getLeafCount() == 1) {
+                                    if (playsRoot.getChildCount() == 0) {
                                         newMissionSpec();
-                                    }
-                                    if (componentT.getSelectionPath() != null) {
-                                        nodeSelected((DefaultMutableTreeNode) componentT.getSelectionPath().getLastPathComponent());
+                                        ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(playsRoot);
+                                    } else {
+                                        nodeSelected(playsRoot.getLastLeaf());
                                     }
                                 }
                             }
@@ -265,7 +265,7 @@ public class DREAAM extends javax.swing.JFrame {
                         });
                         menu.show(componentT, me.getX(), me.getY());
                     } else {
-                        System.out.println("Nothing for " + ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject().getClass());
+                        LOGGER.info("Nothing for " + ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject().getClass());
                     }
                 } else if (treePath != null) {
                     nodeSelected((DefaultMutableTreeNode) treePath.getLastPathComponent());
@@ -285,14 +285,14 @@ public class DREAAM extends javax.swing.JFrame {
                 } else {
                     // Failed to load last used specification
                     Object[] options = {"Load", "New"};
-                    int answer = JOptionPane.showOptionDialog(null, "Could not load last used plan specification: create new DCF or load a different DCF?", "Load or new?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+                    int answer = JOptionPane.showOptionDialog(null, "Could not load last used plan specification (.DRM): create load different file or create new file?", "Load or new?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
                     if (answer == JOptionPane.YES_OPTION) {
                         // Get a different specification to try and load
                         if (mediator.open()) {
                             _open();
                         } else {
                             // Couldn't load this one either, create a new specification
-                            JOptionPane.showMessageDialog(null, "Could not load plan specification, creating a new specification");
+                            JOptionPane.showMessageDialog(null, "Could not load plan specification (.DRM), creating a new specification");
                         }
                     } else {
                         // New specification
@@ -585,7 +585,7 @@ public class DREAAM extends javax.swing.JFrame {
         ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(treeRoot);
         // Reset view
         taskModelEditor.vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
-        
+
         setTitle(Preferences.userRoot().get(LAST_DRM_FILE, null));
     }
 

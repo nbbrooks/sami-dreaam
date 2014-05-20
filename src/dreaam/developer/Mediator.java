@@ -116,6 +116,7 @@ public class Mediator {
                  */
                 oos = new ObjectOutputStream(new FileOutputStream(projectSpecLocation));
                 oos.writeObject(projectSpec);
+                System.out.println("Writing projectSpec with " + projectSpec.getMissionPlans());
                 projectSpec.saved();
                 Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Saved: " + projectSpec);
 

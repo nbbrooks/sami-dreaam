@@ -7,9 +7,13 @@ import sami.event.AbortMission;
 import sami.event.AbortMissionReceived;
 import sami.event.ReflectedEventSpecification;
 import sami.mission.Edge;
+import sami.mission.InEdge;
+import sami.mission.InTokenRequirement;
 import sami.mission.MissionPlanSpecification;
+import sami.mission.OutEdge;
+import sami.mission.OutTokenRequirement;
 import sami.mission.Place;
-import sami.mission.TokenSpecification;
+import sami.mission.TokenRequirement;
 import sami.mission.Transition;
 import sami.mission.Vertex;
 import sami.mission.Vertex.FunctionMode;
@@ -29,8 +33,8 @@ public class AbortMissionHelper extends HelperAgent {
 
     @Override
     public void run() {
-        TokenSpecification noReqTokenSpec = new TokenSpecification("No Req", TokenSpecification.TokenType.MatchNoReq, null);
-        TokenSpecification takeAllTokenSpec = new TokenSpecification("Take All", TokenSpecification.TokenType.TakeAll, null);
+        InTokenRequirement noReqTokenReq = new InTokenRequirement(TokenRequirement.MatchCriteria.None, TokenRequirement.MatchQuantity.None);
+        OutTokenRequirement takeAllTokenReq = new OutTokenRequirement(TokenRequirement.MatchCriteria.AnyToken, TokenRequirement.MatchQuantity.All, TokenRequirement.MatchAction.Take);
         boolean createdTransition = false, createdPlace = false;
 
         for (MissionPlanSpecification missionPlanSpecification : mediator.getMissions()) {
@@ -95,9 +99,8 @@ public class AbortMissionHelper extends HelperAgent {
             Edge endEdge = missionPlanSpecification.getGraph().findEdge(endTransition, endPlace);
             if (endEdge == null) {
                 // Add edge
-                Edge edge = new Edge(endTransition, endPlace, FunctionMode.Recovery);
-                missionPlanSpecification.updateEdgeToTokenSpecListMap(edge, takeAllTokenSpec);
-                edge.addTokenName(takeAllTokenSpec.toString());
+                OutEdge edge = new OutEdge(endTransition, endPlace, FunctionMode.Recovery);
+                edge.addTokenRequirement(takeAllTokenReq);
                 endTransition.addOutEdge(edge);
                 endPlace.addInEdge(edge);
                 missionPlanSpecification.getGraph().addEdge(edge, endTransition, endPlace);
@@ -118,14 +121,14 @@ public class AbortMissionHelper extends HelperAgent {
                         && !((Place) vertex).isEnd()
                         && ((Place) vertex).getFunctionMode() == FunctionMode.Nominal) {
                     // Add edge from place to transition with Proxy token spec
-                    Edge newEdge = new Edge(vertex, endTransition, FunctionMode.Recovery);
-                    missionPlanSpecification.updateEdgeToTokenSpecListMap(newEdge, noReqTokenSpec);
-                    newEdge.addTokenName(noReqTokenSpec.toString());
-                    vertex.addOutEdge(newEdge);
+                    Place place = (Place)vertex;
+                    InEdge newEdge = new InEdge(place, endTransition, FunctionMode.Recovery);
+                    newEdge.addTokenRequirement(noReqTokenReq);
+                    place.addOutEdge(newEdge);
                     endTransition.addInEdge(newEdge);
-                    missionPlanSpecification.getGraph().addEdge(newEdge, vertex, endTransition);
-                    ((Place) vertex).addOutTransition(endTransition);
-                    endTransition.addInPlace((Place) vertex);
+                    missionPlanSpecification.getGraph().addEdge(newEdge, place, endTransition);
+                    place.addOutTransition(endTransition);
+                    endTransition.addInPlace(place);
                 }
             }
             // Disconnect any places that should not be connected any longer

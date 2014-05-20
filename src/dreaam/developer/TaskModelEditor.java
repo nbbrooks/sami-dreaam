@@ -1,10 +1,10 @@
 package dreaam.developer;
 
+import dreaam.developer.SelectTokenD.EdgeType;
 import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
 import edu.uci.ics.jung.algorithms.layout.GraphElementAccessor;
 import edu.uci.ics.jung.algorithms.layout.StaticLayout;
 import edu.uci.ics.jung.graph.DirectedSparseGraph;
-import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.SparseMultigraph;
 import edu.uci.ics.jung.visualization.GraphZoomScrollPane;
 import edu.uci.ics.jung.visualization.Layer;
@@ -18,7 +18,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -29,13 +28,18 @@ import org.apache.commons.collections15.Transformer;
 import sami.event.ReflectedEventSpecification;
 import sami.gui.GuiConfig;
 import sami.mission.Edge;
+import sami.mission.InEdge;
+import sami.mission.InTokenRequirement;
 import sami.mission.MissionPlanSpecification;
+import sami.mission.OutEdge;
+import sami.mission.OutTokenRequirement;
 import sami.mission.Place;
 import sami.mission.RequirementSpecification;
-import sami.mission.TokenSpecification;
+import sami.mission.TokenRequirement;
 import sami.mission.Transition;
 import sami.mission.Vertex;
 import sami.mission.Vertex.FunctionMode;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * GUI for building DREAAM plays Controls: Left click: Click Place/Transition to
@@ -61,10 +65,8 @@ public class TaskModelEditor extends JPanel {
     VisualizationViewer<Vertex, Edge> vv;   // The visual component and renderer for the graph
     String instructions = "Guess";
     EditingModalGraphMouse<Vertex, Edge> graphMouse = null;
-    Edge addedEdge = null;
     private FunctionMode editorMode = FunctionMode.Nominal;
     private Vertex expandedNomVertex = null;
-    private Vertex lastRecovVertex = null;
     private DREAAM dreaam;
     TaskModelEditor.MyMouseListener mml;
 
@@ -353,13 +355,9 @@ public class TaskModelEditor extends JPanel {
             }
         });
 
-        // AnnotationControls<Place, Transition> annotationControls = new AnnotationControls<Place, Transition>(graphMouse.getAnnotatingPlugin());
         JPanel controls = new JPanel();
         controls.add(plus);
         controls.add(minus);
-//        JComboBox modeBox = graphMouse.getModeComboBox();
-//        controls.add(modeBox);
-        // controls.add(annotationControls.getAnnotationsToolBar());
         controls.add(help);
         add(controls, BorderLayout.SOUTH);
 
@@ -429,11 +427,22 @@ public class TaskModelEditor extends JPanel {
     public void setVertexVisibility(Vertex vertex, GuiConfig.VisibilityMode visibilityMode, boolean applyToEdges) {
         vertex.setVisibilityMode(visibilityMode);
         if (applyToEdges) {
-            for (Edge edge : vertex.getInEdges()) {
-                edge.setVisibilityMode(visibilityMode);
-            }
-            for (Edge edge : vertex.getOutEdges()) {
-                edge.setVisibilityMode(visibilityMode);
+            if (vertex instanceof Place) {
+                Place place = (Place) vertex;
+                for (Edge edge : place.getInEdges()) {
+                    edge.setVisibilityMode(visibilityMode);
+                }
+                for (Edge edge : place.getOutEdges()) {
+                    edge.setVisibilityMode(visibilityMode);
+                }
+            } else if (vertex instanceof Transition) {
+                Transition transition = (Transition) vertex;
+                for (Edge edge : transition.getInEdges()) {
+                    edge.setVisibilityMode(visibilityMode);
+                }
+                for (Edge edge : transition.getOutEdges()) {
+                    edge.setVisibilityMode(visibilityMode);
+                }
             }
         }
     }
@@ -450,64 +459,131 @@ public class TaskModelEditor extends JPanel {
      * @param chain
      */
     public void setNeighborVisibility(Vertex vertex, FunctionMode functionMode, GuiConfig.VisibilityMode visibilityMode, boolean chain, ArrayList<Vertex> previouslyVisited) {
-        Vertex v2;
-        for (Edge edge : vertex.getInEdges()) {
-            v2 = edge.getEnd();
-            if (previouslyVisited.contains(v2)) {
-                continue;
-            } else if (v2.getFunctionMode() == functionMode) {
-                edge.setVisibilityMode(visibilityMode);
-                v2.setVisibilityMode(visibilityMode);
-                for (Edge e2 : v2.getInEdges()) {
-                    e2.setVisibilityMode(visibilityMode);
-                }
-                for (Edge e2 : v2.getOutEdges()) {
-                    e2.setVisibilityMode(visibilityMode);
-                }
-                if (chain) {
-                    previouslyVisited.add(vertex);
-                    setNeighborVisibility(v2, functionMode, visibilityMode, chain, previouslyVisited);
+        if (vertex instanceof Place) {
+            Place place = (Place) vertex;
+            Transition neighborTransition;
+            for (OutEdge edge : place.getInEdges()) {
+                neighborTransition = edge.getStart();
+                if (previouslyVisited.contains(neighborTransition)) {
+                    continue;
+                } else if (neighborTransition.getFunctionMode() == functionMode) {
+                    edge.setVisibilityMode(visibilityMode);
+                    neighborTransition.setVisibilityMode(visibilityMode);
+                    for (Edge e2 : neighborTransition.getInEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    for (Edge e2 : neighborTransition.getOutEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    if (chain) {
+                        previouslyVisited.add(place);
+                        setNeighborVisibility(neighborTransition, functionMode, visibilityMode, chain, previouslyVisited);
+                    }
                 }
             }
-        }
-        for (Edge edge : vertex.getOutEdges()) {
-            v2 = edge.getEnd();
-            if (previouslyVisited.contains(v2)) {
-                continue;
-            } else if (v2.getFunctionMode() == functionMode) {
-                edge.setVisibilityMode(visibilityMode);
-                v2.setVisibilityMode(visibilityMode);
-                for (Edge e2 : v2.getInEdges()) {
-                    e2.setVisibilityMode(visibilityMode);
+            for (InEdge edge : place.getOutEdges()) {
+                neighborTransition = edge.getEnd();
+                if (previouslyVisited.contains(neighborTransition)) {
+                    continue;
+                } else if (neighborTransition.getFunctionMode() == functionMode) {
+                    edge.setVisibilityMode(visibilityMode);
+                    neighborTransition.setVisibilityMode(visibilityMode);
+                    for (Edge e2 : neighborTransition.getInEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    for (Edge e2 : neighborTransition.getOutEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    if (chain) {
+                        previouslyVisited.add(place);
+                        setNeighborVisibility(neighborTransition, functionMode, visibilityMode, chain, previouslyVisited);
+                    }
                 }
-                for (Edge e2 : v2.getOutEdges()) {
-                    e2.setVisibilityMode(visibilityMode);
+            }
+        } else if (vertex instanceof Transition) {
+            Transition transition = (Transition) vertex;
+            Place neighborPlace;
+            for (InEdge edge : transition.getInEdges()) {
+                neighborPlace = edge.getStart();
+                if (previouslyVisited.contains(neighborPlace)) {
+                    continue;
+                } else if (neighborPlace.getFunctionMode() == functionMode) {
+                    edge.setVisibilityMode(visibilityMode);
+                    neighborPlace.setVisibilityMode(visibilityMode);
+                    for (Edge e2 : neighborPlace.getInEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    for (Edge e2 : neighborPlace.getOutEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    if (chain) {
+                        previouslyVisited.add(transition);
+                        setNeighborVisibility(neighborPlace, functionMode, visibilityMode, chain, previouslyVisited);
+                    }
                 }
-                if (chain) {
-                    previouslyVisited.add(vertex);
-                    setNeighborVisibility(v2, functionMode, visibilityMode, chain, previouslyVisited);
+            }
+            for (OutEdge edge : transition.getOutEdges()) {
+                neighborPlace = edge.getEnd();
+                if (previouslyVisited.contains(neighborPlace)) {
+                    continue;
+                } else if (neighborPlace.getFunctionMode() == functionMode) {
+                    edge.setVisibilityMode(visibilityMode);
+                    neighborPlace.setVisibilityMode(visibilityMode);
+                    for (Edge e2 : neighborPlace.getInEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    for (Edge e2 : neighborPlace.getOutEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    if (chain) {
+                        previouslyVisited.add(transition);
+                        setNeighborVisibility(neighborPlace, functionMode, visibilityMode, chain, previouslyVisited);
+                    }
                 }
             }
         }
     }
 
-    public void fwdChainNeighborVisibility(Vertex vertex, GuiConfig.VisibilityMode visibilityMode, ArrayList<Vertex> previouslyVisited) {
-        Vertex v2;
-        for (Edge edge : vertex.getOutEdges()) {
-            v2 = edge.getEnd();
-            if (previouslyVisited.contains(v2)) {
-                continue;
-            } else if (v2.getFunctionMode() == FunctionMode.Recovery) {
-                edge.setVisibilityMode(visibilityMode);
-                v2.setVisibilityMode(visibilityMode);
-                for (Edge e2 : v2.getInEdges()) {
-                    e2.setVisibilityMode(visibilityMode);
+    public void fwdChainNeighborVisibility(Vertex startVertex, GuiConfig.VisibilityMode visibilityMode, ArrayList<Vertex> previouslyVisited) {
+        if (startVertex instanceof Place) {
+            Place startPlace = (Place) startVertex;
+            Transition endTransition;
+            for (InEdge edge : startPlace.getOutEdges()) {
+                endTransition = (Transition) edge.getEnd();
+                if (previouslyVisited.contains(endTransition)) {
+                    continue;
+                } else if (endTransition.getFunctionMode() == FunctionMode.Recovery) {
+                    edge.setVisibilityMode(visibilityMode);
+                    endTransition.setVisibilityMode(visibilityMode);
+                    for (Edge e2 : endTransition.getInEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    for (Edge e2 : endTransition.getOutEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    previouslyVisited.add(startPlace);
+                    fwdChainNeighborVisibility(endTransition, visibilityMode, previouslyVisited);
                 }
-                for (Edge e2 : v2.getOutEdges()) {
-                    e2.setVisibilityMode(visibilityMode);
+            }
+        } else if (startVertex instanceof Transition) {
+            Transition startTransition = (Transition) startVertex;
+            Place endPlace;
+            for (OutEdge edge : startTransition.getOutEdges()) {
+                endPlace = (Place) edge.getEnd();
+                if (previouslyVisited.contains(endPlace)) {
+                    continue;
+                } else if (endPlace.getFunctionMode() == FunctionMode.Recovery) {
+                    edge.setVisibilityMode(visibilityMode);
+                    endPlace.setVisibilityMode(visibilityMode);
+                    for (Edge e2 : endPlace.getInEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    for (Edge e2 : endPlace.getOutEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    previouslyVisited.add(startTransition);
+                    fwdChainNeighborVisibility(endPlace, visibilityMode, previouslyVisited);
                 }
-                previouslyVisited.add(vertex);
-                fwdChainNeighborVisibility(v2, visibilityMode, previouslyVisited);
             }
         }
     }
@@ -519,42 +595,78 @@ public class TaskModelEditor extends JPanel {
         if (!previouslyVisited.contains(vertex)) {
             vertex.setVisibilityMode(visibilityMode);
         }
-        Vertex v2;
-        for (Edge edge : vertex.getInEdges()) {
-            v2 = edge.getEnd();
-            if (previouslyVisited.contains(v2)) {
-                continue;
-            } else {
-                edge.setVisibilityMode(visibilityMode);
-                v2.setVisibilityMode(visibilityMode);
-                for (Edge e2 : v2.getInEdges()) {
-                    e2.setVisibilityMode(visibilityMode);
-                }
-                for (Edge e2 : v2.getOutEdges()) {
-                    e2.setVisibilityMode(visibilityMode);
-                }
-                if (degrees > 1) {
-                    previouslyVisited.add(vertex);
-                    expandNeighborVisibility(v2, visibilityMode, degrees - 1, previouslyVisited);
+        if (vertex instanceof Place) {
+            Place place = (Place) vertex;
+            Transition neighborTransition;
+            for (OutEdge edge : place.getInEdges()) {
+                neighborTransition = edge.getStart();
+                if (!previouslyVisited.contains(neighborTransition)) {
+                    edge.setVisibilityMode(visibilityMode);
+                    neighborTransition.setVisibilityMode(visibilityMode);
+                    for (Edge e2 : neighborTransition.getInEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    for (Edge e2 : neighborTransition.getOutEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    if (degrees > 1) {
+                        previouslyVisited.add(place);
+                        expandNeighborVisibility(neighborTransition, visibilityMode, degrees - 1, previouslyVisited);
+                    }
                 }
             }
-        }
-        for (Edge edge : vertex.getOutEdges()) {
-            v2 = edge.getEnd();
-            if (previouslyVisited.contains(v2)) {
-                continue;
-            } else {
-                edge.setVisibilityMode(visibilityMode);
-                v2.setVisibilityMode(visibilityMode);
-                for (Edge e2 : v2.getInEdges()) {
-                    e2.setVisibilityMode(visibilityMode);
+            for (InEdge edge : place.getOutEdges()) {
+                neighborTransition = edge.getEnd();
+                if (!previouslyVisited.contains(neighborTransition)) {
+                    edge.setVisibilityMode(visibilityMode);
+                    neighborTransition.setVisibilityMode(visibilityMode);
+                    for (Edge e2 : neighborTransition.getInEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    for (Edge e2 : neighborTransition.getOutEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    if (degrees > 1) {
+                        previouslyVisited.add(place);
+                        expandNeighborVisibility(neighborTransition, visibilityMode, degrees - 1, previouslyVisited);
+                    }
                 }
-                for (Edge e2 : v2.getOutEdges()) {
-                    e2.setVisibilityMode(visibilityMode);
+            }
+        } else if (vertex instanceof Transition) {
+            Transition transition = (Transition) vertex;
+            Place neighborPlace;
+            for (InEdge edge : transition.getInEdges()) {
+                neighborPlace = edge.getStart();
+                if (!previouslyVisited.contains(neighborPlace)) {
+                    edge.setVisibilityMode(visibilityMode);
+                    neighborPlace.setVisibilityMode(visibilityMode);
+                    for (Edge e2 : neighborPlace.getInEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    for (Edge e2 : neighborPlace.getOutEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    if (degrees > 1) {
+                        previouslyVisited.add(transition);
+                        expandNeighborVisibility(neighborPlace, visibilityMode, degrees - 1, previouslyVisited);
+                    }
                 }
-                if (degrees > 1) {
-                    previouslyVisited.add(vertex);
-                    expandNeighborVisibility(v2, visibilityMode, degrees - 1, previouslyVisited);
+            }
+            for (OutEdge edge : transition.getOutEdges()) {
+                neighborPlace = edge.getEnd();
+                if (!previouslyVisited.contains(neighborPlace)) {
+                    edge.setVisibilityMode(visibilityMode);
+                    neighborPlace.setVisibilityMode(visibilityMode);
+                    for (Edge e2 : neighborPlace.getInEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    for (Edge e2 : neighborPlace.getOutEdges()) {
+                        e2.setVisibilityMode(visibilityMode);
+                    }
+                    if (degrees > 1) {
+                        previouslyVisited.add(transition);
+                        expandNeighborVisibility(neighborPlace, visibilityMode, degrees - 1, previouslyVisited);
+                    }
                 }
             }
         }
@@ -607,66 +719,78 @@ public class TaskModelEditor extends JPanel {
 
             if (edgeStartVertex instanceof Transition && vertex instanceof Place) {
                 // An edge from this place->transition or transition-> does not exist
-                Edge newEdge = new Edge(edgeStartVertex, vertex, editorMode);
-                edgeStartVertex.addOutEdge(newEdge);
-                vertex.addInEdge(newEdge);
-                graph.addEdge(newEdge, edgeStartVertex, vertex);
-                ((Transition) edgeStartVertex).addOutPlace((Place) vertex);
-                ((Place) vertex).addInTransition((Transition) edgeStartVertex);
+                Transition startTransition = (Transition) edgeStartVertex;
+                Place endPlace = (Place) vertex;
+                OutEdge newEdge = new OutEdge(startTransition, endPlace, editorMode);
+                startTransition.addOutEdge(newEdge);
+                endPlace.addInEdge(newEdge);
+                graph.addEdge(newEdge, startTransition, endPlace);
+
+                startTransition.addOutPlace(endPlace);
+                endPlace.addInTransition(startTransition);
             } else if (edgeStartVertex instanceof Place && vertex instanceof Transition) {
                 // An edge from this place->transition or transition-> does not exist
-                Edge newEdge = new Edge(edgeStartVertex, vertex, editorMode);
-                edgeStartVertex.addOutEdge(newEdge);
-                vertex.addInEdge(newEdge);
-                graph.addEdge(newEdge, edgeStartVertex, vertex);
-                ((Place) edgeStartVertex).addOutTransition((Transition) vertex);
-                ((Transition) vertex).addInPlace((Place) edgeStartVertex);
+                Place startPlace = (Place) edgeStartVertex;
+                Transition endTransition = (Transition) vertex;
+                InEdge newEdge = new InEdge(startPlace, endTransition, editorMode);
+                startPlace.addOutEdge(newEdge);
+                endTransition.addInEdge(newEdge);
+                graph.addEdge(newEdge, startPlace, endTransition);
+
+                startPlace.addOutTransition(endTransition);
+                endTransition.addInPlace(startPlace);
             } else if (edgeStartVertex instanceof Place && vertex instanceof Place) {
                 // Trying to create an edge between two places, add an intermittent transition as well
+                Place startPlace = (Place) edgeStartVertex;
+                Place endPlace = (Place) vertex;
                 Transition newTransition = new Transition("", editorMode);
                 graph.addVertex(newTransition);
                 Point freePoint = getVertexFreePoint(
-                        (int) ((layout.getX(edgeStartVertex) + layout.getX(vertex)) / 2),
-                        (int) ((layout.getY(edgeStartVertex) + layout.getY(vertex)) / 2),
+                        (int) ((layout.getX(startPlace) + layout.getX(endPlace)) / 2),
+                        (int) ((layout.getY(startPlace) + layout.getY(endPlace)) / 2),
                         CLICK_RADIUS);
                 layout.setLocation(newTransition, snapToGrid(freePoint));
 
-                Edge newEdge1 = new Edge(edgeStartVertex, newTransition, editorMode);
-                edgeStartVertex.addOutEdge(newEdge1);
+                InEdge newEdge1 = new InEdge(startPlace, newTransition, editorMode);
+                startPlace.addOutEdge(newEdge1);
                 newTransition.addInEdge(newEdge1);
-                graph.addEdge(newEdge1, edgeStartVertex, newTransition);
-                ((Place) edgeStartVertex).addOutTransition(newTransition);
-                newTransition.addInPlace((Place) edgeStartVertex);
+                graph.addEdge(newEdge1, startPlace, newTransition);
 
-                Edge newEdge2 = new Edge(newTransition, vertex, editorMode);
+                OutEdge newEdge2 = new OutEdge(newTransition, endPlace, editorMode);
                 newTransition.addOutEdge(newEdge2);
-                vertex.addInEdge(newEdge2);
-                graph.addEdge(newEdge2, newTransition, vertex);
-                newTransition.addOutPlace((Place) vertex);
-                ((Place) vertex).addInTransition(newTransition);
+                endPlace.addInEdge(newEdge2);
+                graph.addEdge(newEdge2, newTransition, endPlace);
+
+                startPlace.addOutTransition(newTransition);
+                newTransition.addInPlace(startPlace);
+                newTransition.addOutPlace(endPlace);
+                endPlace.addInTransition(newTransition);
             } else if (edgeStartVertex instanceof Transition && vertex instanceof Transition) {
                 // Trying to create an edge between two transitions, add an intermittent place as well
+                Transition startTransition = (Transition) edgeStartVertex;
+                Transition endTransition = (Transition) vertex;
                 Place newPlace = new Place("", editorMode);
                 graph.addVertex(newPlace);
                 Point freePoint = getVertexFreePoint(
-                        (int) ((layout.getX(edgeStartVertex) + layout.getX(vertex)) / 2),
-                        (int) ((layout.getY(edgeStartVertex) + layout.getY(vertex)) / 2),
+                        (int) ((layout.getX(startTransition) + layout.getX(endTransition)) / 2),
+                        (int) ((layout.getY(startTransition) + layout.getY(endTransition)) / 2),
                         CLICK_RADIUS);
                 layout.setLocation(newPlace, snapToGrid(freePoint));
 
-                Edge newEdge1 = new Edge(edgeStartVertex, newPlace, editorMode);
-                edgeStartVertex.addOutEdge(newEdge1);
+                OutEdge newEdge1 = new OutEdge(startTransition, newPlace, editorMode);
+                startTransition.addOutEdge(newEdge1);
                 newPlace.addInEdge(newEdge1);
-                graph.addEdge(newEdge1, edgeStartVertex, newPlace);
-                ((Transition) edgeStartVertex).addOutPlace(newPlace);
-                newPlace.addInTransition((Transition) edgeStartVertex);
+                graph.addEdge(newEdge1, startTransition, newPlace);
 
-                Edge newEdge2 = new Edge(newPlace, vertex, editorMode);
+                InEdge newEdge2 = new InEdge(newPlace, endTransition, editorMode);
                 newPlace.addOutEdge(newEdge2);
-                vertex.addInEdge(newEdge2);
-                graph.addEdge(newEdge2, newPlace, vertex);
-                newPlace.addOutTransition((Transition) vertex);
-                ((Transition) vertex).addInPlace(newPlace);
+                endTransition.addInEdge(newEdge2);
+                graph.addEdge(newEdge2, newPlace, endTransition);
+
+                startTransition.addOutPlace(newPlace);
+                newPlace.addInTransition(startTransition);
+                newPlace.addOutTransition(endTransition);
+                endTransition.addInPlace(newPlace);
             }
             amCreatingEdge = false;
             edgeStartVertex.setBeingModified(false);
@@ -867,6 +991,7 @@ public class TaskModelEditor extends JPanel {
                             }
                         });
                         if (vertex instanceof Place) {
+                            final Place place = (Place) vertex;
                             popup.add(new AbstractAction("Add Sub-mission") {
                                 public void actionPerformed(ActionEvent e) {
                                     SubMissionD d = new SubMissionD(null, true);
@@ -875,38 +1000,38 @@ public class TaskModelEditor extends JPanel {
                                         MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) d.getSelectedMission()).getSubmissionInstance(mSpec, d.namePrefix, d.variablePrefix);
                                         dreaam.addMissionSpec(submissionSpec);
 
-                                        ((Place) vertex).setSubMission(submissionSpec);
+                                        place.setSubMission(submissionSpec);
                                     }
                                     vv.repaint();
                                 }
                             });
-                            if (((Place) vertex).isStart()) {
+                            if (place.isStart()) {
                                 popup.add(new AbstractAction("Unset start") {
                                     public void actionPerformed(ActionEvent e) {
-                                        ((Place) vertex).setIsStart(false);
+                                        place.setIsStart(false);
                                         vv.repaint();
                                     }
                                 });
                             } else {
                                 popup.add(new AbstractAction("Set start") {
                                     public void actionPerformed(ActionEvent e) {
-                                        ((Place) vertex).setIsStart(true);
+                                        place.setIsStart(true);
                                         vv.repaint();
                                     }
                                 });
                             }
-                            if (((Place) vertex).isEnd()) {
+                            if (place.isEnd()) {
                                 popup.add(new AbstractAction("Unset end") {
                                     public void actionPerformed(ActionEvent e) {
-                                        ((Place) vertex).setIsEnd(false);
+                                        place.setIsEnd(false);
                                         vv.repaint();
                                     }
                                 });
                             } else {
                                 popup.add(new AbstractAction("Set end") {
                                     public void actionPerformed(ActionEvent e) {
-                                        ((Place) vertex).setIsEnd(true);
-                                        if (vertex.getOutEdges().size() > 0) {
+                                        place.setIsEnd(true);
+                                        if (place.getOutEdges().size() > 0) {
                                             JOptionPane.showMessageDialog(vv, "An end state has output transitions, these will never be used");
                                         }
                                         vv.repaint();
@@ -930,24 +1055,26 @@ public class TaskModelEditor extends JPanel {
                             public void actionPerformed(ActionEvent ae) {
                                 boolean isIncomingEdge = (edge.getStart() instanceof Place && edge.getEnd() instanceof Transition);
                                 boolean isNominal = edge.getFunctionMode() == FunctionMode.Nominal;
-                                ArrayList<TokenSpecification> usableTokens = null;
-                                if (isIncomingEdge) {
-                                    usableTokens = mSpec.getIncomingTokenSpecList();
+                                EdgeType edgeType = null;
+                                if (isIncomingEdge && isNominal) {
+                                    edgeType = SelectTokenD.EdgeType.IncomingNominal;
+                                } else if (isIncomingEdge && !isNominal) {
+                                    edgeType = SelectTokenD.EdgeType.IncomingRecovery;
                                 } else if (!isIncomingEdge && isNominal) {
-                                    usableTokens = mSpec.getOutgoingTokenSpecList();
+                                    edgeType = SelectTokenD.EdgeType.OutgoingNominal;
                                 } else if (!isIncomingEdge && !isNominal) {
-                                    usableTokens = mSpec.getOutgoingRecoveryTokenSpecList();
-                                } else {
-                                    LOGGER.severe("Could not find token spec list for edge: " + edge);
+                                    edgeType = SelectTokenD.EdgeType.OutgoingRecovery;
                                 }
-                                SelectTokenD tokenD = new SelectTokenD(null, true, mSpec.getTokenSpecList(edge), usableTokens, mSpec.getCustomTaskTokenSpecList());
-                                mSpec.clearTokenSpecList(edge);
-                                edge.clearTokenNames();
+                                SelectTokenD tokenD = new SelectTokenD(null, true, edgeType, edge.getTokenRequirements(), mSpec.getTaskSpecList());
+                                edge.clearTokenRequirements();
                                 tokenD.setVisible(true);
                                 // This won't run until the Frame closes
-                                for (TokenSpecification tokenSpec : tokenD.getSelectedTokenSpecs()) {
-                                    mSpec.updateEdgeToTokenSpecListMap(edge, tokenSpec);
-                                    edge.addTokenName(tokenSpec.toString());
+                                for (TokenRequirement tokenReq : tokenD.getSelectedTokenReqs()) {
+                                    if (edge instanceof InEdge && tokenReq instanceof InTokenRequirement) {
+                                        ((InEdge) edge).addTokenRequirement((InTokenRequirement) tokenReq);
+                                    } else if (edge instanceof OutEdge && tokenReq instanceof OutTokenRequirement) {
+                                        ((OutEdge) edge).addTokenRequirement((OutTokenRequirement) tokenReq);
+                                    }
                                 }
                                 vv.repaint();
                             }
@@ -1130,37 +1257,38 @@ public class TaskModelEditor extends JPanel {
     }
 
     public void addTemplate(MissionPlanSpecification spec) {
-
-        Graph<Vertex, Edge> g = spec.getGraph();
-        if (g != graph && g != null) {
-            HashMap<Vertex, Vertex> vertexMap = new HashMap<Vertex, Vertex>();
-            for (Vertex vertex : g.getVertices()) {
-                if (vertex instanceof Place) {
-                    Place place = (Place) vertex;
-                    Place placeCopy = place.copyWithoutConnections();
-                    vertexMap.put(vertex, placeCopy);
-                    graph.addVertex(placeCopy);
-                    layout.setLocation(placeCopy, spec.getLocations().get(vertex));
-                } else if (vertex instanceof Transition) {
-                    Transition transition = (Transition) vertex;
-                    Transition transitionCopy = transition.copyWithoutConnections();
-                    vertexMap.put(vertex, transitionCopy);
-                    graph.addVertex(transitionCopy);
-                    layout.setLocation(transitionCopy, spec.getLocations().get(vertex));
-                } else {
-                    LOGGER.severe("Vertex is not an instance of Place OR Transition! " + vertex);
-                }
-            }
-
-            for (Edge edge : g.getEdges()) {
-                Edge edgeCopy = edge.copy(vertexMap);
-                graph.addEdge(edgeCopy, edgeCopy.getStart(), edgeCopy.getEnd());
-            }
-            vv.repaint();
-            // System.out.println("Template added");
-        } else {
-            System.out.println("Can't add to self");
-        }
+        throw new NotImplementedException();
+//
+//        Graph<Vertex, Edge> g = spec.getGraph();
+//        if (g != graph && g != null) {
+//            HashMap<Vertex, Vertex> vertexMap = new HashMap<Vertex, Vertex>();
+//            for (Vertex vertex : g.getVertices()) {
+//                if (vertex instanceof Place) {
+//                    Place place = (Place) vertex;
+//                    Place placeCopy = place.copyWithoutConnections();
+//                    vertexMap.put(vertex, placeCopy);
+//                    graph.addVertex(placeCopy);
+//                    layout.setLocation(placeCopy, spec.getLocations().get(vertex));
+//                } else if (vertex instanceof Transition) {
+//                    Transition transition = (Transition) vertex;
+//                    Transition transitionCopy = transition.copyWithoutConnections();
+//                    vertexMap.put(vertex, transitionCopy);
+//                    graph.addVertex(transitionCopy);
+//                    layout.setLocation(transitionCopy, spec.getLocations().get(vertex));
+//                } else {
+//                    LOGGER.severe("Vertex is not an instance of Place OR Transition! " + vertex);
+//                }
+//            }
+//
+//            for (Edge edge : g.getEdges()) {
+//                Edge edgeCopy = edge.copy(vertexMap);
+//                graph.addEdge(edgeCopy, edgeCopy.getStart(), edgeCopy.getEnd());
+//            }
+//            vv.repaint();
+//            // System.out.println("Template added");
+//        } else {
+//            System.out.println("Can't add to self");
+//        }
     }
 
     public void setGraph(MissionPlanSpecification spec) {
@@ -1223,18 +1351,18 @@ public class TaskModelEditor extends JPanel {
             mSpec.setLayout(vv.getRenderContext().getMultiLayerTransformer().getTransformer(Layer.LAYOUT).getTransform());
             mSpec.setView(vv.getRenderContext().getMultiLayerTransformer().getTransformer(Layer.VIEW).getTransform());
         } else {
-            System.out.println(">>>>>>>>>>> Not writing graph ..... ");
+            LOGGER.warning("MissionSpecification is null, not writing graph");
         }
     }
 
     public void removePlace(Place place) {
         // First remove the transition and its edges from our copy of the graph so we don't have to reload the whole thing
-        ArrayList<Edge> list = (ArrayList<Edge>) place.getInEdges();
-        for (Edge inEdge : list) {
+        ArrayList<OutEdge> inEdges = (ArrayList<OutEdge>) place.getInEdges();
+        for (OutEdge inEdge : inEdges) {
             graph.removeEdge(inEdge);
         }
-        list = (ArrayList<Edge>) place.getOutEdges();
-        for (Edge outEdge : list) {
+        ArrayList<InEdge> outEdges = (ArrayList<InEdge>) place.getOutEdges();
+        for (InEdge outEdge : outEdges) {
             graph.removeEdge(outEdge);
         }
         // Now we can remove the vertex
@@ -1248,12 +1376,12 @@ public class TaskModelEditor extends JPanel {
 
     public void removeTransition(Transition transition) {
         // First remove the transition and its edges from our copy of the graph so we don't have to reload the whole thing
-        ArrayList<Edge> list = (ArrayList<Edge>) transition.getInEdges();
-        for (Edge inEdge : list) {
+        ArrayList<InEdge> inEdges = (ArrayList<InEdge>) transition.getInEdges();
+        for (InEdge inEdge : inEdges) {
             graph.removeEdge(inEdge);
         }
-        list = (ArrayList<Edge>) transition.getOutEdges();
-        for (Edge outEdge : list) {
+        ArrayList<OutEdge> outEdges = (ArrayList<OutEdge>) transition.getOutEdges();
+        for (OutEdge outEdge : outEdges) {
             graph.removeEdge(outEdge);
         }
         // Now we can remove the vertex
