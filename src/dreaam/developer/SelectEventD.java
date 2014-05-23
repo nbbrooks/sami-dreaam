@@ -38,6 +38,7 @@ public class SelectEventD extends javax.swing.JDialog {
     private Hashtable<ToolTipTreeNode, ReflectedEventSpecification> nodeMapping = new Hashtable<ToolTipTreeNode, ReflectedEventSpecification>();
     // This contains the events that are selected for caller class to pull out
     ArrayList<ReflectedEventSpecification> existingEventSpecs;
+    ArrayList<String> missionVariables;
 
     /**
      * Creates new form SelectEvent
@@ -47,11 +48,12 @@ public class SelectEventD extends javax.swing.JDialog {
      * list here and edit
      *
      */
-    public SelectEventD(java.awt.Frame parent, boolean modal, ArrayList<ReflectedEventSpecification> existingEventSpecs, boolean showInput, boolean showOutput) {
+    public SelectEventD(java.awt.Frame parent, boolean modal, ArrayList<ReflectedEventSpecification> existingEventSpecs, ArrayList<String> missionVariables, boolean showInput, boolean showOutput) {
         super(parent, modal);
         initComponents();
         setTitle("SelectEventD");
         this.existingEventSpecs = existingEventSpecs;
+        this.missionVariables = missionVariables;
         this.showInput = showInput;
         this.showOutput = showOutput;
 
@@ -245,10 +247,16 @@ public class SelectEventD extends javax.swing.JDialog {
         try {
             Class eventClass = Class.forName(eventSpec.getClassName());
             // Get definitions for event fields
+            int numFields = 0;
             ArrayList<String> fieldNames = (ArrayList<String>) (eventClass.getField("fieldNames").get(null));
-            if (fieldNames.size() > 0) {
+            numFields += fieldNames.size();
+            if (InputEvent.class.isAssignableFrom(eventClass)) {
+                ArrayList<String> variableNames = (ArrayList<String>) (eventClass.getField("variableNames").get(null));
+                numFields += variableNames.size();
+            }
+            if (numFields > 0) {
                 // If there are fields for the event that can be filled, create dialog
-                ReflectedEventD diag = new ReflectedEventD(eventSpec, null, true);
+                ReflectedEventD diag = new ReflectedEventD(eventSpec, missionVariables, null, true);
                 diag.setVisible(true);
             } else {
 //                LOGGER.info("Event class \"" + eventClass.getName() + "\" has no fields");
@@ -475,7 +483,7 @@ public class SelectEventD extends javax.swing.JDialog {
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                SelectEventD dialog = new SelectEventD(new javax.swing.JFrame(), true, null, true, true);
+                SelectEventD dialog = new SelectEventD(new javax.swing.JFrame(), true, null, new ArrayList<String>(), true, true);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         System.exit(0);

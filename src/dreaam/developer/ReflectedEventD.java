@@ -10,6 +10,8 @@ import java.awt.GridBagLayout;
 import java.awt.ScrollPane;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +27,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import sami.event.Event;
+import sami.event.ReflectionHelper;
 import sami.markup.Markup;
 import sami.uilanguage.MarkupComponent;
 
@@ -49,23 +52,34 @@ public class ReflectedEventD extends javax.swing.JDialog {
     // Class held by event spec
     private Class eventClass = null;
     private EventType eventType;
-    // Maps each field in the event to a variable string name or value
-    private HashMap<String, Object> fieldNameToDefinition;
+
+    private HashMap<String, Object> fieldNameToValue;
+    private HashMap<String, String> fieldNameToReadVariable;
+    private HashMap<String, String> fieldNameToWriteVariable;
     private HashMap<String, Boolean> fieldNameToEditable;
-    private HashMap<Field, MarkupComponent> fieldToValueComponent;
-    private HashMap<Field, JComboBox> fieldToVariableComboBox;
-    private HashMap<Field, JTextField> fieldToVariableTextField;
-    private HashMap<Field, JButton> fieldToEditable;
+
+    private final HashMap<Field, MarkupComponent> fieldToValueComponent;
+    // Combo box for selecting a variable to read at run-time to get the field's object definition
+    private final HashMap<Field, JComboBox> fieldToVariableCB;
+    // Reverse lookup for disabling/enabling editable button based on variable selection
+    private final HashMap<JComboBox, Field> variableCBToField;
+    // Button to choose whether or not the field definition can be modified at run-time
+    private final HashMap<Field, JButton> fieldToEditableB;
+    // Text field to provide the variable name to write the run-time field's value to (input events only)
+    private final HashMap<Field, JTextField> fieldToVariableTF;
     private final ReflectedEventSpecification eventSpec;
+    private final ArrayList<String> missionVariables;
+    private final VariableSelectedListener variableSelectedListener = new VariableSelectedListener();
 
     /**
      * Creates new form ReflectedEventD
      */
-    public ReflectedEventD(ReflectedEventSpecification eventSpec, java.awt.Frame parent, boolean modal) {
+    public ReflectedEventD(ReflectedEventSpecification eventSpec, ArrayList<String> missionVariables, java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         this.eventSpec = eventSpec;
+        this.missionVariables = missionVariables;
         try {
-            Class eventClass = Class.forName(eventSpec.getClassName());
+            eventClass = Class.forName(eventSpec.getClassName());
             if (InputEvent.class.isAssignableFrom(eventClass)) {
                 // Input event
                 eventType = ReflectedEventD.EventType.INPUT;
@@ -77,15 +91,10 @@ public class ReflectedEventD extends javax.swing.JDialog {
             cnfe.printStackTrace();
         }
         fieldToValueComponent = new HashMap<Field, MarkupComponent>();
-        fieldToVariableComboBox = new HashMap<Field, JComboBox>();
-        fieldToVariableTextField = new HashMap<Field, JTextField>();
-        fieldToEditable = new HashMap<Field, JButton>();
-
-        try {
-            eventClass = Class.forName(eventSpec.getClassName());
-        } catch (ClassNotFoundException ex) {
-            ex.printStackTrace();
-        }
+        fieldToVariableCB = new HashMap<Field, JComboBox>();
+        variableCBToField = new HashMap<JComboBox, Field>();
+        fieldToVariableTF = new HashMap<Field, JTextField>();
+        fieldToEditableB = new HashMap<Field, JButton>();
 
         initComponents();
         setTitle("ReflectedEventD");
@@ -95,7 +104,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
         try {
             ArrayList<String> fieldNames = (ArrayList<String>) (eventClass.getField("fieldNames").get(null));
             HashMap<String, String> fieldNameToDescription = (HashMap<String, String>) (eventClass.getField("fieldNameToDescription").get(null));
-            LOGGER.fine("ReflectedEventD adding fields for " + eventSpec + ", fields: " + fieldNames.toString());
+            LOGGER.info("ReflectedEventD adding fields for " + eventSpec + ", fields: " + fieldNames.toString());
 
             GridBagConstraints paramsConstraints = new GridBagConstraints();
             paramsConstraints.fill = GridBagConstraints.HORIZONTAL;
@@ -104,7 +113,11 @@ public class ReflectedEventD extends javax.swing.JDialog {
             paramsConstraints.weightx = 1.0;
 
             for (String fieldName : fieldNames) {
-                final Field field = eventClass.getField(fieldName);
+                final Field field = ReflectionHelper.getField(eventClass, fieldName);
+                if (field == null) {
+                    LOGGER.severe("Could not find field \"" + fieldName + "\" in class " + eventClass.getSimpleName() + " or any super class");
+                    continue;
+                }
                 JPanel fieldPanel = new JPanel();
                 fieldPanel.setLayout(new GridBagLayout());
                 fieldPanel.setBorder(BorderFactory.createLineBorder(Color.black));
@@ -120,21 +133,12 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
                 fieldPanel.add(description, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
-
-                // Field definition components
-                if (eventType == ReflectedEventD.EventType.INPUT) {
-                    // Add text field for setting variable
-                    addVariableTextField(field, fieldNameToDefinition, fieldPanel, fieldConstraints);
-                    fieldConstraints.gridy = fieldConstraints.gridy + 1;
-                } else if (eventType == ReflectedEventD.EventType.OUTPUT) {
-                    // Add combo box for selecting variable name
-                    addVariableComboBox(field, fieldNameToDefinition, fieldPanel, fieldConstraints);
-                    fieldConstraints.gridy = fieldConstraints.gridy + 1;
-                    // Add component for defining value
-                    addValueComponent(field, fieldNameToDefinition, fieldPanel, fieldConstraints);
-                    fieldConstraints.gridy = fieldConstraints.gridy + 1;
-                }
-
+                // Add combo box for selecting variable name
+                addVariableComboBox(field, fieldNameToReadVariable, fieldPanel, fieldConstraints);
+                fieldConstraints.gridy = fieldConstraints.gridy + 1;
+                // Add component for defining value
+                addValueComponent(field, fieldNameToValue, fieldPanel, fieldConstraints);
+                fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 // Add toggle button for setting ability to edit field at run-time
                 addEditableButton(field, fieldNameToEditable, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
@@ -150,6 +154,46 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 paramsConstraints.gridy = paramsConstraints.gridy + 1;
             }
 
+            if (eventType == ReflectedEventD.EventType.INPUT) {
+                ArrayList<String> variableNames = (ArrayList<String>) (eventClass.getField("variableNames").get(null));
+                HashMap<String, String> variableNameToDescription = (HashMap<String, String>) (eventClass.getField("variableNameToDescription").get(null));
+                LOGGER.info("ReflectedEventD adding variable fields for " + eventSpec + ", fields: " + variableNames.toString());
+                for (String variableFieldName : variableNames) {
+                    final Field variableField = ReflectionHelper.getField(eventClass, variableFieldName);
+                    if (variableField == null) {
+                        LOGGER.severe("Could not find variable field \"" + variableFieldName + "\" in class " + eventClass.getSimpleName() + " or any super class");
+                        continue;
+                    }
+                    JPanel variablePanel = new JPanel();
+                    variablePanel.setLayout(new GridBagLayout());
+                    variablePanel.setBorder(BorderFactory.createLineBorder(Color.black));
+
+                    GridBagConstraints variableConstraints = new GridBagConstraints();
+                    variableConstraints.fill = GridBagConstraints.HORIZONTAL;
+                    variableConstraints.gridy = 0;
+                    variableConstraints.gridx = 0;
+                    variableConstraints.weightx = 1.0;
+
+                    // Add description for this field
+                    JLabel description = new JLabel(variableNameToDescription.get(variableFieldName), SwingConstants.LEFT);
+                    description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
+                    variablePanel.add(description, variableConstraints);
+                    variableConstraints.gridy = variableConstraints.gridy + 1;
+
+                    // Add text field for setting variable
+                    addVariableTextField(variableField, fieldNameToWriteVariable, variablePanel, variableConstraints);
+                    variableConstraints.gridy = variableConstraints.gridy + 1;
+                    maxComponentWidth = Math.max(maxComponentWidth, variablePanel.getPreferredSize().width);
+                    paramsPanel.add(variablePanel);
+                    paramsPanel.add(variablePanel, paramsConstraints);
+                    paramsConstraints.gridy = paramsConstraints.gridy + 1;
+
+                    // Add space between each enum's interaction area
+                    paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)));
+                    paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)), paramsConstraints);
+                    paramsConstraints.gridy = paramsConstraints.gridy + 1;
+                }
+            }
         } catch (NoSuchFieldException ex) {
             ex.printStackTrace();
         } catch (SecurityException ex) {
@@ -159,47 +203,43 @@ public class ReflectedEventD extends javax.swing.JDialog {
         }
     }
 
-    protected void addVariableTextField(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel, GridBagConstraints constraints) {
+    protected void addVariableTextField(Field field, HashMap<String, String> fieldNameToWriteVariable, JPanel panel, GridBagConstraints constraints) {
         JTextField textField = new JTextField();
 
-        Object fieldDefinition = fieldNameToDefinition.get(field.getName());
-        if (fieldDefinition != null && fieldDefinition instanceof String && ((String) fieldDefinition).startsWith("@")) {
+        if (fieldNameToWriteVariable.containsKey(field.getName())) {
             // This field is already defined with a variable name
-            textField.setText((String) fieldDefinition);
+            textField.setText(fieldNameToWriteVariable.get(field.getName()));
         }
-        fieldToVariableTextField.put(field, textField);
+        fieldToVariableTF.put(field, textField);
         maxComponentWidth = Math.max(maxComponentWidth, textField.getPreferredSize().width);
         panel.add(textField, constraints);
     }
 
-    protected void addVariableComboBox(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel, GridBagConstraints constraints) {
-        ArrayList<String> existingVariables = null;
-        try {
-            existingVariables = (ArrayList<String>) (new Mediator()).getAllVariables().clone();
-        } catch (NullPointerException e) {
-            existingVariables = new ArrayList<String>();
-        }
+    protected void addVariableComboBox(Field field, HashMap<String, String> fieldNameToReadVariable, JPanel panel, GridBagConstraints constraints) {
+        ArrayList<String> existingVariables = (ArrayList< String>) missionVariables.clone();
         existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 
-        Object fieldObject = fieldNameToDefinition.get(field.getName());
-        if (fieldObject != null && fieldObject instanceof String && ((String) fieldObject).startsWith("@")) {
-            // This field is already defined with a variable name
-            if (existingVariables.contains((String) fieldObject)) {
-                comboBox.setSelectedItem((String) fieldObject);
+        if (fieldNameToReadVariable.containsKey(field.getName())) {
+            if (existingVariables.contains(fieldNameToReadVariable.get(field.getName()))) {
+                comboBox.setSelectedItem(fieldNameToReadVariable.get(field.getName()));
+            } else {
+                LOGGER.severe("Read variable \"" + fieldNameToReadVariable.get(field.getName()) + "\" for field " + fieldNameToReadVariable.get(field.getName()) + " is not an existing variable");
             }
         }
-        fieldToVariableComboBox.put(field, comboBox);
+        fieldToVariableCB.put(field, comboBox);
+        variableCBToField.put(comboBox, field);
         maxComponentWidth = Math.max(maxComponentWidth, comboBox.getPreferredSize().width);
         panel.add(comboBox, constraints);
+        comboBox.addItemListener(variableSelectedListener);
     }
 
-    protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToDefinition, JPanel panel, GridBagConstraints constraints) {
+    protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToValue, JPanel panel, GridBagConstraints constraints) {
         MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((java.lang.reflect.Type) field.getType(), new ArrayList<Markup>());
         JComponent visualization = null;
         if (markupComponent != null && markupComponent.getComponent() != null) {
             visualization = markupComponent.getComponent();
-            Object definition = fieldNameToDefinition.get(field.getName());
+            Object definition = fieldNameToValue.get(field.getName());
             if (definition != null) {
                 // This field already has been defined with a value
                 // Earlier we had to replace primitive fields with their wrapper object, take that into account here
@@ -207,7 +247,8 @@ public class ReflectedEventD extends javax.swing.JDialog {
                         || (definition.getClass().equals(Double.class) && field.getType().equals(double.class))
                         || (definition.getClass().equals(Float.class) && field.getType().equals(float.class))
                         || (definition.getClass().equals(Integer.class) && field.getType().equals(int.class))
-                        || (definition.getClass().equals(Long.class) && field.getType().equals(long.class))) {
+                        || (definition.getClass().equals(Long.class) && field.getType().equals(long.class))
+                        || (definition.getClass().equals(Boolean.class) && field.getType().equals(boolean.class))) {
                     UiComponentGenerator.getInstance().setComponentValue(markupComponent, definition);
                 }
             }
@@ -234,6 +275,17 @@ public class ReflectedEventD extends javax.swing.JDialog {
             enableEditB.setText("Editable");
             enableEditB.setSelected(true);
         }
+        // Check if variable combo box has a variable name selected (saved value will have already been loaded at this point)
+        JComboBox variableCombo = fieldToVariableCB.get(field);
+        if (variableCombo == null) {
+            LOGGER.severe("Could not find variable combo for field: " + field + ", fieldToVariableComboBox: " + fieldToVariableCB.toString());
+        } else {
+            if (variableCombo.getSelectedIndex() != 0) {
+                enableEditB.setText("Locked");
+                enableEditB.setSelected(false);
+                enableEditB.setEnabled(false);
+            }
+        }
         enableEditB.addActionListener(new ActionListener() {
 
             @Override
@@ -248,7 +300,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 }
             }
         });
-        fieldToEditable.put(field, enableEditB);
+        fieldToEditableB.put(field, enableEditB);
         maxComponentWidth = Math.max(maxComponentWidth, enableEditB.getPreferredSize().width);
         maxComponentWidth = Math.max(maxComponentWidth, enableEditB.getPreferredSize().width);
         panel.add(enableEditB, constraints);
@@ -258,9 +310,17 @@ public class ReflectedEventD extends javax.swing.JDialog {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         // Get previously set field definitions
-        fieldNameToDefinition = eventSpec.getFieldDefinitions();
-        if (fieldNameToDefinition == null) {
-            fieldNameToDefinition = new HashMap<String, Object>();
+        fieldNameToValue = eventSpec.getFieldValues();
+        if (fieldNameToValue == null) {
+            fieldNameToValue = new HashMap<String, Object>();
+        }
+        fieldNameToReadVariable = eventSpec.getReadVariables();
+        if (fieldNameToReadVariable == null) {
+            fieldNameToReadVariable = new HashMap<String, String>();
+        }
+        fieldNameToWriteVariable = eventSpec.getWriteVariables();
+        if (fieldNameToWriteVariable == null) {
+            fieldNameToWriteVariable = new HashMap<String, String>();
         }
         // Get previously set field editability
         fieldNameToEditable = eventSpec.getEditableFields();
@@ -304,58 +364,85 @@ public class ReflectedEventD extends javax.swing.JDialog {
      */
     private void okButtonActionPerformed(java.awt.event.ActionEvent evt) {
         setVisible(false);
-        HashMap<String, Object> fieldNameToDefinition = getDefinitionsFromComponents();
-        eventSpec.setFieldDefinitions(fieldNameToDefinition);
-        HashMap<String, Boolean> fieldNameToEditable = getEditableFromComponents(fieldNameToDefinition);
+        HashMap<String, Object> fieldNameToValue = getValuesFromComponents();
+        eventSpec.setFieldValues(fieldNameToValue);
+        HashMap<String, String> fieldNameToReadVariable = getReadVariablesFromComponents();
+        eventSpec.setReadVariables(fieldNameToReadVariable);
+        HashMap<String, String> fieldNameToWriteVariable = getWriteVariablesFromComponents();
+        eventSpec.setWriteVariables(fieldNameToWriteVariable);
+        HashMap<String, Boolean> fieldNameToEditable = getEditableFromComponents(fieldNameToValue, fieldNameToReadVariable);
         eventSpec.setEditableFields(fieldNameToEditable);
     }
 
-    private HashMap<String, Object> getDefinitionsFromComponents() {
+    /**
+     * For each field with a creation component, store the defined value if it
+     * is not null
+     *
+     * @return HashMap of field names to defined, non-null values
+     */
+    private HashMap<String, Object> getValuesFromComponents() {
         HashMap<String, Object> fieldNameToObject = new HashMap<String, Object>();
-        if (eventType == ReflectedEventD.EventType.INPUT) {
-            for (Field field : fieldToVariableTextField.keySet()) {
-                Object definition = null;
-                JTextField variableTextField = fieldToVariableTextField.get(field);
-                if (variableTextField != null) {
-                    String variable = variableTextField.getText().trim();
-                    if (variable.length() > 0 && !variable.startsWith("@")) {
-                        variable = "@" + variable;
-                    }
-                    // Store the value from the component unless nothing was entered
-                    if (variable.length() > 0) {
-                        definition = variable;
-                    }
+        for (Field field : fieldToValueComponent.keySet()) {
+            JComboBox variableComboBox = fieldToVariableCB.get(field);
+            if (variableComboBox == null || variableComboBox.getSelectedItem().toString().equalsIgnoreCase(Event.NONE)) {
+                // User selected NONE for variable, now see if they created a value definition
+                MarkupComponent markupComponent = fieldToValueComponent.get(field);
+                if (markupComponent != null) {
+                    // Store the value from the component
+                    fieldNameToObject.put(field.getName(), UiComponentGenerator.getInstance().getComponentValue(markupComponent, field));
                 }
-                fieldNameToObject.put(field.getName(), definition);
-            }
-        } else if (eventType == ReflectedEventD.EventType.OUTPUT) {
-            for (Field field : fieldToVariableComboBox.keySet()) {
-                Object definition = null;
-                JComboBox variableComboBox = fieldToVariableComboBox.get(field);
-                if (!variableComboBox.getSelectedItem().toString().equalsIgnoreCase(Event.NONE)) {
-                    // User selected a variable other than NONE to define the field
-                    definition = variableComboBox.getSelectedItem().toString();
-                } else {
-                    // User selected NONE for variable, now see if they created a value definition
-                    MarkupComponent markupComponent = fieldToValueComponent.get(field);
-                    if (markupComponent != null) {
-                        // Store the value from the component
-                        definition = UiComponentGenerator.getInstance().getComponentValue(markupComponent, field);
-                    }
-                }
-                fieldNameToObject.put(field.getName(), definition);
             }
         }
-
         return fieldNameToObject;
     }
 
-    private HashMap<String, Boolean> getEditableFromComponents(HashMap<String, Object> fieldNameToDefinition) {
+    /**
+     * For each field with a read variable combo box, store the selected
+     * variable name if it is not @NONE
+     *
+     * @return HashMap of field names to variable names (not @NONE)
+     */
+    private HashMap<String, String> getReadVariablesFromComponents() {
+        HashMap<String, String> fieldNameToReadVariable = new HashMap<String, String>();
+        for (Field field : fieldToVariableCB.keySet()) {
+            JComboBox variableComboBox = fieldToVariableCB.get(field);
+            if (!variableComboBox.getSelectedItem().toString().equalsIgnoreCase(Event.NONE)) {
+                // User selected a variable other than NONE to define the field
+                fieldNameToReadVariable.put(field.getName(), variableComboBox.getSelectedItem().toString());
+            }
+        }
+        return fieldNameToReadVariable;
+    }
+
+    /**
+     * For each field with a write variable text field, store the defined
+     * variable name if it is not @NONE
+     *
+     * @return HashMap of field names to variable names (not @NONE)
+     */
+    private HashMap<String, String> getWriteVariablesFromComponents() {
+        HashMap<String, String> fieldNameToWriteVariable = new HashMap<String, String>();
+        for (Field field : fieldToVariableTF.keySet()) {
+            JTextField variableTextField = fieldToVariableTF.get(field);
+            if (variableTextField != null) {
+                String variable = variableTextField.getText().trim();
+                if (variable.length() > 0 && !variable.startsWith("@")) {
+                    variable = "@" + variable;
+                }
+                if (variable.length() > 1 && variable.startsWith("@")) {
+                    fieldNameToWriteVariable.put(field.getName(), variable);
+                }
+            }
+        }
+
+        return fieldNameToWriteVariable;
+    }
+
+    private HashMap<String, Boolean> getEditableFromComponents(HashMap<String, Object> fieldNameToValue, HashMap<String, String> fieldNameToReadVariable) {
         HashMap<String, Boolean> fieldNameToEditable = new HashMap<String, Boolean>();
-        for (Field field : fieldToEditable.keySet()) {
-            if (fieldNameToDefinition.containsKey(field.getName())
-                    && fieldNameToDefinition.get(field.getName()) != null
-                    && !fieldToEditable.get(field).isSelected()) {
+        for (Field field : fieldToEditableB.keySet()) {
+            if ((fieldNameToValue.containsKey(field.getName()) || fieldNameToReadVariable.containsKey(field.getName()))
+                    && !fieldToEditableB.get(field).isSelected()) {
                 // Field is defined and locked
                 fieldNameToEditable.put(field.getName(), false);
             } else {
@@ -367,18 +454,44 @@ public class ReflectedEventD extends javax.swing.JDialog {
         return fieldNameToEditable;
     }
 
-    public static void main(String argv[]) {
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
+    private class VariableSelectedListener implements ItemListener {
 
-                ReflectedEventD dialog = new ReflectedEventD(new ReflectedEventSpecification("crw.event.output.ui.DisplayMessage"), null, true);
-                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
-                    public void windowClosing(java.awt.event.WindowEvent e) {
-                        System.exit(0);
+        public VariableSelectedListener() {
+        }
+
+        // This method is called only if a new item has been selected.
+        public void itemStateChanged(ItemEvent evt) {
+            if (evt.getSource() instanceof JComboBox) {
+                JComboBox variableCombo = (JComboBox) evt.getSource();
+                Field field = variableCBToField.get(variableCombo);
+                if (field == null) {
+                    LOGGER.severe("Could not find field for variable combo box: " + variableCombo + ", variableComboBoxToField: " + variableCBToField.toString());
+                    return;
+                }
+                JButton editableB = fieldToEditableB.get(field);
+                if (editableB == null) {
+                    LOGGER.severe("Could not find editable button for field: " + field + ", fieldToEditable: " + fieldToEditableB.toString());
+                    return;
+                }
+                if (evt.getStateChange() == ItemEvent.SELECTED) {
+                    if (variableCombo.getSelectedIndex() == 0) {
+                        // @NONE selected
+                        // Enable the "Editable" button if it was disabled
+                        if (!editableB.isEnabled()) {
+                            editableB.setEnabled(true);
+                        }
+                    } else {
+                        // Variable other than @NONE selected
+                        // Lock value and disable "Editable" button (we don't want to change the variable at run-time, just values)
+                        editableB.setText("Locked");
+                        editableB.setSelected(false);
+                        editableB.setEnabled(false);
                     }
-                });
-                dialog.setVisible(true);
+                    paramsPanel.revalidate();
+                }
+            } else {
+
             }
-        });
+        }
     }
 }

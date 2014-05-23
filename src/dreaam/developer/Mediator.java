@@ -15,14 +15,10 @@ import java.util.prefs.Preferences;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import sami.event.Event;
-import sami.event.ReflectedEventSpecification;
 import sami.gui.GuiElementSpec;
 import sami.mission.MissionPlanSpecification;
 import sami.mission.ProjectSpecification;
 import sami.mission.RequirementSpecification;
-import sami.mission.Transition;
-import sami.mission.Vertex;
 
 /**
  *
@@ -81,10 +77,6 @@ public class Mediator {
         instance.remove(mps);
     }
 
-    public ArrayList<String> getAllVariables() {
-        return instance.getAllVariables();
-    }
-
     private static class _Mediator {
 
         ProjectSpecification projectSpec = null;
@@ -116,9 +108,9 @@ public class Mediator {
                  */
                 oos = new ObjectOutputStream(new FileOutputStream(projectSpecLocation));
                 oos.writeObject(projectSpec);
-                System.out.println("Writing projectSpec with " + projectSpec.getMissionPlans());
+                LOGGER.info("Writing projectSpec with " + projectSpec.getMissionPlans());
                 projectSpec.saved();
-                Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Saved: " + projectSpec);
+                LOGGER.info("Saved: " + projectSpec);
 
                 // Update last DRM file
                 Preferences p = Preferences.userRoot();
@@ -223,38 +215,6 @@ public class Mediator {
 
         private void remove(MissionPlanSpecification mps) {
             projectSpec.removeMissionPlan(mps);
-        }
-
-        public ArrayList<String> getAllVariables() {
-            ArrayList<String> ret = new ArrayList<String>();
-
-            for (MissionPlanSpecification missionPlanSpecification : projectSpec.getMissionPlans()) {
-                if (missionPlanSpecification.getGraph() != null && missionPlanSpecification.getGraph().getEdges() != null) {
-                    for (Vertex v : missionPlanSpecification.getGraph().getVertices()) {
-                        if (v instanceof Transition) {
-                            if (missionPlanSpecification.getEventSpecList((Transition) v) != null) {
-                                for (ReflectedEventSpecification eventSpec : missionPlanSpecification.getEventSpecList((Transition) v)) {
-                                    // This is in place of actually working out whether this is an input or output event
-                                    if (eventSpec.getFieldDefinitions() != null && eventSpec.getFieldDefinitions().size() > 0) {
-                                        for (Object object : eventSpec.getFieldDefinitions().values()) {
-                                            if (object instanceof String && ((String) object).startsWith("@") && !((String) object).equals(Event.NONE)) {
-                                                ret.add((String) object);
-                                                Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Adding " + (String) object + " to variable list");
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                Logger.getLogger(this.getClass().getName()).log(Level.FINE, "No events to check for variables.");
-                            }
-                        }
-                    }
-                } else {
-                    Logger.getLogger(this.getClass().getName()).log(Level.FINE, "No edges to check for events");
-                }
-            }
-
-            return ret;
         }
     }
 }

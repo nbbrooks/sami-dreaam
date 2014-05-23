@@ -47,20 +47,9 @@ public class SelectTokenD extends javax.swing.JDialog {
     SelectTokenD.MatchCriteriaListener matchCriteriaListener = new SelectTokenD.MatchCriteriaListener();
     private ArrayList<ReqSelPanel> reqPanels = new ArrayList<ReqSelPanel>();
     // Task token specs the developer created
-    private ArrayList<TaskSpecification> taskTokenSpecs;    
+    private ArrayList<TaskSpecification> taskTokenSpecs;
     private EdgeType edgeType;
     private GridLayout layout;
-    private ArrayList<TokenRequirement.MatchCriteria> criteriaOptions;
-    private ArrayList<TokenRequirement.MatchQuantity> quantityOptions;
-    private ArrayList<TokenRequirement.MatchAction> actionOptions;
-
-    static private ArrayList<TokenRequirement.MatchCriteria> inCriteriaOptions, outCriteriaOptions, outRecovCriteriaOptions;
-    static private ArrayList<TokenRequirement.MatchQuantity> inQuantityOptions, outQuantityOptions, outRecovQuantityOptions;
-    static private ArrayList<TokenRequirement.MatchAction> outActionOptions, outRecovActionOptions;
-
-    static {
-        createTokenReqLists();
-    }
 
     public SelectTokenD(java.awt.Frame parent, boolean modal, EdgeType edgeType, ArrayList<? extends TokenRequirement> selectedTokenReqs, ArrayList<TaskSpecification> taskTokenSpecs) {
         super(parent, modal);
@@ -75,29 +64,6 @@ public class SelectTokenD extends javax.swing.JDialog {
 
         this.edgeType = edgeType;
         this.taskTokenSpecs = taskTokenSpecs;
-
-        switch (edgeType) {
-            case IncomingNominal:
-                criteriaOptions = inCriteriaOptions;
-                quantityOptions = inQuantityOptions;
-                actionOptions = null;
-                break;
-            case IncomingRecovery:
-                criteriaOptions = inCriteriaOptions;
-                quantityOptions = inQuantityOptions;
-                actionOptions = null;
-                break;
-            case OutgoingNominal:
-                criteriaOptions = outCriteriaOptions;
-                quantityOptions = outQuantityOptions;
-                actionOptions = outActionOptions;
-                break;
-            case OutgoingRecovery:
-                criteriaOptions = outRecovCriteriaOptions;
-                quantityOptions = outRecovQuantityOptions;
-                actionOptions = outRecovActionOptions;
-                break;
-        }
 
         // Add the done button
         JButton doneButton = new JButton("Done");
@@ -219,66 +185,6 @@ public class SelectTokenD extends javax.swing.JDialog {
         return selectedTokenReqs;
     }
 
-    private static void createTokenReqLists() {
-        inCriteriaOptions = new ArrayList<TokenRequirement.MatchCriteria>();
-        outCriteriaOptions = new ArrayList<TokenRequirement.MatchCriteria>();
-        outRecovCriteriaOptions = new ArrayList<TokenRequirement.MatchCriteria>();
-
-        inQuantityOptions = new ArrayList<TokenRequirement.MatchQuantity>();
-        outQuantityOptions = new ArrayList<TokenRequirement.MatchQuantity>();
-        outRecovQuantityOptions = new ArrayList<TokenRequirement.MatchQuantity>();
-
-        outActionOptions = new ArrayList<TokenRequirement.MatchAction>();
-        outRecovActionOptions = new ArrayList<TokenRequirement.MatchAction>();
-
-        // Incoming
-        //  Criteria
-        inCriteriaOptions.add(TokenRequirement.MatchCriteria.AnyProxy);
-        inCriteriaOptions.add(TokenRequirement.MatchCriteria.AnyTask);
-        inCriteriaOptions.add(TokenRequirement.MatchCriteria.AnyToken);
-        inCriteriaOptions.add(TokenRequirement.MatchCriteria.Generic);
-        inCriteriaOptions.add(TokenRequirement.MatchCriteria.None);
-        inCriteriaOptions.add(TokenRequirement.MatchCriteria.RelevantToken);
-        inCriteriaOptions.add(TokenRequirement.MatchCriteria.SpecificTask);
-        //  Quantities
-        inQuantityOptions.add(TokenRequirement.MatchQuantity.None);
-        inQuantityOptions.add(TokenRequirement.MatchQuantity.Number);
-
-        // Outgoing
-        //  Criteria
-        outCriteriaOptions.add(TokenRequirement.MatchCriteria.AnyProxy);
-        outCriteriaOptions.add(TokenRequirement.MatchCriteria.AnyTask);
-        outCriteriaOptions.add(TokenRequirement.MatchCriteria.AnyToken);
-        outCriteriaOptions.add(TokenRequirement.MatchCriteria.Generic);
-        outCriteriaOptions.add(TokenRequirement.MatchCriteria.None);
-        outCriteriaOptions.add(TokenRequirement.MatchCriteria.RelevantToken);
-        outCriteriaOptions.add(TokenRequirement.MatchCriteria.SpecificTask);
-        //  Quantity
-        outQuantityOptions.add(TokenRequirement.MatchQuantity.All);
-        outQuantityOptions.add(TokenRequirement.MatchQuantity.Number);
-        //  Action
-        outActionOptions.add(TokenRequirement.MatchAction.Add);
-        outActionOptions.add(TokenRequirement.MatchAction.Consume);
-        outActionOptions.add(TokenRequirement.MatchAction.Take);
-
-        // Outgoing for recovery mode edges
-        //  Criteria
-        outRecovCriteriaOptions.add(TokenRequirement.MatchCriteria.AnyProxy);
-        outRecovCriteriaOptions.add(TokenRequirement.MatchCriteria.AnyTask);
-        outRecovCriteriaOptions.add(TokenRequirement.MatchCriteria.AnyToken);
-        outRecovCriteriaOptions.add(TokenRequirement.MatchCriteria.Generic);
-        outRecovCriteriaOptions.add(TokenRequirement.MatchCriteria.None);
-        outRecovCriteriaOptions.add(TokenRequirement.MatchCriteria.RelevantToken);
-        outRecovCriteriaOptions.add(TokenRequirement.MatchCriteria.SpecificTask);
-        //  Quantity
-        outRecovQuantityOptions.add(TokenRequirement.MatchQuantity.All);
-        outRecovQuantityOptions.add(TokenRequirement.MatchQuantity.Number);
-        //  Action
-        outRecovActionOptions.add(TokenRequirement.MatchAction.Add);
-        outRecovActionOptions.add(TokenRequirement.MatchAction.Consume);
-        outRecovActionOptions.add(TokenRequirement.MatchAction.Take);
-    }
-
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
@@ -367,6 +273,26 @@ public class SelectTokenD extends javax.swing.JDialog {
                         // Hide specificTaskCB
                         reqP.specificTaskCB.setVisible(false);
                     }
+
+                    // For incoming events, allow "All" MatchQuantity to be selected for "RelevantToken" MatchCriteria
+                    if (edgeType == edgeType.IncomingNominal || edgeType == EdgeType.IncomingRecovery) {
+                        boolean inList = false;
+                        for (int i = 0; i < reqP.quantityCB.getItemCount(); i++) {
+                            if (reqP.quantityCB.getItemAt(i) == MatchQuantity.All) {
+                                inList = true;
+                                break;
+                            }
+                        }
+                        if (criteriaCombo.getSelectedItem() == MatchCriteria.RelevantToken && !inList) {
+                            reqP.quantityCB.addItem(MatchQuantity.All);
+                        } else if (criteriaCombo.getSelectedItem() != MatchCriteria.RelevantToken && inList) {
+                            reqP.quantityCB.removeItem(MatchQuantity.All);
+                        }
+                    } else {
+                        // Hide specificTaskCB
+                        reqP.specificTaskCB.setVisible(false);
+                    }
+
                     panel.revalidate();
                 }
             } else {
@@ -418,7 +344,7 @@ public class SelectTokenD extends javax.swing.JDialog {
             // criteriaCB
             criteriaCB = new JComboBox();
             criteriaCB.insertItemAt(" ", 0);
-            for (MatchCriteria criteria : criteriaOptions) {
+            for (MatchCriteria criteria : MatchCriteria.values()) {
                 criteriaCB.addItem(criteria);
             }
             add(criteriaCB);
@@ -435,8 +361,12 @@ public class SelectTokenD extends javax.swing.JDialog {
             // quantityCB
             quantityCB = new JComboBox();
             quantityCB.insertItemAt(" ", 0);
-            for (MatchQuantity criteria : quantityOptions) {
-                quantityCB.addItem(criteria);
+            if (edgeType == EdgeType.IncomingNominal || edgeType == EdgeType.IncomingRecovery) {
+                quantityCB.addItem(MatchQuantity.None);
+                quantityCB.addItem(MatchQuantity.Number);
+            } else if (edgeType == EdgeType.OutgoingNominal || edgeType == EdgeType.OutgoingRecovery) {
+                quantityCB.addItem(MatchQuantity.All);
+                quantityCB.addItem(MatchQuantity.Number);
             }
             add(quantityCB);
             quantityCB.setVisible(false);
@@ -447,10 +377,10 @@ public class SelectTokenD extends javax.swing.JDialog {
             quantityTF.setVisible(false);
             // Action
             // actionCB
-            if (actionOptions != null) {
+            if (edgeType == EdgeType.OutgoingNominal || edgeType == EdgeType.OutgoingRecovery) {
                 actionCB = new JComboBox();
                 actionCB.insertItemAt(" ", 0);
-                for (MatchAction criteria : actionOptions) {
+                for (MatchAction criteria : MatchAction.values()) {
                     actionCB.addItem(criteria);
                 }
                 add(actionCB);
@@ -475,8 +405,7 @@ public class SelectTokenD extends javax.swing.JDialog {
                 return;
             }
 
-            if (actionOptions != null
-                    && value instanceof OutTokenRequirement
+            if (value instanceof OutTokenRequirement
                     && ((OutTokenRequirement) value).getMatchAction() != null) {
                 actionCB.setSelectedItem(((OutTokenRequirement) value).getMatchAction());
                 actionCB.setVisible(true);
@@ -484,6 +413,10 @@ public class SelectTokenD extends javax.swing.JDialog {
             if (value.getMatchCriteria() != null) {
                 criteriaCB.setSelectedItem(value.getMatchCriteria());
                 criteriaCB.setVisible(true);
+                if ((edgeType == EdgeType.IncomingNominal || edgeType == EdgeType.IncomingRecovery)
+                        && criteriaCB.getSelectedItem() == MatchCriteria.RelevantToken) {
+                    quantityCB.addItem(MatchQuantity.All);
+                }
             }
             if (value.getMatchQuantity() != null) {
                 quantityCB.setSelectedItem(value.getMatchQuantity());

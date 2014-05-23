@@ -1,6 +1,6 @@
 package dreaam.developer;
 
-import dreaam.Helper;
+import dreaam.DreaamHelper;
 import dreaam.agent.Platform;
 import dreaam.agent.checker.CheckerAgent;
 import dreaam.agent.checker.CheckerAgent.AgentMessage;
@@ -518,7 +518,7 @@ public class DREAAM extends javax.swing.JFrame {
         while (enumeration.hasMoreElements()) {
             playNames.add(((DefaultMutableTreeNode) enumeration.nextElement()).toString());
         }
-        String missionName = Helper.getUniqueName("Anonymous", playNames);
+        String missionName = DreaamHelper.getUniqueName("Anonymous", playNames);
         MissionPlanSpecification spec = mediator.getProjectSpec().getNewMissionPlanSpecification(missionName);
         DefaultMutableTreeNode node = new DefaultMutableTreeNode(spec);
         playsRoot.add(node);

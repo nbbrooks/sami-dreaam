@@ -23,6 +23,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import sami.event.Event;
+import sami.event.ReflectionHelper;
 import sami.markup.Markup;
 import sami.markup.MarkupOption;
 import sami.markup.ReflectedMarkupSpecification;
@@ -50,6 +51,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
     HashMap<String, HashMap<String, HashMap<Field, JComboBox>>> enumToConstantToFieldToCombo;
     HashMap<String, HashMap<String, HashMap<Field, Object>>> enumToConstantToFieldToDefinition;
     private final ReflectedMarkupSpecification markupSpec;
+    private final ArrayList<String> missionVariables;
     public static final int RECURSION_DEPTH = 2;
     // Serializable variable definition storage using HashMaps and Strings to represent object
     HashMap<String, Object> enumFieldNameToDefinition = new HashMap<String, Object>();
@@ -61,9 +63,10 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
     /**
      * Creates new form ReflectedEventD
      */
-    public ReflectedMarkupD(ReflectedMarkupSpecification markupSpec, java.awt.Frame parent, boolean modal) {
+    public ReflectedMarkupD(ReflectedMarkupSpecification markupSpec, ArrayList<String> missionVariables, java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         this.markupSpec = markupSpec;
+        this.missionVariables = missionVariables;
 
         enumFieldNameToPanel = new HashMap<String, JPanel>();
         enumFieldNameToCombo = new HashMap<String, JComboBox>();
@@ -108,7 +111,11 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
             // Add components for each Markup enums
             for (String enumFieldName : enumFieldNames) {
                 try {
-                    final Field enumField = markupClass.getField(enumFieldName);
+                    final Field enumField = ReflectionHelper.getField(markupClass, enumFieldName);
+                    if (enumFieldName == null) {
+                        LOGGER.severe("Could not find field \"" + enumFieldName + "\" in class " + markupClass.getSimpleName() + " or any super class");
+                        continue;
+                    }
                     if (enumField.getType().isEnum()) {
                         // Initialize hashmaps
                         enumToConstantToPanel.put(enumFieldName, new HashMap<String, JPanel>());
@@ -171,8 +178,6 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
                     } else {
                         LOGGER.severe("Markup class field " + enumField.getName() + " is not an enum");
                     }
-                } catch (NoSuchFieldException ex) {
-                    ex.printStackTrace();
                 } catch (SecurityException ex) {
                     ex.printStackTrace();
                 }
@@ -213,23 +218,25 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
                 if (fieldName != null) {
                     try {
                         // Field for MarkupOption associated with the enum constant
-                        Field field = markupClass.getField(fieldName);
-                        constantToClass.put(constant.toString(), field.getType());
-                    } catch (NoSuchFieldException ex) {
-                        Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
+                        Field field = ReflectionHelper.getField(markupClass, fieldName);
+                        if (field != null) {
+                            constantToClass.put(constant.toString(), field.getType());
+
+                            // Make the field to comp hash
+                            constantToFieldToComp.put(constant.toString(), new HashMap<Field, MarkupComponent>());
+                            // Make the field to combo hash
+                            constantToFieldToCombo.put(constant.toString(), new HashMap<Field, JComboBox>());
+                            // Make the field to definition
+                            constantToFieldToDefinition.put(constant.toString(), new HashMap<Field, Object>());
+
+                            // Construct the panel for this enum value
+                            addConstantComponents(enumField, constant);
+                        } else {
+                            LOGGER.severe("Could not find field \"" + fieldName + "\" in class " + markupClass.getSimpleName() + " or any super class");
+                        }
                     } catch (SecurityException ex) {
                         Logger.getLogger(ReflectedMarkupD.class.getName()).log(Level.SEVERE, null, ex);
                     }
-
-                    // Make the field to comp hash
-                    constantToFieldToComp.put(constant.toString(), new HashMap<Field, MarkupComponent>());
-                    // Make the field to combo hash
-                    constantToFieldToCombo.put(constant.toString(), new HashMap<Field, JComboBox>());
-                    // Make the field to definition
-                    constantToFieldToDefinition.put(constant.toString(), new HashMap<Field, Object>());
-
-                    // Construct the panel for this enum value
-                    addConstantComponents(enumField, constant);
                 }
             } else {
                 LOGGER.severe("No field name linked to enum \"" + enumField.getName() + "\" value \"" + constant + "\"");
@@ -313,7 +320,11 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
             }
             for (String optionFieldName : optionFieldNames) {
                 // Get corresponding field
-                Field optionField = optionClass.getField(optionFieldName);
+                Field optionField = ReflectionHelper.getField(optionClass, optionFieldName);
+                if (optionField == null) {
+                    LOGGER.severe("Could not find field \"" + optionFieldName + "\" in class " + optionClass.getSimpleName() + " or any super class");
+                    continue;
+                }
                 // Add description for this field of the markup option
                 JLabel description = new JLabel(optionFieldNameToDescription.get(optionFieldName), SwingConstants.LEFT);
                 description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
@@ -347,12 +358,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
      * @param option
      */
     protected void addVariableComboBox(String enumName, String enumValueName, Field optionField, JPanel constantPanel, GridBagConstraints constraints, MarkupOption option) {
-        ArrayList<String> existingVariables = null;
-        try {
-            existingVariables = (ArrayList<String>) (new Mediator()).getAllVariables().clone();
-        } catch (NullPointerException e) {
-            existingVariables = new ArrayList<String>();
-        }
+        ArrayList<String> existingVariables = (ArrayList<String>) missionVariables.clone();
         existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 
@@ -530,7 +536,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
 
-                ReflectedMarkupD dialog = new ReflectedMarkupD(new ReflectedMarkupSpecification("sami.markup.Attention"), null, true);
+                ReflectedMarkupD dialog = new ReflectedMarkupD(new ReflectedMarkupSpecification("sami.markup.Attention"), new ArrayList<String>(), null, true);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         System.exit(0);

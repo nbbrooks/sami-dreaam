@@ -917,7 +917,7 @@ public class TaskModelEditor extends JPanel {
                                 // Write things out to make sure that we have variables.
                                 writeModel();
 //                                System.out.println("b spec list: " + mSpec.getEventSpecList(vertex));
-                                SelectEventD diag = new SelectEventD(null, true, mSpec.getEventSpecList(vertex), vertex instanceof Transition, vertex instanceof Place);
+                                SelectEventD diag = new SelectEventD(null, true, mSpec.getEventSpecList(vertex), mSpec.getAllVariables(), vertex instanceof Transition, vertex instanceof Place);
 
                                 // Remove event specs that were mapped to this transition
                                 // @todo Probably should edit events instead of clearing and adding
@@ -951,7 +951,7 @@ public class TaskModelEditor extends JPanel {
                                 }
 
                                 for (ReflectedEventSpecification eventSpec : eventDiag.selectedEventSpecs) {
-                                    SelectMarkupD markupDiag = new SelectMarkupD(null, true, eventSpec.getMarkupSpecs());
+                                    SelectMarkupD markupDiag = new SelectMarkupD(null, true, eventSpec.getMarkupSpecs(), mSpec.getAllVariables());
                                     markupDiag.setVisible(true);
 //                                    // This part won't run until the Frame closes
                                     eventSpec.setMarkupSpecs(markupDiag.getSelectedMarkupSpecs());

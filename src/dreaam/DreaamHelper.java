@@ -6,7 +6,7 @@ import java.util.ArrayList;
  *
  * @author nbb
  */
-public class Helper {
+public class DreaamHelper {
 
     public static String getUniqueName(String name, ArrayList<String> existingNames) {
         boolean invalidName = existingNames.contains(name);

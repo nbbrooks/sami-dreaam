@@ -34,12 +34,14 @@ public class SelectMarkupD extends javax.swing.JDialog {
     private Hashtable<ToolTipTreeNode, ReflectedMarkupSpecification> nodeMapping = new Hashtable<ToolTipTreeNode, ReflectedMarkupSpecification>();
     // This contains the events that are selected for caller class to pull out
     ArrayList<ReflectedMarkupSpecification> existingMarkupSpecs;
+    ArrayList<String> missionVariables;
 
-    public SelectMarkupD(java.awt.Frame parent, boolean modal, ArrayList<ReflectedMarkupSpecification> existingMarkupSpecs) {
+    public SelectMarkupD(java.awt.Frame parent, boolean modal, ArrayList<ReflectedMarkupSpecification> existingMarkupSpecs, ArrayList<String> missionVariables) {
         super(parent, modal);
         initComponents();
         setTitle("SelectMarkupD");
         this.existingMarkupSpecs = existingMarkupSpecs;
+        this.missionVariables = missionVariables;
 
         eventT.setCellRenderer(renderer);
         eventT.setCellEditor(new CheckBoxNodeEditor(eventT));
@@ -226,7 +228,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
     }
 
     public void getDefinitionsForMarkup(ReflectedMarkupSpecification markupSpec) {
-        ReflectedMarkupD diag = new ReflectedMarkupD(markupSpec, null, true);
+        ReflectedMarkupD diag = new ReflectedMarkupD(markupSpec, missionVariables, null, true);
         diag.setVisible(true);
     }//GEN-LAST:event_okBActionPerformed
 
@@ -418,7 +420,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                SelectMarkupD dialog = new SelectMarkupD(new javax.swing.JFrame(), true, null);
+                SelectMarkupD dialog = new SelectMarkupD(new javax.swing.JFrame(), true, null, new ArrayList<String>());
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         System.exit(0);
