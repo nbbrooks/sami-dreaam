@@ -12,6 +12,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -20,17 +24,22 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javax.swing.AbstractAction;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.tree.*;
 import sami.config.DomainConfigManager;
-import sami.gui.GuiConfig;
+import sami.engine.Engine;
+import sami.environment.EnvironmentProperties;
 import sami.mission.MissionPlanSpecification;
 import sami.mission.RequirementSpecification;
 import sami.mission.Vertex;
 import sami.mission.Vertex.FunctionMode;
+import static sami.ui.MissionMonitor.LAST_EPF_FILE;
+import static sami.ui.MissionMonitor.LAST_EPF_FOLDER;
 
 /**
  *
@@ -302,6 +311,15 @@ public class DREAAM extends javax.swing.JFrame {
         } catch (AccessControlException e) {
             LOGGER.severe("Failed to save preferences");
         }
+        // Try to load the last used EPF file
+        try {
+            String lastEpfPath = p.get(LAST_EPF_FILE, null);
+            if (lastEpfPath != null) {
+                loadEpf(new File(lastEpfPath));
+            }
+        } catch (AccessControlException e) {
+            LOGGER.severe("Failed to load last used EPF");
+        }
     }
 
     /**
@@ -320,10 +338,11 @@ public class DREAAM extends javax.swing.JFrame {
         mainP = new javax.swing.JPanel();
         jMenuBar1 = new javax.swing.JMenuBar();
         fileM = new javax.swing.JMenu();
-        newM = new javax.swing.JMenuItem();
-        openM = new javax.swing.JMenuItem();
-        saveM = new javax.swing.JMenuItem();
-        saveAsM = new javax.swing.JMenuItem();
+        newDrmM = new javax.swing.JMenuItem();
+        openDrmM = new javax.swing.JMenuItem();
+        saveDrmM = new javax.swing.JMenuItem();
+        saveDrmAsM = new javax.swing.JMenuItem();
+        loadEpfM = new javax.swing.JMenuItem();
         editM = new javax.swing.JMenu();
         requirementsM = new javax.swing.JMenu();
         editReqsM = new javax.swing.JMenuItem();
@@ -339,7 +358,7 @@ public class DREAAM extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        sideP.setBackground(GuiConfig.BACKGROUND_COLOR);
+        sideP.setBackground(sami.gui.GuiConfig.BACKGROUND_COLOR);
 
         javax.swing.tree.DefaultMutableTreeNode treeNode1 = new javax.swing.tree.DefaultMutableTreeNode("root");
         javax.swing.tree.DefaultMutableTreeNode treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("Plays");
@@ -351,7 +370,7 @@ public class DREAAM extends javax.swing.JFrame {
         treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("Detected errors");
         treeNode1.add(treeNode2);
         componentT.setModel(new javax.swing.tree.DefaultTreeModel(treeNode1));
-        componentT.setBackground(GuiConfig.BACKGROUND_COLOR);
+        componentT.setBackground(sami.gui.GuiConfig.BACKGROUND_COLOR);
         componentT.setRootVisible(false);
         jScrollPane1.setViewportView(componentT);
 
@@ -368,7 +387,7 @@ public class DREAAM extends javax.swing.JFrame {
 
         jSplitPane1.setLeftComponent(sideP);
 
-        mainP.setBackground(GuiConfig.BACKGROUND_COLOR);
+        mainP.setBackground(sami.gui.GuiConfig.BACKGROUND_COLOR);
 
         org.jdesktop.layout.GroupLayout mainPLayout = new org.jdesktop.layout.GroupLayout(mainP);
         mainP.setLayout(mainPLayout);
@@ -385,40 +404,48 @@ public class DREAAM extends javax.swing.JFrame {
 
         fileM.setText("File");
 
-        newM.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.META_MASK));
-        newM.setText("New");
-        newM.addActionListener(new java.awt.event.ActionListener() {
+        newDrmM.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.META_MASK));
+        newDrmM.setText("New DRM");
+        newDrmM.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                newMActionPerformed(evt);
+                newDrmMActionPerformed(evt);
             }
         });
-        fileM.add(newM);
+        fileM.add(newDrmM);
 
-        openM.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.META_MASK));
-        openM.setText("Open");
-        openM.addActionListener(new java.awt.event.ActionListener() {
+        openDrmM.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.META_MASK));
+        openDrmM.setText("Open DRM");
+        openDrmM.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                openMActionPerformed(evt);
+                openDrmMActionPerformed(evt);
             }
         });
-        fileM.add(openM);
+        fileM.add(openDrmM);
 
-        saveM.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.META_MASK));
-        saveM.setText("Save");
-        saveM.addActionListener(new java.awt.event.ActionListener() {
+        saveDrmM.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.META_MASK));
+        saveDrmM.setText("Save DRM");
+        saveDrmM.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                saveMActionPerformed(evt);
+                saveDrmMActionPerformed(evt);
             }
         });
-        fileM.add(saveM);
+        fileM.add(saveDrmM);
 
-        saveAsM.setText("Save as ...");
-        saveAsM.addActionListener(new java.awt.event.ActionListener() {
+        saveDrmAsM.setText("Save DRM as ...");
+        saveDrmAsM.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                saveAsMActionPerformed(evt);
+                saveDrmAsMActionPerformed(evt);
             }
         });
-        fileM.add(saveAsM);
+        fileM.add(saveDrmAsM);
+
+        loadEpfM.setText("Load EPF");
+        loadEpfM.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                loadEpfActionPerformed(evt);
+            }
+        });
+        fileM.add(loadEpfM);
 
         jMenuBar1.add(fileM);
 
@@ -551,11 +578,11 @@ public class DREAAM extends javax.swing.JFrame {
         return nodes.isEmpty() ? null : new TreePath(nodes.toArray());
     }
 
-    private void openMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMActionPerformed
+    private void openDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openDrmMActionPerformed
         if (mediator.open()) {
             _open();
         }
-    }//GEN-LAST:event_openMActionPerformed
+    }//GEN-LAST:event_openDrmMActionPerformed
 
     private void _open() {
         // Clear out stuff from previous DRM
@@ -589,26 +616,26 @@ public class DREAAM extends javax.swing.JFrame {
         setTitle(Preferences.userRoot().get(LAST_DRM_FILE, null));
     }
 
-    private void saveMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveMActionPerformed
+    private void saveDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmMActionPerformed
         taskModelEditor.writeModel();
         mediator.getProjectSpec().addMissionPlan(taskModelEditor.getModel());
         mediator.save();
 
-    }//GEN-LAST:event_saveMActionPerformed
+    }//GEN-LAST:event_saveDrmMActionPerformed
 
-    private void saveAsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveAsMActionPerformed
+    private void saveDrmAsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmAsMActionPerformed
         taskModelEditor.writeModel();
         mediator.getProjectSpec().addMissionPlan(taskModelEditor.getModel());
         mediator.saveAs();
-    }//GEN-LAST:event_saveAsMActionPerformed
+    }//GEN-LAST:event_saveDrmAsMActionPerformed
 
-    private void newMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newMActionPerformed
+    private void newDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newDrmMActionPerformed
         playsRoot.removeAllChildren();
         errorsRoot.removeAllChildren();
 
         mediator.newSpec();
         _open();
-    }//GEN-LAST:event_newMActionPerformed
+    }//GEN-LAST:event_newDrmMActionPerformed
 
     private void editReqsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editReqsMActionPerformed
 //        Enumeration e = requirementsRoot.breadthFirstEnumeration();
@@ -693,6 +720,58 @@ public class DREAAM extends javax.swing.JFrame {
     private void recoveryModeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_recoveryModeActionPerformed
         taskModelEditor.setMode(FunctionMode.Recovery);
     }//GEN-LAST:event_recoveryModeActionPerformed
+
+    private void loadEpfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadEpfActionPerformed
+        File environmentLocation = null;
+
+        if (environmentLocation == null) {
+            Preferences p = Preferences.userRoot();
+            String lastEpfFolder = p.get(LAST_EPF_FOLDER, "");
+            JFileChooser chooser = new JFileChooser(lastEpfFolder);
+            FileNameExtensionFilter filter = new FileNameExtensionFilter("EPF specification files", "epf");
+            chooser.setFileFilter(filter);
+            int ret = chooser.showOpenDialog(null);
+            if (ret == JFileChooser.APPROVE_OPTION) {
+                environmentLocation = chooser.getSelectedFile();
+            }
+        }
+        loadEpf(environmentLocation);
+    }//GEN-LAST:event_loadEpfActionPerformed
+
+    public void loadEpf(File epfFile) {
+        if (epfFile == null) {
+            return;
+        }
+        EnvironmentProperties environmentProperties = null;
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(epfFile));
+            environmentProperties = (EnvironmentProperties) ois.readObject();
+
+            LOGGER.info("Reading environment properties at [" + epfFile + "]");
+
+            if (environmentProperties == null) {
+                LOGGER.log(Level.WARNING, "Failed to load environment properties at [" + epfFile + "]");
+                JOptionPane.showMessageDialog(null, "Environment properties failed load");
+            } else {
+                Preferences p = Preferences.userRoot();
+                try {
+                    p.put(LAST_EPF_FILE, epfFile.getAbsolutePath());
+                    p.put(LAST_EPF_FOLDER, epfFile.getParent());
+                } catch (AccessControlException e) {
+                    LOGGER.severe("Failed to save preferences");
+                }
+
+                Engine.getInstance().setEnvironmentProperties(environmentProperties);
+            }
+
+        } catch (ClassNotFoundException ex) {
+            LOGGER.severe("Class not found exception in EPF load");
+        } catch (FileNotFoundException ex) {
+            LOGGER.severe("EPF File not found");
+        } catch (IOException ex) {
+            LOGGER.severe("IO Exception on EPF load");
+        }
+    }
 
     public void nodeSelected(DefaultMutableTreeNode node) {
         // DefaultMutableTreeNode node = (DefaultMutableTreeNode) componentT.getLastSelectedPathComponent();
@@ -781,16 +860,17 @@ public class DREAAM extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSplitPane jSplitPane1;
+    private javax.swing.JMenuItem loadEpfM;
     private javax.swing.JPanel mainP;
     private javax.swing.JMenu modeMenu;
-    private javax.swing.JMenuItem newM;
+    private javax.swing.JMenuItem newDrmM;
     private javax.swing.JMenuItem nominalMode;
-    private javax.swing.JMenuItem openM;
+    private javax.swing.JMenuItem openDrmM;
     private javax.swing.JMenuItem recoveryMode;
     private javax.swing.JMenu requirementsM;
     private javax.swing.JMenuItem runAgentsM;
-    private javax.swing.JMenuItem saveAsM;
-    private javax.swing.JMenuItem saveM;
+    private javax.swing.JMenuItem saveDrmAsM;
+    private javax.swing.JMenuItem saveDrmM;
     private javax.swing.JPanel sideP;
     private javax.swing.JMenuItem specGUIM;
     // End of variables declaration//GEN-END:variables
