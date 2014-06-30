@@ -17,7 +17,7 @@ public class RequirementChecker extends CheckerAgent {
     @Override
     public ArrayList<AgentMessage> getMessages() {
         ArrayList<AgentMessage> msgs = new ArrayList<AgentMessage>();
-        ArrayList<RequirementSpecification> reqs = (new Mediator()).getReqs();
+        ArrayList<RequirementSpecification> reqs = (new Mediator()).getProjectSpec().getReqs();
         if (reqs != null) {
             for (RequirementSpecification requirementSpecification : reqs) {
                 if (!requirementSpecification.isFilled()) {

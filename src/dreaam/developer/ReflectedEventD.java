@@ -29,6 +29,7 @@ import javax.swing.SwingConstants;
 import sami.event.Event;
 import sami.event.ReflectionHelper;
 import sami.markup.Markup;
+import sami.mission.MissionPlanSpecification;
 import sami.uilanguage.MarkupComponent;
 
 /**
@@ -68,16 +69,17 @@ public class ReflectedEventD extends javax.swing.JDialog {
     // Text field to provide the variable name to write the run-time field's value to (input events only)
     private final HashMap<Field, JTextField> fieldToVariableTF;
     private final ReflectedEventSpecification eventSpec;
-    private final ArrayList<String> missionVariables;
+    private final MissionPlanSpecification mSpec;
     private final VariableSelectedListener variableSelectedListener = new VariableSelectedListener();
+    private final Mediator mediator = new Mediator();
 
     /**
      * Creates new form ReflectedEventD
      */
-    public ReflectedEventD(ReflectedEventSpecification eventSpec, ArrayList<String> missionVariables, java.awt.Frame parent, boolean modal) {
+    public ReflectedEventD(java.awt.Frame parent, boolean modal, ReflectedEventSpecification eventSpec, MissionPlanSpecification mSpec) {
         super(parent, modal);
         this.eventSpec = eventSpec;
-        this.missionVariables = missionVariables;
+        this.mSpec = mSpec;
         try {
             eventClass = Class.forName(eventSpec.getClassName());
             if (InputEvent.class.isAssignableFrom(eventClass)) {
@@ -216,7 +218,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected void addVariableComboBox(Field field, HashMap<String, String> fieldNameToReadVariable, JPanel panel, GridBagConstraints constraints) {
-        ArrayList<String> existingVariables = (ArrayList< String>) missionVariables.clone();
+        ArrayList<String> existingVariables = mediator.getProjectSpec().getVariables(field, mSpec);
         existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 

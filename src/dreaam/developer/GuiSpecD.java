@@ -120,7 +120,7 @@ public class GuiSpecD extends javax.swing.JDialog {
             }
         }
         
-        (new Mediator()).setGUI(elements);
+        (new Mediator()).getProjectSpec().setGuiElements(elements);
         
     }//GEN-LAST:event_jButton1ActionPerformed
 

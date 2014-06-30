@@ -288,9 +288,6 @@ public class SelectTokenD extends javax.swing.JDialog {
                         } else if (criteriaCombo.getSelectedItem() != MatchCriteria.RelevantToken && inList) {
                             reqP.quantityCB.removeItem(MatchQuantity.All);
                         }
-                    } else {
-                        // Hide specificTaskCB
-                        reqP.specificTaskCB.setVisible(false);
                     }
 
                     panel.revalidate();

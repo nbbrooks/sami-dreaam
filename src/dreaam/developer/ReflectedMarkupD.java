@@ -27,6 +27,7 @@ import sami.event.ReflectionHelper;
 import sami.markup.Markup;
 import sami.markup.MarkupOption;
 import sami.markup.ReflectedMarkupSpecification;
+import sami.mission.MissionPlanSpecification;
 import sami.uilanguage.MarkupComponent;
 
 /**
@@ -43,30 +44,30 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
     private ScrollPane scrollPane;
     private JPanel paramsPanel;
     private JButton okButton;
-    HashMap<String, JPanel> enumFieldNameToPanel;
-    HashMap<String, JComboBox> enumFieldNameToCombo;
-    HashMap<String, HashMap<String, JPanel>> enumToConstantToPanel;
-    HashMap<String, HashMap<String, Class>> enumToConstantToClass;
-    HashMap<String, HashMap<String, HashMap<Field, MarkupComponent>>> enumToConstantToFieldToComp;
-    HashMap<String, HashMap<String, HashMap<Field, JComboBox>>> enumToConstantToFieldToCombo;
-    HashMap<String, HashMap<String, HashMap<Field, Object>>> enumToConstantToFieldToDefinition;
+    private HashMap<String, JPanel> enumFieldNameToPanel;
+    private HashMap<String, JComboBox> enumFieldNameToCombo;
+    private HashMap<String, HashMap<String, JPanel>> enumToConstantToPanel;
+    private HashMap<String, HashMap<String, Class>> enumToConstantToClass;
+    private HashMap<String, HashMap<String, HashMap<Field, MarkupComponent>>> enumToConstantToFieldToComp;
+    private HashMap<String, HashMap<String, HashMap<Field, JComboBox>>> enumToConstantToFieldToCombo;
+    private HashMap<String, HashMap<String, HashMap<Field, Object>>> enumToConstantToFieldToDefinition;
     private final ReflectedMarkupSpecification markupSpec;
-    private final ArrayList<String> missionVariables;
+    private final MissionPlanSpecification mSpec;
     public static final int RECURSION_DEPTH = 2;
     // Serializable variable definition storage using HashMaps and Strings to represent object
-    HashMap<String, Object> enumFieldNameToDefinition = new HashMap<String, Object>();
-    HashMap<String, HashMap<String, Object>> optionFieldNameToDefinition = new HashMap<String, HashMap<String, Object>>();
-    Class markupClass = null;
-    Markup markupInstance = null;
-    public HashMap<String, Object> fieldNameToDefinition = new HashMap<String, Object>();
+    private HashMap<String, Object> enumFieldNameToDefinition = new HashMap<String, Object>();
+    private HashMap<String, HashMap<String, Object>> optionFieldNameToDefinition = new HashMap<String, HashMap<String, Object>>();
+    private Class markupClass = null;
+    private HashMap<String, Object> fieldNameToDefinition = new HashMap<String, Object>();
+    private final Mediator mediator = new Mediator();
 
     /**
      * Creates new form ReflectedEventD
      */
-    public ReflectedMarkupD(ReflectedMarkupSpecification markupSpec, ArrayList<String> missionVariables, java.awt.Frame parent, boolean modal) {
+    public ReflectedMarkupD(java.awt.Frame parent, boolean modal, ReflectedMarkupSpecification markupSpec, MissionPlanSpecification mSpec) {
         super(parent, modal);
         this.markupSpec = markupSpec;
-        this.missionVariables = missionVariables;
+        this.mSpec = mSpec;
 
         enumFieldNameToPanel = new HashMap<String, JPanel>();
         enumFieldNameToCombo = new HashMap<String, JComboBox>();
@@ -78,13 +79,8 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
 
         try {
             markupClass = Class.forName(markupSpec.getClassName());
-            markupInstance = (Markup) markupClass.newInstance();
         } catch (ClassNotFoundException ex) {
             ex.printStackTrace();
-        } catch (InstantiationException ex) {
-            Logger.getLogger(ReflectedMarkupSpecification.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            Logger.getLogger(ReflectedMarkupSpecification.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         initComponents();
@@ -358,7 +354,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
      * @param option
      */
     protected void addVariableComboBox(String enumName, String enumValueName, Field optionField, JPanel constantPanel, GridBagConstraints constraints, MarkupOption option) {
-        ArrayList<String> existingVariables = (ArrayList<String>) missionVariables.clone();
+        ArrayList<String> existingVariables = mediator.getProjectSpec().getVariables(optionField, mSpec);
         existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 
@@ -536,7 +532,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
 
-                ReflectedMarkupD dialog = new ReflectedMarkupD(new ReflectedMarkupSpecification("sami.markup.Attention"), new ArrayList<String>(), null, true);
+                ReflectedMarkupD dialog = new ReflectedMarkupD(null, true, new ReflectedMarkupSpecification("sami.markup.Attention"), new MissionPlanSpecification("Anon"));
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         System.exit(0);

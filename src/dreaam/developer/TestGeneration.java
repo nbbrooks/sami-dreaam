@@ -26,32 +26,32 @@ public class TestGeneration {
 
         System.out.println("Starting test case generation");
 
-        for(MissionPlanSpecification missionPlanSpecification : mediator.getMissions()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
             Graph<Vertex, Edge> graph = missionPlanSpecification.getGraph();
             // Grab the start place
             Place start = null;
-            for(Vertex v : graph.getVertices()) {
-                if(v instanceof Place && ((Place) v).isStart()) {
+            for (Vertex v : graph.getVertices()) {
+                if (v instanceof Place && ((Place) v).isStart()) {
                     start = (Place) v;
                 }
             }
 
-            if(start != null) {
+            if (start != null) {
                 ArrayList<Node> queue = new ArrayList<Node>();
 
                 Node n = new Node(start);
                 queue.add(n);
 
-                while(!queue.isEmpty()) {
+                while (!queue.isEmpty()) {
                     Node first = queue.remove(0);
                     System.out.println("Expanding: " + first);
                     ArrayList<Node> expansions = first.expand();
 
                     // For each of this node's children, add it to the queue if it has a small number of children
-                    if(expansions != null) {
-                        for(Node node : expansions) {
+                    if (expansions != null) {
+                        for (Node node : expansions) {
 
-                            if(node.places.size() < maxDepth) {
+                            if (node.places.size() < maxDepth) {
                                 queue.add(node);
                             } else {
                                 System.out.println("TestGeneration max depth exceeded");
@@ -70,7 +70,7 @@ public class TestGeneration {
         }
 
         testCases = new ArrayList<TestCase>();
-        for(Node node : cases) {
+        for (Node node : cases) {
             TestCase t = new TestCase(node.events);
             testCases.add(t);
         }
@@ -101,12 +101,12 @@ public class TestGeneration {
 
         public ArrayList<Node> expand() {
             Place last = places.get(places.size() - 1);
-            if(last.getOutTransitions() != null && last.getOutTransitions().size() > 0) {
+            if (last.getOutTransitions() != null && last.getOutTransitions().size() > 0) {
                 // For each transition from this node, add its resulting place(s) 
                 //  and event(s) to a copy of this node's lists
                 ArrayList<Node> ret = new ArrayList<Node>();
-                for(Transition transition : last.getOutTransitions()) {
-                    for(Place outPlace : transition.getOutPlaces()) {
+                for (Transition transition : last.getOutTransitions()) {
+                    for (Place outPlace : transition.getOutPlaces()) {
                         ArrayList<Place> ps = (ArrayList<Place>) places.clone();
                         ArrayList<Event> es = (ArrayList<Event>) events.clone();
                         ps.add(outPlace);

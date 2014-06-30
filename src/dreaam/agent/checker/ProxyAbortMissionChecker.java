@@ -22,7 +22,7 @@ public class ProxyAbortMissionChecker extends CheckerAgent {
         boolean hasProxyAbortMissionTransition;
         ArrayList<AgentMessage> msgs = new ArrayList<AgentMessage>();
         // Check that each place has a transition with a ProxyAbortMissionReceived trigger
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getMissions()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
             for (Vertex v : missionPlanSpecification.getGraph().getVertices()) {
                 if (v instanceof Place && !((Place) v).isEnd()) {
                     hasProxyAbortMissionTransition = false;

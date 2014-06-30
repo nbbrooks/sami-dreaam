@@ -418,6 +418,10 @@ public class TaskModelEditor extends JPanel {
         }
     }
 
+    public void resetView() {
+        vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
+    }
+
     /**
      *
      * @param vertex
@@ -917,7 +921,7 @@ public class TaskModelEditor extends JPanel {
                                 // Write things out to make sure that we have variables.
                                 writeModel();
 //                                System.out.println("b spec list: " + mSpec.getEventSpecList(vertex));
-                                SelectEventD diag = new SelectEventD(null, true, mSpec.getEventSpecList(vertex), mSpec.getAllVariables(), vertex instanceof Transition, vertex instanceof Place);
+                                SelectEventD diag = new SelectEventD(null, true, mSpec.getEventSpecList(vertex), mSpec, vertex instanceof Transition, vertex instanceof Place);
 
                                 // Remove event specs that were mapped to this transition
                                 // @todo Probably should edit events instead of clearing and adding
@@ -951,7 +955,7 @@ public class TaskModelEditor extends JPanel {
                                 }
 
                                 for (ReflectedEventSpecification eventSpec : eventDiag.selectedEventSpecs) {
-                                    SelectMarkupD markupDiag = new SelectMarkupD(null, true, eventSpec.getMarkupSpecs(), mSpec.getAllVariables());
+                                    SelectMarkupD markupDiag = new SelectMarkupD(null, true, eventSpec.getMarkupSpecs(), mSpec);
                                     markupDiag.setVisible(true);
 //                                    // This part won't run until the Frame closes
                                     eventSpec.setMarkupSpecs(markupDiag.getSelectedMarkupSpecs());
@@ -960,47 +964,25 @@ public class TaskModelEditor extends JPanel {
                                 }
                             }
                         });
-                        popup.add(new AbstractAction("Delete") {
-                            public void actionPerformed(ActionEvent e) {
-                                boolean reallyRemove = true;
-                                // @todo Consider linking requirements to objects to make the deletion process cleaner
-                                // @todo GetFilledBy only returns one object, if multiple fulfill, not listed
-                                // @todo Cancel/No not handled smoothly when multiple requirements filled by this.
-                                if (mediator.getReqs() != null) {
-                                    for (RequirementSpecification requirementSpecification : mediator.getReqs()) {
-                                        if (requirementSpecification.getFilledBy() == vertex) {
-                                            int ret = JOptionPane.showConfirmDialog(null, "Requirement: " + requirementSpecification + " is filled by this object, really delete?");
-                                            if (ret == JOptionPane.NO_OPTION || ret == JOptionPane.CANCEL_OPTION) {
-                                                reallyRemove = false;
-                                            } else {
-                                                requirementSpecification.setFilled(false);
-                                                requirementSpecification.setFilledBy(null);
-                                            }
-                                        } else {
-                                            System.out.println("Requirement " + requirementSpecification + " not impacted by " + vertex + " " + requirementSpecification.getFilledBy());
-                                        }
-                                    }
-                                }
-                                if (reallyRemove) {
-                                    if (vertex instanceof Place) {
-                                        removePlace((Place) vertex);
-                                    } else if (vertex instanceof Transition) {
-                                        removeTransition((Transition) vertex);
-                                    }
-                                }
-                            }
-                        });
                         if (vertex instanceof Place) {
                             final Place place = (Place) vertex;
-                            popup.add(new AbstractAction("Add Sub-mission") {
+                            popup.add(new AbstractAction("Edit Sub-missions") {
                                 public void actionPerformed(ActionEvent e) {
-                                    SubMissionD d = new SubMissionD(null, true);
-                                    d.setVisible(true);
-                                    if (d.getSelectedMission() != null) {
-                                        MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) d.getSelectedMission()).getSubmissionInstance(mSpec, d.namePrefix, d.variablePrefix);
-                                        dreaam.addMissionSpec(submissionSpec);
 
-                                        place.setSubMission(submissionSpec);
+                                    SelectSubMissionDNew d = new SelectSubMissionDNew(null, true, mSpec, place.getSubMissions(), place.getSubMissionToTaskMap());
+                                    d.setVisible(true);
+                                    if (d.confirmedExit()) {
+                                        for (MissionPlanSpecification createdSubMMSpec : d.getCreatedSubMissions()) {
+                                            mediator.getProjectSpec().addSubMissionPlan(createdSubMMSpec, mSpec);
+                                        }
+                                        for (MissionPlanSpecification deletedSubMMSpec : d.getDeletedSubMissions()) {
+                                            mediator.getProjectSpec().removeMissionPlan(deletedSubMMSpec);
+                                        }
+                                        place.setSubMissions(d.getSubMissions());
+                                        place.setSubMissionToTaskMap(d.getSubMissionToTaskMap());
+                                        place.updateTag();
+                                        dreaam.refreshMissionTree();
+                                        dreaam.selectNode(mediator.getProjectSpec().getNode(mSpec));
                                     }
                                     vv.repaint();
                                 }
@@ -1047,6 +1029,36 @@ public class TaskModelEditor extends JPanel {
                                 }
                             });
                         }
+                        popup.add(new AbstractAction("Delete") {
+                            public void actionPerformed(ActionEvent e) {
+                                boolean reallyRemove = true;
+                                // @todo Consider linking requirements to objects to make the deletion process cleaner
+                                // @todo GetFilledBy only returns one object, if multiple fulfill, not listed
+                                // @todo Cancel/No not handled smoothly when multiple requirements filled by this.
+                                if (mediator.getProjectSpec().getReqs() != null) {
+                                    for (RequirementSpecification requirementSpecification : mediator.getProjectSpec().getReqs()) {
+                                        if (requirementSpecification.getFilledBy() == vertex) {
+                                            int ret = JOptionPane.showConfirmDialog(null, "Requirement: " + requirementSpecification + " is filled by this object, really delete?");
+                                            if (ret == JOptionPane.NO_OPTION || ret == JOptionPane.CANCEL_OPTION) {
+                                                reallyRemove = false;
+                                            } else {
+                                                requirementSpecification.setFilled(false);
+                                                requirementSpecification.setFilledBy(null);
+                                            }
+                                        } else {
+                                            System.out.println("Requirement " + requirementSpecification + " not impacted by " + vertex + " " + requirementSpecification.getFilledBy());
+                                        }
+                                    }
+                                }
+                                if (reallyRemove) {
+                                    if (vertex instanceof Place) {
+                                        removePlace((Place) vertex);
+                                    } else if (vertex instanceof Transition) {
+                                        removeTransition((Transition) vertex);
+                                    }
+                                }
+                            }
+                        });
                         popup.show(vv, me.getX(), me.getY());
                     } else if (edge != null) {
                         JPopupMenu popup = new JPopupMenu();
@@ -1316,12 +1328,13 @@ public class TaskModelEditor extends JPanel {
 
             spec.updateThisLayout(layout);    // @help Why are we doing this?
 
+            //@todo Add lookup for plan to translation and zoom
+            vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
             vv.repaint();
-//            System.out.println("Size " + layout.getSize());
         } else {
             this.graph = new DirectedSparseGraph<Vertex, Edge>();
-            // this.graph = new SparseMultigraph<Place, Transition>();
             layout.setGraph(this.graph);
+            vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
             vv.repaint();
         }
     }
