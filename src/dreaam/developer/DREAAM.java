@@ -287,7 +287,7 @@ public class DREAAM extends javax.swing.JFrame {
                 if (mediator.open(new File(lastDrmPath))) {
                     // Succeeded loading last used specification
                     loadSuccess = true;
-                    _load();
+                    loadProject();
                 } else {
                     // Failed to load last used specification
                     Object[] options = {"Load", "New"};
@@ -296,7 +296,7 @@ public class DREAAM extends javax.swing.JFrame {
                         // Get a different specification to try and load
                         if (mediator.open()) {
                             loadSuccess = true;
-                            _load();
+                            loadProject();
                         } else {
                             // Couldn't load this one either, create a new specification
                             JOptionPane.showMessageDialog(null, "Could not load plan specification (.DRM), creating a new specification");
@@ -309,7 +309,7 @@ public class DREAAM extends javax.swing.JFrame {
         }
         if (!loadSuccess) {
             // New mission
-            addNewRootMissionSpec();
+            loadNewProject();
         }
 
         // Try to load the last used EPF file
@@ -591,11 +591,11 @@ public class DREAAM extends javax.swing.JFrame {
 
     private void openDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openDrmMActionPerformed
         if (mediator.open()) {
-            _load();
+            loadProject();
         }
     }//GEN-LAST:event_openDrmMActionPerformed
 
-    private void _load() {
+    private void loadProject() {
         // Clear out errors
         errorsRoot.removeAllChildren();
 
@@ -605,7 +605,7 @@ public class DREAAM extends javax.swing.JFrame {
         treeRoot.insert(missionsRoot, 0);
         refreshMissionTree();
 
-        // Load the first mission into the editor
+//        // Load the first mission into the editor
         ArrayList<MissionPlanSpecification> mpSpecs = mediator.getProjectSpec().getRootMissionPlans();
         if (mpSpecs.size() > 0) {
             Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Setting graph", this);
@@ -619,7 +619,18 @@ public class DREAAM extends javax.swing.JFrame {
 
         setTitle(Preferences.userRoot().get(LAST_DRM_FILE, null));
     }
+    private void loadNewProject() {
+        // Clear out errors
+        errorsRoot.removeAllChildren();
 
+        // Load the mission tree
+        treeRoot.remove(0);
+        missionsRoot = mediator.getProjectSpec().getMissionTree();
+        treeRoot.insert(missionsRoot, 0);
+
+        addNewRootMissionSpec();
+    }
+    
     private void saveDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmMActionPerformed
         taskModelEditor.writeModel();
         mediator.save();
@@ -633,12 +644,7 @@ public class DREAAM extends javax.swing.JFrame {
 
     private void newDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newDrmMActionPerformed
         mediator.newSpec();
-
-        // Add a new mission
-        addNewRootMissionSpec();
-
-        _load();
-
+        loadNewProject();
     }//GEN-LAST:event_newDrmMActionPerformed
 
     private void editReqsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editReqsMActionPerformed
