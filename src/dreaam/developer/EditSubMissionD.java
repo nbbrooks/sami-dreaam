@@ -11,6 +11,8 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
@@ -49,7 +51,7 @@ public class EditSubMissionD extends javax.swing.JDialog {
     private TaskMapMethod selectedTaskMapMethod;
     // All fields are valid?
     private boolean valid = false;
-    private TextListener textListener = new TextListener();
+    private ActivityListener activityListener = new ActivityListener();
     // OK button used to exit the dialog?
     private boolean okExit = false;
 
@@ -114,6 +116,7 @@ public class EditSubMissionD extends javax.swing.JDialog {
         rowParGroup1.addComponent(component);
         colParGroupArr[row] = layout.createParallelGroup();
         colParGroupArr[row].addComponent(component);
+        component.setMaximumSize(new Dimension(Integer.MAX_VALUE, component.getPreferredSize().height));
         maxColWidth = Math.max(maxColWidth, (int) component.getPreferredSize().getWidth() + BUTTON_WIDTH);
         cumulComponentHeight += Math.max((int) component.getPreferredSize().getHeight(), BUTTON_HEIGHT);
         row++;
@@ -148,25 +151,24 @@ public class EditSubMissionD extends javax.swing.JDialog {
                 updateTaskMapping();
             }
         });
-        planCB.setMaximumSize(new Dimension(Integer.MAX_VALUE, planCB.getPreferredSize().height));
         addComponent(planLabel);
         addComponent(planCB);
 
         // Text field for specifying name prefix
         namePrefixL = new JLabel("Text prefix for sub mission instance's name?");
         namePrefixTF = new JTextField("");
-        namePrefixTF.addKeyListener(textListener);
-        namePrefixTF.addFocusListener(textListener);
-        namePrefixTF.setMaximumSize(new Dimension(Integer.MAX_VALUE, namePrefixTF.getPreferredSize().height));
+        namePrefixTF.addKeyListener(activityListener);
+        namePrefixTF.addFocusListener(activityListener);
+        namePrefixTF.addMouseListener(activityListener);
         addComponent(namePrefixL);
         addComponent(namePrefixTF);
 
         // Text field for specifying variable prefix
         variablePrefixL = new JLabel("Text prefix for sub mission instance's variables?");
         variablePrefixTF = new JTextField("");
-        variablePrefixTF.addKeyListener(textListener);
-        variablePrefixTF.addFocusListener(textListener);
-        variablePrefixTF.setMaximumSize(new Dimension(Integer.MAX_VALUE, variablePrefixTF.getPreferredSize().height));
+        variablePrefixTF.addKeyListener(activityListener);
+        variablePrefixTF.addFocusListener(activityListener);
+        variablePrefixTF.addMouseListener(activityListener);
         addComponent(variablePrefixL);
         addComponent(variablePrefixTF);
 
@@ -174,7 +176,6 @@ public class EditSubMissionD extends javax.swing.JDialog {
         allocationMethodL = new JLabel("Task mapping method?");
         taskMapMethodCB = new JComboBox(TaskMapMethod.values());
         selectedTaskMapMethod = (TaskMapMethod) taskMapMethodCB.getSelectedItem();
-        taskMapMethodCB.setMaximumSize(new Dimension(Integer.MAX_VALUE, taskMapMethodCB.getPreferredSize().height));
         taskMapMethodCB.addActionListener(new ActionListener() {
 
             @Override
@@ -192,7 +193,6 @@ public class EditSubMissionD extends javax.swing.JDialog {
         // Combo boxes for mapping task tokens to sub mission (if appropriate)
         taskMappingL = new JLabel();
         taskMappingP = new JPanel(new BorderLayout());
-        taskMappingP.setMaximumSize(new Dimension(Integer.MAX_VALUE, taskMappingP.getPreferredSize().height));
         addComponent(taskMappingP);
 
         // Done
@@ -311,7 +311,7 @@ public class EditSubMissionD extends javax.swing.JDialog {
         return okExit;
     }
 
-    class TextListener implements KeyListener, FocusListener {
+    class ActivityListener implements KeyListener, FocusListener, MouseListener {
 
         @Override
         public void keyTyped(KeyEvent ke) {
@@ -333,6 +333,28 @@ public class EditSubMissionD extends javax.swing.JDialog {
 
         @Override
         public void focusLost(FocusEvent fe) {
+            checkValidity();
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent me) {
+        }
+
+        @Override
+        public void mousePressed(MouseEvent me) {
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent me) {
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent me) {
+            checkValidity();
+        }
+
+        @Override
+        public void mouseExited(MouseEvent me) {
             checkValidity();
         }
     }

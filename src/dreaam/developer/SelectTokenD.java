@@ -78,7 +78,8 @@ public class SelectTokenD extends javax.swing.JDialog {
         if (selectedTokenReqs != null) {
             for (TokenRequirement selTokenReq : selectedTokenReqs) {
                 // Don't add in item listener yet or we'll get a bunch of extra empty boxes 
-                addReqPanel(selTokenReq);
+                ReqSelPanel reqPanel = addReqPanel(selTokenReq);
+//                matchCriteriaListener.refreshCBOptions(reqPanel);
             }
         }
 
@@ -90,23 +91,24 @@ public class SelectTokenD extends javax.swing.JDialog {
         setVisible(false);
     }
 
-    public void addReqPanel() {
-        addReqPanel(null, panel.getComponentCount() - 1);
+    public ReqSelPanel addReqPanel() {
+        return addReqPanel(null, panel.getComponentCount() - 1);
     }
 
-    public void addReqPanel(int index) {
-        addReqPanel(null, index);
+    public ReqSelPanel addReqPanel(int index) {
+        return addReqPanel(null, index);
     }
 
-    public void addReqPanel(TokenRequirement value) {
-        addReqPanel(value, panel.getComponentCount() - 1);
+    public ReqSelPanel addReqPanel(TokenRequirement value) {
+        return addReqPanel(value, panel.getComponentCount() - 1);
     }
 
-    public void addReqPanel(TokenRequirement value, int index) {
+    public ReqSelPanel addReqPanel(TokenRequirement value, int index) {
         ReqSelPanel reqPanel = new ReqSelPanel(edgeType, value);
         reqPanels.add(reqPanel);
         layout.setRows(layout.getRows() + 1);
         panel.add(reqPanel, index);
+        return reqPanel;
     }
 
     public ArrayList<TokenRequirement> getSelectedTokenReqs() {
@@ -251,50 +253,93 @@ public class SelectTokenD extends javax.swing.JDialog {
             if (evt.getSource() instanceof JComboBox
                     && ((JComboBox) evt.getSource()).getParent() instanceof ReqSelPanel) {
                 ReqSelPanel reqP = (ReqSelPanel) ((JComponent) evt.getSource()).getParent();
-                JComboBox criteriaCombo = (JComboBox) evt.getSource();
                 if (evt.getStateChange() == ItemEvent.SELECTED) {
-                    // Item was just selected
-                    if (criteriaCombo.getSelectedItem() == MatchCriteria.None
-                            || criteriaCombo.getSelectedItem() == "") {
-                        reqP.quantityCB.setVisible(false);
-                        if (reqP.actionCB != null) {
-                            reqP.actionCB.setVisible(false);
-                        }
-                    } else {
-                        reqP.quantityCB.setVisible(true);
-                        if (reqP.actionCB != null) {
-                            reqP.actionCB.setVisible(true);
-                        }
-                    }
-                    if (criteriaCombo.getSelectedItem() == MatchCriteria.SpecificTask) {
-                        // Show specificTaskCB
-                        reqP.specificTaskCB.setVisible(true);
-                    } else {
-                        // Hide specificTaskCB
-                        reqP.specificTaskCB.setVisible(false);
-                    }
-
-                    // For incoming events, allow "All" MatchQuantity to be selected for "RelevantToken" MatchCriteria
-                    if (edgeType == edgeType.IncomingNominal || edgeType == EdgeType.IncomingRecovery) {
-                        boolean inList = false;
-                        for (int i = 0; i < reqP.quantityCB.getItemCount(); i++) {
-                            if (reqP.quantityCB.getItemAt(i) == MatchQuantity.All) {
-                                inList = true;
-                                break;
-                            }
-                        }
-                        if (criteriaCombo.getSelectedItem() == MatchCriteria.RelevantToken && !inList) {
-                            reqP.quantityCB.addItem(MatchQuantity.All);
-                        } else if (criteriaCombo.getSelectedItem() != MatchCriteria.RelevantToken && inList) {
-                            reqP.quantityCB.removeItem(MatchQuantity.All);
-                        }
-                    }
-
-                    panel.revalidate();
+                    refreshCBOptions(reqP);
                 }
             } else {
 
             }
+        }
+
+        public void refreshCBOptions(ReqSelPanel reqP) {
+            // actionCB visibility
+            if (reqP.criteriaCB.getSelectedItem() == MatchCriteria.None
+                    || reqP.criteriaCB.getSelectedItem() == "") {
+                reqP.quantityCB.setVisible(false);
+                if (reqP.actionCB != null) {
+                    reqP.actionCB.setVisible(false);
+                }
+            } else {
+                reqP.quantityCB.setVisible(true);
+                if (reqP.actionCB != null) {
+                    reqP.actionCB.setVisible(true);
+                }
+            }
+
+            // specificTaskCB visibility
+            if (reqP.criteriaCB.getSelectedItem() == MatchCriteria.SpecificTask) {
+                // Show specificTaskCB
+                reqP.specificTaskCB.setVisible(true);
+            } else {
+                // Hide specificTaskCB
+                reqP.specificTaskCB.setVisible(false);
+            }
+
+            // criteriaCombo options
+            if (reqP.criteriaCB.getSelectedItem() == MatchCriteria.SubMissionToken) {
+                // Only use "Add" action
+            }
+
+            // quantityCB options
+            if (edgeType == EdgeType.IncomingNominal || edgeType == EdgeType.IncomingRecovery) {
+                if (reqP.criteriaCB.getSelectedItem() == MatchCriteria.RelevantToken) {
+                    // In edge and RT selected
+                    reqP.quantityCB.removeAllItems();
+                    reqP.quantityCB.addItem("");
+                    reqP.quantityCB.addItem(MatchQuantity.None);
+                    reqP.quantityCB.addItem(MatchQuantity.All);
+                    reqP.quantityCB.addItem(MatchQuantity.Number);
+                } else {
+                    // In edge
+                    reqP.quantityCB.removeAllItems();
+                    reqP.quantityCB.addItem("");
+                    reqP.quantityCB.addItem(MatchQuantity.None);
+                    reqP.quantityCB.addItem(MatchQuantity.Number);
+                }
+            } else if (edgeType == EdgeType.OutgoingNominal || edgeType == EdgeType.OutgoingRecovery) {
+                if (reqP.criteriaCB.getSelectedItem() == MatchCriteria.SubMissionToken) {
+                    // Out edge and SMT selected
+                    reqP.quantityCB.removeAllItems();
+                    reqP.quantityCB.addItem("");
+                    reqP.quantityCB.addItem(MatchQuantity.All);
+                } else {
+                    // Out edge
+                    reqP.quantityCB.removeAllItems();
+                    reqP.quantityCB.addItem("");
+                    reqP.quantityCB.addItem(MatchQuantity.All);
+                    reqP.quantityCB.addItem(MatchQuantity.Number);
+                }
+            } else {
+                LOGGER.severe("Case not handled in setting quantityCB options");
+            }
+
+            // actionCB options
+            if (reqP.actionCB != null
+                    && (edgeType == EdgeType.OutgoingNominal || edgeType == EdgeType.OutgoingRecovery)) {
+                if (reqP.criteriaCB.getSelectedItem() == MatchCriteria.SubMissionToken) {
+                    reqP.actionCB.removeAllItems();
+                    reqP.actionCB.addItem("");
+                    reqP.actionCB.addItem(MatchAction.Add);
+                } else {
+                    reqP.actionCB.removeAllItems();
+                    reqP.actionCB.addItem("");
+                    for (MatchAction criteria : MatchAction.values()) {
+                        reqP.actionCB.addItem(criteria);
+                    }
+                }
+            }
+
+            panel.revalidate();
         }
     }
 
@@ -341,8 +386,15 @@ public class SelectTokenD extends javax.swing.JDialog {
             // criteriaCB
             criteriaCB = new JComboBox();
             criteriaCB.insertItemAt(" ", 0);
-            for (MatchCriteria criteria : MatchCriteria.values()) {
-                criteriaCB.addItem(criteria);
+            criteriaCB.addItem(MatchCriteria.AnyProxy);
+            criteriaCB.addItem(MatchCriteria.AnyToken);
+            criteriaCB.addItem(MatchCriteria.AnyTask);
+            criteriaCB.addItem(MatchCriteria.Generic);
+            criteriaCB.addItem(MatchCriteria.None);
+            criteriaCB.addItem(MatchCriteria.RelevantToken);
+            criteriaCB.addItem(MatchCriteria.SpecificTask);
+            if (edgeType == EdgeType.OutgoingNominal || edgeType == EdgeType.OutgoingRecovery) {
+                criteriaCB.addItem(MatchCriteria.SubMissionToken);
             }
             add(criteriaCB);
             // specificTaskCB
@@ -402,6 +454,16 @@ public class SelectTokenD extends javax.swing.JDialog {
                 return;
             }
 
+            // Set the previously selected values
+            setSelectedItems(value);
+            // Update what options the CB should have based on selected values
+            matchCriteriaListener.refreshCBOptions(this);
+            // Re-select the previously selected values (refresh resets)
+            setSelectedItems(value);
+            addListeners();
+        }
+
+        public void setSelectedItems(TokenRequirement value) {
             if (value instanceof OutTokenRequirement
                     && ((OutTokenRequirement) value).getMatchAction() != null) {
                 actionCB.setSelectedItem(((OutTokenRequirement) value).getMatchAction());
@@ -427,8 +489,6 @@ public class SelectTokenD extends javax.swing.JDialog {
                 specificTaskCB.setSelectedItem(value.getTaskName());
                 specificTaskCB.setVisible(true);
             }
-
-            addListeners();
         }
 
         private void addListeners() {

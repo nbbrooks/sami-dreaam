@@ -354,7 +354,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
      * @param option
      */
     protected void addVariableComboBox(String enumName, String enumValueName, Field optionField, JPanel constantPanel, GridBagConstraints constraints, MarkupOption option) {
-        ArrayList<String> existingVariables = mediator.getProjectSpec().getVariables(optionField, mSpec);
+        ArrayList<String> existingVariables = mediator.getProjectSpec().getVariables(optionField);
         existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 
@@ -506,7 +506,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
                         MarkupComponent valueComponent = valueComponentLookup.get(optionField);
                         if (valueComponent != null) {
                             // Store the value from the component
-                            definition = UiComponentGenerator.getInstance().getComponentValue(valueComponent, optionField);
+                            definition = UiComponentGenerator.getInstance().getComponentValue(valueComponent, optionField.getType());
                             optionField.set(option, definition);
                         }
                     }

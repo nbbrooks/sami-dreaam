@@ -18,6 +18,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -969,7 +970,7 @@ public class TaskModelEditor extends JPanel {
                             popup.add(new AbstractAction("Edit Sub-missions") {
                                 public void actionPerformed(ActionEvent e) {
 
-                                    SelectSubMissionDNew d = new SelectSubMissionDNew(null, true, mSpec, place.getSubMissions(), place.getSubMissionToTaskMap());
+                                    SelectSubMissionD d = new SelectSubMissionD(null, true, mSpec, mediator.getProjectSpec(), place.getSubMissions(), place.getSubMissionToTaskMap());
                                     d.setVisible(true);
                                     if (d.confirmedExit()) {
                                         for (MissionPlanSpecification createdSubMMSpec : d.getCreatedSubMissions()) {
@@ -1119,6 +1120,23 @@ public class TaskModelEditor extends JPanel {
                                 graph.addVertex(transition);
                                 layout.setLocation(transition, snapToGrid(graphPoint));
                                 vv.repaint();
+                            }
+                        });
+                        popup.add(new AbstractAction("Edit Global Variables") {
+                            @Override
+                            public void actionPerformed(ActionEvent ae) {
+                                SelectGlobalVariableD variableD = new SelectGlobalVariableD(null, true, mediator.getProjectSpec().getGlobalVariableToValue());
+                                variableD.setVisible(true);
+                                if (variableD.confirmedExit()) {
+                                    ArrayList<String> deletedVariables = variableD.getDeletedVariables();
+                                    for (String variable : deletedVariables) {
+                                        mediator.getProjectSpec().deleteGlobalVariable(variable);
+                                    }
+                                    HashMap<String, Object> createdVariables = variableD.getCreatedVariables();
+                                    for (String variable : createdVariables.keySet()) {
+                                        mediator.getProjectSpec().setGlobalVariableValue(variable, createdVariables.get(variable));
+                                    }
+                                }
                             }
                         });
                         popup.show(vv, me.getX(), me.getY());

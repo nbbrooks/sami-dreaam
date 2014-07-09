@@ -605,7 +605,7 @@ public class DREAAM extends javax.swing.JFrame {
         treeRoot.insert(missionsRoot, 0);
         refreshMissionTree();
 
-//        // Load the first mission into the editor
+        // Load the first mission into the editor
         ArrayList<MissionPlanSpecification> mpSpecs = mediator.getProjectSpec().getRootMissionPlans();
         if (mpSpecs.size() > 0) {
             Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Setting graph", this);
@@ -619,6 +619,7 @@ public class DREAAM extends javax.swing.JFrame {
 
         setTitle(Preferences.userRoot().get(LAST_DRM_FILE, null));
     }
+
     private void loadNewProject() {
         // Clear out errors
         errorsRoot.removeAllChildren();
@@ -630,7 +631,7 @@ public class DREAAM extends javax.swing.JFrame {
 
         addNewRootMissionSpec();
     }
-    
+
     private void saveDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmMActionPerformed
         taskModelEditor.writeModel();
         mediator.save();

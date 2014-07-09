@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
 import javax.swing.*;
-import sami.mission.MissionPlanSpecification;
-import sami.mission.TaskSpecification;
 
 /**
  * Dialog window that lets you select InputEvents and OutputEvents for SAMI
@@ -18,14 +16,10 @@ import sami.mission.TaskSpecification;
  *
  * @author pscerri
  */
-public class SelectSubMissionDNew extends javax.swing.JDialog {
+public class SelectGlobalVariableD extends javax.swing.JDialog {
 
-    private static final Logger LOGGER = Logger.getLogger(SelectSubMissionDNew.class.getName());
-    private MissionPlanSpecification parentMSpec;
-    private ArrayList<MissionPlanSpecification> subMSpecs;
-    private ArrayList<MissionPlanSpecification> createdSubMSpecs = new ArrayList<MissionPlanSpecification>();
-    private ArrayList<MissionPlanSpecification> deletedSubMSpecs = new ArrayList<MissionPlanSpecification>();
-    private HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>> mSpecTaskMap;
+    private static final Logger LOGGER = Logger.getLogger(SelectGlobalVariableD.class.getName());
+    private HashMap<String, Object> variables, existingVariables;
 
     private javax.swing.JButton newB, okB, cancelB;
 
@@ -45,21 +39,18 @@ public class SelectSubMissionDNew extends javax.swing.JDialog {
     private final static int BUTTON_HEIGHT = 50;
 
     private JScrollPane mSpecSP;
-    private JPanel existingMSpecP;
+    private JPanel existingVariableP;
 
-    public SelectSubMissionDNew(java.awt.Frame parent, boolean modal, MissionPlanSpecification parentMSpec, ArrayList<MissionPlanSpecification> existingSubMSpecs, HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>> existingMSpecTaskMap) {
+    public SelectGlobalVariableD(java.awt.Frame parent, boolean modal, HashMap<String, Object> existingVariables) {
         super(parent, modal);
-        this.parentMSpec = parentMSpec;
-        this.subMSpecs = (ArrayList<MissionPlanSpecification>) existingSubMSpecs.clone();
-        if (subMSpecs == null) {
-            subMSpecs = new ArrayList<MissionPlanSpecification>();
-        }
-        this.mSpecTaskMap = (HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>) existingMSpecTaskMap.clone();
-        if (mSpecTaskMap == null) {
-            mSpecTaskMap = new HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>();
+        this.existingVariables = existingVariables;
+        this.variables = (HashMap<String, Object>) existingVariables.clone();
+        if (existingVariables == null) {
+            existingVariables = new HashMap<String, Object>();
+            variables = new HashMap<String, Object>();
         }
         initComponents();
-        setTitle("SelectSubMissionDNew");
+        setTitle("SelectGlobalVariableD");
     }
 
     private void addComponent(JComponent component) {
@@ -84,16 +75,16 @@ public class SelectSubMissionDNew extends javax.swing.JDialog {
         maxColWidth = BUTTON_WIDTH;
         cumulComponentHeight = 0;
 
-        existingMSpecP = new JPanel();
-        existingMSpecP.setLayout(new BoxLayout(existingMSpecP, BoxLayout.Y_AXIS));
-        for (MissionPlanSpecification mSpec : subMSpecs) {
-            SubMissionElementP mSpecP = new SubMissionElementP(mSpec);
-            existingMSpecP.add(mSpecP);
+        existingVariableP = new JPanel();
+        existingVariableP.setLayout(new BoxLayout(existingVariableP, BoxLayout.Y_AXIS));
+        for (String variable : variables.keySet()) {
+            VariableP mSpecP = new VariableP(variable);
+            existingVariableP.add(mSpecP);
         }
 
         mSpecSP = new JScrollPane();
         mSpecSP.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        mSpecSP.setViewportView(existingMSpecP);
+        mSpecSP.setViewportView(existingVariableP);
         addComponent(mSpecSP);
 
         newB = new javax.swing.JButton();
@@ -151,21 +142,12 @@ public class SelectSubMissionDNew extends javax.swing.JDialog {
     }
 
     private void newBActionPerformed(java.awt.event.ActionEvent evt) {
-        EditSubMissionD subMissionD = new EditSubMissionD(null, true, parentMSpec);
-        subMissionD.setVisible(true);
+        EditGlobalVariableD variableD = new EditGlobalVariableD(null, true);
+        variableD.setVisible(true);
 
-        if (subMissionD.confirmedExit()) {
-            if (subMissionD.getTaskMapMethod() == EditSubMissionD.TaskMapMethod.Event) {
-                MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) subMissionD.getSelectedMission()).getSubmissionInstance(subMissionD.getSelectedMission(), subMissionD.getNamePrefix(), subMissionD.getVariablePrefix());
-                subMSpecs.add(submissionSpec);
-                createdSubMSpecs.add(submissionSpec);
-            } else if (subMissionD.getTaskMapMethod() == EditSubMissionD.TaskMapMethod.Manual) {
-                MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) subMissionD.getSelectedMission()).getSubmissionInstance(subMissionD.getSelectedMission(), subMissionD.getNamePrefix(), subMissionD.getVariablePrefix());
-                subMSpecs.add(submissionSpec);
-                mSpecTaskMap.put(submissionSpec, subMissionD.getTaskMapping());
-                createdSubMSpecs.add(submissionSpec);
-            }
-            refreshMSpecP();
+        if (variableD.confirmedExit()) {
+            variables.put(variableD.getName(), variableD.getValue());
+            refreshVariableP();
         }
     }
 
@@ -182,87 +164,86 @@ public class SelectSubMissionDNew extends javax.swing.JDialog {
         setVisible(false);
     }
 
-    public ArrayList<MissionPlanSpecification> getSubMissions() {
-        return subMSpecs;
+    public HashMap<String, Object> getVariables() {
+        return variables;
     }
 
-    public ArrayList<MissionPlanSpecification> getCreatedSubMissions() {
-        return createdSubMSpecs;
+    public HashMap<String, Object> getCreatedVariables() {
+        HashMap<String, Object> createdVariables = new HashMap<String, Object>();
+        for(String variable : variables.keySet()) {
+            if(!existingVariables.containsKey(variable)) {
+                createdVariables.put(variable, variables.get(variable));
+            }
+        }
+        return createdVariables;
     }
 
-    public ArrayList<MissionPlanSpecification> getDeletedSubMissions() {
-        return deletedSubMSpecs;
+    public ArrayList<String> getDeletedVariables() {
+        ArrayList<String> deletedVariables = new ArrayList<String>();
+        for(String variable : existingVariables.keySet()) {
+            if(!variables.containsKey(variable)) {
+                deletedVariables.add(variable);
+            }
+        }
+        return deletedVariables;
     }
 
-    public HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>> getSubMissionToTaskMap() {
-        return mSpecTaskMap;
-    }
-
-    private void refreshMSpecP() {
-        existingMSpecP.removeAll();
+    private void refreshVariableP() {
+        existingVariableP.removeAll();
 //        existingMSpecP.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        for (MissionPlanSpecification mSpec : subMSpecs) {
-            SubMissionElementP mSpecP = new SubMissionElementP(mSpec);
-            existingMSpecP.add(mSpecP);
+        for (String variable : variables.keySet()) {
+            VariableP variableP = new VariableP(variable);
+            existingVariableP.add(variableP);
         }
         validate();
         repaint();
     }
 
-    class SubMissionElementP extends JPanel {
+    class VariableP extends JPanel {
 
-        MissionPlanSpecification subMMSpec;
+        String variable;
         JButton modifyB, deleteB;
 
-        public SubMissionElementP(MissionPlanSpecification mSpec) {
-            this.subMMSpec = mSpec;
+        public VariableP(String variable) {
+            this.variable = variable;
             initComponents();
         }
 
         private void initComponents() {
             setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
-//            modifyB = new JButton("Edit");
-//            modifyB.setPreferredSize(new Dimension(10, 10));
-//            modifyB.addActionListener(new ActionListener() {
-//
-//                @Override
-//                public void actionPerformed(ActionEvent ae) {
-//                    SubMissionD subMissionD = new SubMissionD(null, true, parentMSpec, subMMSpec, newMSpecTaskMap.get(subMMSpec));
-//                    subMissionD.setVisible(true);
-//
-//                    if (subMissionD.confirmedExit()) {
-//                        // Remove old entry
-//                        newSubMSpecs.remove(subMMSpec);
-//                        newMSpecTaskMap.remove(subMMSpec);
-//                        // Add new entry
-//                        if (subMissionD.getTaskMapMethod() == SubMissionD.TaskMapMethod.Event) {
-//                            MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) subMissionD.getSelectedMission()).getSubmissionInstance(subMissionD.getSelectedMission(), subMissionD.getNamePrefix(), subMissionD.getVariablePrefix());
-//                            newSubMSpecs.add(submissionSpec);
-//                        } else if (subMissionD.getTaskMapMethod() == SubMissionD.TaskMapMethod.Manual) {
-//                            MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) subMissionD.getSelectedMission()).getSubmissionInstance(subMissionD.getSelectedMission(), subMissionD.getNamePrefix(), subMissionD.getVariablePrefix());
-//                            newSubMSpecs.add(submissionSpec);
-//                            newMSpecTaskMap.put(submissionSpec, subMissionD.getTaskMapping());
-//                        }
-//                        refreshMSpecP();
-//                    }
-//                }
-//            });
+            modifyB = new JButton("Edit");
+            modifyB.setPreferredSize(new Dimension(10, 10));
+            modifyB.addActionListener(new ActionListener() {
+
+                @Override
+                public void actionPerformed(ActionEvent ae) {
+                    String variableOld = variable;
+                    EditGlobalVariableD variableD = new EditGlobalVariableD(null, true, variable, variables.get(variable));
+                    variableD.setVisible(true);
+
+                    if (variableD.confirmedExit()) {
+                        // Remove old entry
+                        variables.remove(variableOld);
+                        variables.put(variableD.getName(), variableD.getValue());
+                        refreshVariableP();
+                    }
+                }
+            });
+            
             deleteB = new JButton("Delete");
             deleteB.setPreferredSize(new Dimension(10, 10));
             deleteB.addActionListener(new ActionListener() {
 
                 @Override
                 public void actionPerformed(ActionEvent ae) {
-                    subMSpecs.remove(subMMSpec);
-                    mSpecTaskMap.remove(subMMSpec);
-                    deletedSubMSpecs.add(subMMSpec);
-                    refreshMSpecP();
+                    variables.remove(variable);
+                    refreshVariableP();
                 }
             });
 
-            add(new JLabel(subMMSpec.getName()));
-//            add(modifyB);
+            add(new JLabel(variable));
+            add(modifyB);
             add(deleteB);
 
             pack();
@@ -275,7 +256,7 @@ public class SelectSubMissionDNew extends javax.swing.JDialog {
 //    public static void main(String args[]) {
 //        java.awt.EventQueue.invokeLater(new Runnable() {
 //            public void run() {
-//                SelectSubMissionDNew dialog = new SelectSubMissionDNew(new javax.swing.JFrame(), true, null, new ArrayList<String>(), true, true);
+//                SelectGlobalVariableD dialog = new SelectGlobalVariableD(new javax.swing.JFrame(), true, null, new ArrayList<String>(), true, true);
 //                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
 //                    public void windowClosing(java.awt.event.WindowEvent e) {
 //                        System.exit(0);
