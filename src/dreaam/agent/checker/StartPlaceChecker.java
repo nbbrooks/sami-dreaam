@@ -1,6 +1,5 @@
 package dreaam.agent.checker;
 
-import dreaam.agent.checker.CheckerAgent;
 import sami.mission.MissionPlanSpecification;
 import sami.mission.Place;
 import sami.mission.Vertex;
@@ -19,7 +18,7 @@ public class StartPlaceChecker extends CheckerAgent {
     public ArrayList<AgentMessage> getMessages() {
         ArrayList<AgentMessage> msgs = new ArrayList<AgentMessage>();
         String msg = null;
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getMissions()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
             msg = null;
             Place start = null;
             for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {

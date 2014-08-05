@@ -8,17 +8,14 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.AccessControlException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import sami.gui.GuiElementSpec;
-import sami.mission.MissionPlanSpecification;
 import sami.mission.ProjectSpecification;
-import sami.mission.RequirementSpecification;
 
 /**
  *
@@ -31,6 +28,10 @@ public class Mediator {
 
     public ProjectSpecification getProjectSpec() {
         return instance.getProjectSpec();
+    }
+
+    public void newSpec() {
+        instance.newSpec();
     }
 
     public boolean open() {
@@ -49,39 +50,13 @@ public class Mediator {
         instance.saveAs();
     }
 
-    public void setGUI(ArrayList<GuiElementSpec> elements) {
-        instance.setGUI(elements);
-    }
-
-    public void newSpec() {
-        instance.newSpec();
-    }
-
-    public ArrayList<MissionPlanSpecification> getMissions() {
-        return instance.getProjectSpec().getMissionPlans();
-    }
-
-    public ArrayList<GuiElementSpec> getGuiSpecs() {
-        return instance.getGuiSpecs();
-    }
-
-    void setRequirements(ArrayList<RequirementSpecification> reqs) {
-        instance.setRequirements(reqs);
-    }
-
-    public ArrayList<RequirementSpecification> getReqs() {
-        return instance.getReqs();
-    }
-
-    public void remove(MissionPlanSpecification mps) {
-        instance.remove(mps);
-    }
-
     private static class _Mediator {
 
         ProjectSpecification projectSpec = null;
         private File projectSpecLocation = null;
         private Platform platform = new Platform();
+        // Variable name to number of references (for garbage collection)
+        private HashMap<String, Integer> varToRefCount = new HashMap<String, Integer>();
 
         private ProjectSpecification getProjectSpec() {
 
@@ -90,6 +65,16 @@ public class Mediator {
             }
 
             return projectSpec;
+        }
+
+        private void newSpec() {
+            if (projectSpec != null && projectSpec.needsSaving()) {
+                int answer = JOptionPane.showOptionDialog(null, "Save current specification?", "Save first?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+                if (answer == JOptionPane.YES_OPTION) {
+                    save();
+                }
+            }
+            projectSpec = new ProjectSpecification();
         }
 
         private void save() {
@@ -108,7 +93,7 @@ public class Mediator {
                  */
                 oos = new ObjectOutputStream(new FileOutputStream(projectSpecLocation));
                 oos.writeObject(projectSpec);
-                LOGGER.info("Writing projectSpec with " + projectSpec.getMissionPlans());
+                LOGGER.info("Writing projectSpec with " + projectSpec.getAllMissionPlans());
                 projectSpec.saved();
                 LOGGER.info("Saved: " + projectSpec);
 
@@ -184,37 +169,6 @@ public class Mediator {
             }
 
             return false;
-        }
-
-        private void newSpec() {
-            if (projectSpec != null && projectSpec.needsSaving()) {
-                int answer = JOptionPane.showOptionDialog(null, "Save current specification?", "Save first?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
-                if (answer == JOptionPane.YES_OPTION) {
-                    save();
-                }
-            }
-            projectSpec = new ProjectSpecification();
-            projectSpec.getNewMissionPlanSpecification("Anonymous");
-        }
-
-        private void setGUI(ArrayList<GuiElementSpec> elements) {
-            projectSpec.setGuiElements(elements);
-        }
-
-        private ArrayList<GuiElementSpec> getGuiSpecs() {
-            return projectSpec.getGuiElements();
-        }
-
-        private void setRequirements(ArrayList<RequirementSpecification> reqs) {
-            projectSpec.setReqs(reqs);
-        }
-
-        public ArrayList<RequirementSpecification> getReqs() {
-            return projectSpec.getReqs();
-        }
-
-        private void remove(MissionPlanSpecification mps) {
-            projectSpec.removeMissionPlan(mps);
         }
     }
 }

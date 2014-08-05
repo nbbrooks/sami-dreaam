@@ -25,7 +25,7 @@ public class ReachabilityChecker extends CheckerAgent {
     @Override
     public ArrayList<AgentMessage> getMessages() {
         ArrayList<AgentMessage> msgs = new ArrayList<AgentMessage>();
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getMissions()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
             Place start = null;
             for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
                 if (vertex instanceof Place && ((Place) vertex).isStart()) {
@@ -75,7 +75,7 @@ public class ReachabilityChecker extends CheckerAgent {
     }
 
     public void removeIllegalConnections() {
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getMissions()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
             for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
                 // Check for in/out transition/place with no matching edge
                 ArrayList<Vertex> verticesToRemove = new ArrayList<Vertex>();

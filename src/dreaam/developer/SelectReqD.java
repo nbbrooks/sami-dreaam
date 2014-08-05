@@ -24,8 +24,8 @@ public class SelectReqD extends javax.swing.JDialog {
         this.o = o;
         reqP.setLayout(new GridLayout(0, 1));
         Mediator mediator = new Mediator();
-        if (mediator.getReqs() != null) {
-            for (RequirementSpecification r : mediator.getReqs()) {
+        if (mediator.getProjectSpec().getReqs() != null) {
+            for (RequirementSpecification r : mediator.getProjectSpec().getReqs()) {
                 JCheckBox cb = new JCheckBox(r.toString());
                 mapping.put(r, cb);
                 cb.setSelected(r.isFilled());

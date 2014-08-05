@@ -21,6 +21,7 @@ import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.tree.*;
+import sami.mission.MissionPlanSpecification;
 
 /**
  * Dialog window that lets you select InputEvents and OutputEvents for SAMI
@@ -32,13 +33,13 @@ public class SelectEventD extends javax.swing.JDialog {
 
     private static final Logger LOGGER = Logger.getLogger(SelectEventD.class.getName());
     private boolean showInput, showOutput;
-    DefaultMutableTreeNode treeRoot, existingEventsNode;
-    CheckBoxNodeRenderer renderer = new CheckBoxNodeRenderer();
+    private DefaultMutableTreeNode treeRoot, existingEventsNode;
+    private CheckBoxNodeRenderer renderer = new CheckBoxNodeRenderer();
     // This insanity is required because CheckBox node is replacing the event spec with a string.
     private Hashtable<ToolTipTreeNode, ReflectedEventSpecification> nodeMapping = new Hashtable<ToolTipTreeNode, ReflectedEventSpecification>();
     // This contains the events that are selected for caller class to pull out
-    ArrayList<ReflectedEventSpecification> existingEventSpecs;
-    ArrayList<String> missionVariables;
+    private ArrayList<ReflectedEventSpecification> existingEventSpecs;
+    private final MissionPlanSpecification mSpec;
 
     /**
      * Creates new form SelectEvent
@@ -48,15 +49,15 @@ public class SelectEventD extends javax.swing.JDialog {
      * list here and edit
      *
      */
-    public SelectEventD(java.awt.Frame parent, boolean modal, ArrayList<ReflectedEventSpecification> existingEventSpecs, ArrayList<String> missionVariables, boolean showInput, boolean showOutput) {
+    public SelectEventD(java.awt.Frame parent, boolean modal, ArrayList<ReflectedEventSpecification> existingEventSpecs, MissionPlanSpecification mSpec, boolean showInput, boolean showOutput) {
         super(parent, modal);
         initComponents();
         setTitle("SelectEventD");
         this.existingEventSpecs = existingEventSpecs;
-        this.missionVariables = missionVariables;
+        this.mSpec = mSpec;
         this.showInput = showInput;
         this.showOutput = showOutput;
-
+        
         eventT.setCellRenderer(renderer);
         eventT.setCellEditor(new CheckBoxNodeEditor(eventT));
         treeRoot = new javax.swing.tree.DefaultMutableTreeNode("JTree");
@@ -127,6 +128,7 @@ public class SelectEventD extends javax.swing.JDialog {
         }
         ReflectedEventSpecification emptyEventSpec = new ReflectedEventSpecification(className);
 
+//        System.out.println("name: "+className);
         // Store spec in a ToolTipTreeNode, which is stored in the tree and a lookup table
         ToolTipTreeNode node = new ToolTipTreeNode(emptyEventSpec, toolText);
         nodeMapping.put(node, emptyEventSpec);
@@ -256,7 +258,7 @@ public class SelectEventD extends javax.swing.JDialog {
             }
             if (numFields > 0) {
                 // If there are fields for the event that can be filled, create dialog
-                ReflectedEventD diag = new ReflectedEventD(eventSpec, missionVariables, null, true);
+                ReflectedEventD diag = new ReflectedEventD(null, true, eventSpec, mSpec);
                 diag.setVisible(true);
             } else {
 //                LOGGER.info("Event class \"" + eventClass.getName() + "\" has no fields");
@@ -483,7 +485,7 @@ public class SelectEventD extends javax.swing.JDialog {
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                SelectEventD dialog = new SelectEventD(new javax.swing.JFrame(), true, null, new ArrayList<String>(), true, true);
+                SelectEventD dialog = new SelectEventD(new javax.swing.JFrame(), true, null, new MissionPlanSpecification(("Anon")), true, true);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         System.exit(0);

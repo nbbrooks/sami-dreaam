@@ -20,13 +20,14 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.tree.*;
 import sami.config.DomainConfig.LeafNode;
 import sami.markup.ReflectedMarkupSpecification;
+import sami.mission.MissionPlanSpecification;
 
 /**
  *
  * @author pscerri
  */
 public class SelectMarkupD extends javax.swing.JDialog {
-
+    
     private static final Logger LOGGER = Logger.getLogger(SelectMarkupD.class.getName());
     DefaultMutableTreeNode treeRoot, existingMarkupsNode;
     CheckBoxNodeRenderer renderer = new CheckBoxNodeRenderer();
@@ -34,15 +35,15 @@ public class SelectMarkupD extends javax.swing.JDialog {
     private Hashtable<ToolTipTreeNode, ReflectedMarkupSpecification> nodeMapping = new Hashtable<ToolTipTreeNode, ReflectedMarkupSpecification>();
     // This contains the events that are selected for caller class to pull out
     ArrayList<ReflectedMarkupSpecification> existingMarkupSpecs;
-    ArrayList<String> missionVariables;
-
-    public SelectMarkupD(java.awt.Frame parent, boolean modal, ArrayList<ReflectedMarkupSpecification> existingMarkupSpecs, ArrayList<String> missionVariables) {
+    MissionPlanSpecification mSpec;
+    
+    public SelectMarkupD(java.awt.Frame parent, boolean modal, ArrayList<ReflectedMarkupSpecification> existingMarkupSpecs, MissionPlanSpecification mSpec) {
         super(parent, modal);
         initComponents();
         setTitle("SelectMarkupD");
         this.existingMarkupSpecs = existingMarkupSpecs;
-        this.missionVariables = missionVariables;
-
+        this.mSpec = mSpec;
+        
         eventT.setCellRenderer(renderer);
         eventT.setCellEditor(new CheckBoxNodeEditor(eventT));
         treeRoot = new javax.swing.tree.DefaultMutableTreeNode("JTree");
@@ -62,10 +63,10 @@ public class SelectMarkupD extends javax.swing.JDialog {
         for (int i = 0; i < eventT.getRowCount(); i++) {
             eventT.expandRow(i);
         }
-
+        
         ToolTipManager.sharedInstance().registerComponent(eventT);
     }
-
+    
     public void addExistingMarkup(ReflectedMarkupSpecification markupSpec, String toolText, DefaultMutableTreeNode parentNode) {
         // Store spec in a ToolTipTreeNode, which is stored in the tree and a lookup table
         ToolTipTreeNode node = new ToolTipTreeNode(markupSpec, toolText);
@@ -73,14 +74,14 @@ public class SelectMarkupD extends javax.swing.JDialog {
         nodeMapping.put(node, markupSpec);
         parentNode.add(node);
     }
-
+    
     public void addDomainMarkups(DefaultMutableTreeNode treeRoot) {
         DefaultMutableTreeNode eventTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().domainConfiguration.markupTree;
         for (int i = 0; i < eventTree.getChildCount(); i++) {
             addNode(eventTree.getChildAt(i), treeRoot);
         }
     }
-
+    
     public void addNode(TreeNode aliasNode, DefaultMutableTreeNode parent) {
         if (aliasNode instanceof LeafNode) {
             // At a event, add as CheckBox and return
@@ -100,7 +101,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
             LOGGER.severe("Could not handle TreeNode: " + aliasNode + ": of class: " + aliasNode.getClass());
         }
     }
-
+    
     private void addEmptyMarkup(String className, String displayName, String toolText, DefaultMutableTreeNode parentNode) {
         try {
             if (!Markup.class.isAssignableFrom(Class.forName(className))) {
@@ -111,7 +112,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Unable to work out class for " + className);
             ex.printStackTrace();
         }
-
+        
         ReflectedMarkupSpecification markupSpec = new ReflectedMarkupSpecification(className);
 
         // Store spec in a ToolTipTreeNode, which is stored in the tree and a lookup table
@@ -119,7 +120,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
         nodeMapping.put(node, markupSpec);
         parentNode.add(node);
     }
-
+    
     public Markup instanceExists(String className, ArrayList<Markup> selectedMarkups) {
         for (Markup markup : selectedMarkups) {
             if (markup.getClass().getName().equals(className)) {
@@ -189,12 +190,12 @@ public class SelectMarkupD extends javax.swing.JDialog {
 
     private void okBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okBActionPerformed
         ArrayList<ReflectedMarkupSpecification> newSelectedMarkups = new ArrayList<ReflectedMarkupSpecification>();
-
+        
         Enumeration e = treeRoot.breadthFirstEnumeration();
         while (e.hasMoreElements()) {
             DefaultMutableTreeNode n = (DefaultMutableTreeNode) e.nextElement();
             if (n.isLeaf()) {
-
+                
                 Object userObject = n.getUserObject();
                 // Turns into a CheckBoxNode if touched
                 // Get values for markup for each event that was passed into SelectMarkupD
@@ -222,30 +223,30 @@ public class SelectMarkupD extends javax.swing.JDialog {
         existingMarkupSpecs = newSelectedMarkups;
         setVisible(false);
     }
-
+    
     public ArrayList<ReflectedMarkupSpecification> getSelectedMarkupSpecs() {
         return existingMarkupSpecs;
     }
-
+    
     public void getDefinitionsForMarkup(ReflectedMarkupSpecification markupSpec) {
-        ReflectedMarkupD diag = new ReflectedMarkupD(markupSpec, missionVariables, null, true);
+        ReflectedMarkupD diag = new ReflectedMarkupD(null, true, markupSpec, mSpec);
         diag.setVisible(true);
     }//GEN-LAST:event_okBActionPerformed
 
     // Adapted from http://www.java2s.com/Code/Java/Swing-JFC/CheckBoxNodeTreeSample.htm
     class CheckBoxNodeRenderer implements TreeCellRenderer {
-
+        
         private JCheckBox leafRenderer = new JCheckBox();
         private DefaultTreeCellRenderer nonLeafRenderer = new DefaultTreeCellRenderer();
         Color selectionBorderColor, selectionForeground, selectionBackground,
                 textForeground, textBackground;
-
+        
         protected JCheckBox getLeafRenderer() {
             return leafRenderer;
         }
-
+        
         public CheckBoxNodeRenderer() {
-
+            
             Font fontValue;
             fontValue = UIManager.getFont("Tree.font");
             if (fontValue != null) {
@@ -253,19 +254,19 @@ public class SelectMarkupD extends javax.swing.JDialog {
             }
             Boolean booleanValue = (Boolean) UIManager.get("Tree.drawsFocusBorderAroundIcon");
             leafRenderer.setFocusPainted((booleanValue != null) && (booleanValue.booleanValue()));
-
+            
             selectionBorderColor = UIManager.getColor("Tree.selectionBorderColor");
             selectionForeground = UIManager.getColor("Tree.selectionForeground");
             selectionBackground = UIManager.getColor("Tree.selectionBackground");
             textForeground = UIManager.getColor("Tree.textForeground");
             textBackground = UIManager.getColor("Tree.textBackground");
-
+            
         }
-
+        
         public Component getTreeCellRendererComponent(JTree tree, Object value,
                 boolean selected, boolean expanded, boolean leaf, int row,
                 boolean hasFocus) {
-
+            
             Component returnValue;
             if (leaf) {
                 // Add an markup class checkbox
@@ -280,7 +281,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
                     }
                 }
                 leafRenderer.setEnabled(tree.isEnabled());
-
+                
                 if ((value != null) && (value instanceof ToolTipTreeNode)) {
                     ToolTipTreeNode tttn = (ToolTipTreeNode) value;
                     leafRenderer.setToolTipText(tttn.getToolTipText());
@@ -294,7 +295,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
                         // System.out.println("This was called, with " + node.isSelected());
                     }
                 }
-
+                
                 if (selected) {
                     leafRenderer.setForeground(selectionForeground);
                     leafRenderer.setBackground(selectionBackground);
@@ -302,7 +303,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
                     leafRenderer.setForeground(textForeground);
                     leafRenderer.setBackground(textBackground);
                 }
-
+                
                 returnValue = leafRenderer;
             } else {
                 returnValue = nonLeafRenderer.getTreeCellRendererComponent(tree,
@@ -311,23 +312,23 @@ public class SelectMarkupD extends javax.swing.JDialog {
             return returnValue;
         }
     }
-
+    
     class CheckBoxNodeEditor extends AbstractCellEditor implements TreeCellEditor {
-
+        
         CheckBoxNodeRenderer renderer = new CheckBoxNodeRenderer();
         ChangeEvent changeEvent = null;
         JTree tree;
-
+        
         public CheckBoxNodeEditor(JTree tree) {
             this.tree = tree;
         }
-
+        
         public Object getCellEditorValue() {
             JCheckBox checkbox = renderer.getLeafRenderer();
             CheckBoxNode checkBoxNode = new CheckBoxNode(checkbox.getText(), checkbox.isSelected());
             return checkBoxNode;
         }
-
+        
         public boolean isCellEditable(EventObject event) {
             boolean returnValue = false;
             if (event instanceof MouseEvent) {
@@ -344,10 +345,10 @@ public class SelectMarkupD extends javax.swing.JDialog {
             }
             return returnValue;
         }
-
+        
         public Component getTreeCellEditorComponent(JTree tree, Object value,
                 boolean selected, boolean expanded, boolean leaf, int row) {
-
+            
             Component editor = renderer.getTreeCellRendererComponent(tree, value,
                     true, expanded, leaf, row, true);
 
@@ -362,53 +363,53 @@ public class SelectMarkupD extends javax.swing.JDialog {
             if (editor instanceof JCheckBox) {
                 ((JCheckBox) editor).addItemListener(itemListener);
             }
-
+            
             return editor;
         }
     }
-
+    
     class CheckBoxNode {
-
+        
         String text;
         boolean selected;
-
+        
         public CheckBoxNode(String text, boolean selected) {
             this.text = text;
             this.selected = selected;
         }
-
+        
         public boolean isSelected() {
             return selected;
         }
-
+        
         public void setSelected(boolean newValue) {
             selected = newValue;
         }
-
+        
         public String getText() {
             return text;
         }
-
+        
         public void setText(String newValue) {
             text = newValue;
         }
-
+        
         public String toString() {
             return getClass().getName() + "[" + text + "/" + selected + "]";
         }
     }
-
+    
     class ToolTipTreeNode extends DefaultMutableTreeNode {
-
+        
         private String toolTipText;
-
+        
         public ToolTipTreeNode(Object obj, String toolTipText) {
             super(obj);
             this.toolTipText = toolTipText;
-
+            
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Got object of type: " + obj.getClass(), this);
         }
-
+        
         public String getToolTipText() {
             return toolTipText;
         }
@@ -420,7 +421,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                SelectMarkupD dialog = new SelectMarkupD(new javax.swing.JFrame(), true, null, new ArrayList<String>());
+                SelectMarkupD dialog = new SelectMarkupD(new javax.swing.JFrame(), true, null, new MissionPlanSpecification("Anon"));
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     public void windowClosing(java.awt.event.WindowEvent e) {
                         System.exit(0);

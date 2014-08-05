@@ -42,7 +42,6 @@ public class UiComponentGenerator {
             nsme.printStackTrace();
         } catch (InvocationTargetException ite) {
             ite.printStackTrace();
-            System.out.println(ite.getCause());
         }
         LOGGER.severe("Failed to create instance of UiComponentGeneratorInterface");
         return null;

@@ -37,7 +37,7 @@ public class AbortMissionHelper extends HelperAgent {
         OutTokenRequirement takeAllTokenReq = new OutTokenRequirement(TokenRequirement.MatchCriteria.AnyToken, TokenRequirement.MatchQuantity.All, TokenRequirement.MatchAction.Take);
         boolean createdTransition = false, createdPlace = false;
 
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getMissions()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
             // Fetch transition that handles AbortMissionReceived events
             Transition endTransition = missionToTransition.get(missionPlanSpecification);
             if (endTransition == null) {
@@ -121,7 +121,7 @@ public class AbortMissionHelper extends HelperAgent {
                         && !((Place) vertex).isEnd()
                         && ((Place) vertex).getFunctionMode() == FunctionMode.Nominal) {
                     // Add edge from place to transition with Proxy token spec
-                    Place place = (Place)vertex;
+                    Place place = (Place) vertex;
                     InEdge newEdge = new InEdge(place, endTransition, FunctionMode.Recovery);
                     newEdge.addTokenRequirement(noReqTokenReq);
                     place.addOutEdge(newEdge);

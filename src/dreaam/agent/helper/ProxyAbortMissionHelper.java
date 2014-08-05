@@ -37,7 +37,7 @@ public class ProxyAbortMissionHelper extends HelperAgent {
         OutTokenRequirement takeNoneTokenReq = new OutTokenRequirement(TokenRequirement.MatchCriteria.None, TokenRequirement.MatchQuantity.None, TokenRequirement.MatchAction.Take);
         InTokenRequirement relProxyTokenReq = new InTokenRequirement(TokenRequirement.MatchCriteria.RelevantToken, TokenRequirement.MatchQuantity.All);
 
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getMissions()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
             // First check that we actually need an end place (ie have a place that is neither a start nor a stop place)
             boolean needEndPlace = false;
             for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {

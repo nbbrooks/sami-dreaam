@@ -5,6 +5,7 @@ import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
 import edu.uci.ics.jung.algorithms.layout.GraphElementAccessor;
 import edu.uci.ics.jung.algorithms.layout.StaticLayout;
 import edu.uci.ics.jung.graph.DirectedSparseGraph;
+import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.SparseMultigraph;
 import edu.uci.ics.jung.visualization.GraphZoomScrollPane;
 import edu.uci.ics.jung.visualization.Layer;
@@ -18,18 +19,28 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.UUID;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.tree.DefaultMutableTreeNode;
 import org.apache.commons.collections15.Transformer;
+import sami.config.DomainConfig;
+import sami.config.DomainConfigManager;
+import sami.event.InterruptEventOE;
+import sami.event.ProxyInterruptEventIE;
 import sami.event.ReflectedEventSpecification;
 import sami.gui.GuiConfig;
 import sami.mission.Edge;
 import sami.mission.InEdge;
 import sami.mission.InTokenRequirement;
+import sami.mission.InterruptType;
 import sami.mission.MissionPlanSpecification;
 import sami.mission.OutEdge;
 import sami.mission.OutTokenRequirement;
@@ -39,7 +50,6 @@ import sami.mission.TokenRequirement;
 import sami.mission.Transition;
 import sami.mission.Vertex;
 import sami.mission.Vertex.FunctionMode;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * GUI for building DREAAM plays Controls: Left click: Click Place/Transition to
@@ -69,6 +79,9 @@ public class TaskModelEditor extends JPanel {
     private Vertex expandedNomVertex = null;
     private DREAAM dreaam;
     TaskModelEditor.MyMouseListener mml;
+    ArrayList<Vertex> selectedSourceDest = null;
+    private boolean amSelectingNodes;
+    private Vertex selectedDest;
 
     public TaskModelEditor(DREAAM dreaam, MissionPlanSpecification spec) {
         this(spec);
@@ -368,6 +381,10 @@ public class TaskModelEditor extends JPanel {
         return mSpec;
     }
 
+    public Vertex getSelectedDest() {
+        return selectedDest;
+    }
+
     public void setMode(FunctionMode mode) {
         this.editorMode = mode;
         refreshGraphVisibility();
@@ -416,6 +433,10 @@ public class TaskModelEditor extends JPanel {
                 }
                 break;
         }
+    }
+
+    public void resetView() {
+        vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
     }
 
     /**
@@ -672,6 +693,10 @@ public class TaskModelEditor extends JPanel {
         }
     }
 
+    void setSelectDestination(boolean b) {
+        amSelectingNodes = b;
+    }
+
     private class MyMouseListener implements MouseListener, MouseMotionListener, MouseWheelListener {
 
         final CrossoverScalingControl scaler = new CrossoverScalingControl();
@@ -869,18 +894,33 @@ public class TaskModelEditor extends JPanel {
             if (me.getButton() == MouseEvent.BUTTON1
                     && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) == 0
                     && !amDraggingVertex) {
+//                System.out.println("tasto sinistro, rotellina o destro cliccati e non sto draggingVertex");
+
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
+//                    System.out.println("pick support non null");
+
                     final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
                     if (vertex != null) {
+//                        System.out.println("vertex diverso da null, cioÃ¨ selezionato vertex");
+                        if (amSelectingNodes) {
+
+                            selectedDest = vertex;
+
+                        }
                         if (!amCreatingEdge && edgeStartVertex == null) {
+//                            System.out.println("non sto creando archi quindi seleziono il selezionato come start");
+
                             // Set start point for new edge
                             startVertexSelected(vertex);
                         } else if (amCreatingEdge && edgeStartVertex != null) {
                             // Set start point for new edge
+//                            System.out.println("sono in creazione archi quindi seleziono il selezionato come ens");
                             endVertexSelected(vertex);
                         }
                     } else if (vertex == null && amCreatingEdge) {
+//                        System.out.println("se non ho selezinato un vertex allora end point sbagliato");
+
                         // Invalid end point, cancel edge creation
                         amCreatingEdge = false;
                         edgeStartVertex.setBeingModified(false);
@@ -895,6 +935,7 @@ public class TaskModelEditor extends JPanel {
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
                     final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
+
                     final Edge edge = getNearestEdge(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
                     if (vertex != null) {
                         // Right click place or transition -> show options
@@ -917,7 +958,7 @@ public class TaskModelEditor extends JPanel {
                                 // Write things out to make sure that we have variables.
                                 writeModel();
 //                                System.out.println("b spec list: " + mSpec.getEventSpecList(vertex));
-                                SelectEventD diag = new SelectEventD(null, true, mSpec.getEventSpecList(vertex), mSpec.getAllVariables(), vertex instanceof Transition, vertex instanceof Place);
+                                SelectEventD diag = new SelectEventD(null, true, mSpec.getEventSpecList(vertex), mSpec, vertex instanceof Transition, vertex instanceof Place);
 
                                 // Remove event specs that were mapped to this transition
                                 // @todo Probably should edit events instead of clearing and adding
@@ -951,7 +992,7 @@ public class TaskModelEditor extends JPanel {
                                 }
 
                                 for (ReflectedEventSpecification eventSpec : eventDiag.selectedEventSpecs) {
-                                    SelectMarkupD markupDiag = new SelectMarkupD(null, true, eventSpec.getMarkupSpecs(), mSpec.getAllVariables());
+                                    SelectMarkupD markupDiag = new SelectMarkupD(null, true, eventSpec.getMarkupSpecs(), mSpec);
                                     markupDiag.setVisible(true);
 //                                    // This part won't run until the Frame closes
                                     eventSpec.setMarkupSpecs(markupDiag.getSelectedMarkupSpecs());
@@ -960,47 +1001,25 @@ public class TaskModelEditor extends JPanel {
                                 }
                             }
                         });
-                        popup.add(new AbstractAction("Delete") {
-                            public void actionPerformed(ActionEvent e) {
-                                boolean reallyRemove = true;
-                                // @todo Consider linking requirements to objects to make the deletion process cleaner
-                                // @todo GetFilledBy only returns one object, if multiple fulfill, not listed
-                                // @todo Cancel/No not handled smoothly when multiple requirements filled by this.
-                                if (mediator.getReqs() != null) {
-                                    for (RequirementSpecification requirementSpecification : mediator.getReqs()) {
-                                        if (requirementSpecification.getFilledBy() == vertex) {
-                                            int ret = JOptionPane.showConfirmDialog(null, "Requirement: " + requirementSpecification + " is filled by this object, really delete?");
-                                            if (ret == JOptionPane.NO_OPTION || ret == JOptionPane.CANCEL_OPTION) {
-                                                reallyRemove = false;
-                                            } else {
-                                                requirementSpecification.setFilled(false);
-                                                requirementSpecification.setFilledBy(null);
-                                            }
-                                        } else {
-                                            System.out.println("Requirement " + requirementSpecification + " not impacted by " + vertex + " " + requirementSpecification.getFilledBy());
-                                        }
-                                    }
-                                }
-                                if (reallyRemove) {
-                                    if (vertex instanceof Place) {
-                                        removePlace((Place) vertex);
-                                    } else if (vertex instanceof Transition) {
-                                        removeTransition((Transition) vertex);
-                                    }
-                                }
-                            }
-                        });
                         if (vertex instanceof Place) {
                             final Place place = (Place) vertex;
-                            popup.add(new AbstractAction("Add Sub-mission") {
+                            popup.add(new AbstractAction("Edit Sub-missions") {
                                 public void actionPerformed(ActionEvent e) {
-                                    SubMissionD d = new SubMissionD(null, true);
-                                    d.setVisible(true);
-                                    if (d.getSelectedMission() != null) {
-                                        MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) d.getSelectedMission()).getSubmissionInstance(mSpec, d.namePrefix, d.variablePrefix);
-                                        dreaam.addMissionSpec(submissionSpec);
 
-                                        place.setSubMission(submissionSpec);
+                                    SelectSubMissionD d = new SelectSubMissionD(null, true, mSpec, mediator.getProjectSpec(), place.getSubMissions(), place.getSubMissionToTaskMap());
+                                    d.setVisible(true);
+                                    if (d.confirmedExit()) {
+                                        for (MissionPlanSpecification createdSubMMSpec : d.getCreatedSubMissions()) {
+                                            mediator.getProjectSpec().addSubMissionPlan(createdSubMMSpec, mSpec);
+                                        }
+                                        for (MissionPlanSpecification deletedSubMMSpec : d.getDeletedSubMissions()) {
+                                            mediator.getProjectSpec().removeMissionPlan(deletedSubMMSpec);
+                                        }
+                                        place.setSubMissions(d.getSubMissions());
+                                        place.setSubMissionToTaskMap(d.getSubMissionToTaskMap());
+                                        place.updateTag();
+                                        dreaam.refreshMissionTree();
+                                        dreaam.selectNode(mediator.getProjectSpec().getNode(mSpec));
                                     }
                                     vv.repaint();
                                 }
@@ -1038,6 +1057,312 @@ public class TaskModelEditor extends JPanel {
                                     }
                                 });
                             }
+                            popup.add(new AbstractAction("Add new type interrupt Block") {
+
+                                @Override
+                                public void actionPerformed(ActionEvent ae) {
+                                    writeModel();
+                                    if (selectedSourceDest == null) {
+                                        selectedSourceDest = new ArrayList<Vertex>();
+                                    }
+
+                                    selectedSourceDest.add(vertex);
+                                    vv.repaint();
+                                    SelectNodeD selNode = new SelectNodeD(dreaam, getModel());
+                                    selNode.setVisible(true);
+
+                                    selectedSourceDest.add(selNode.getSelectedDest());
+
+                                    InterruptBlockD d = new InterruptBlockD(null, true);
+                                    d.setVisible(true);
+                                    Vertex sourceV = selectedSourceDest.get(0), destinationV = selectedSourceDest.get(1);
+
+                                    if (d.getSelectedMission() != null) {
+
+                                        // GLOBAL VAR CHECK??
+//                                        System.out.println("GLOBAL VAR REMEMBER");
+//                                        MissionPlanSpecification intBlock = ((MissionPlanSpecification) d.getSelectedMission()).getSubmissionInstance(mSpec, null, null, mediator.getProjectSpec().getGlobalVariableToValue());
+
+                                        InterruptType type = d.getInterruptType();
+
+                                        Place interruptPlace = new Place("Interrupt Place", FunctionMode.Nominal);
+                                        Place submissionIntPlace = new Place("Submission Interrupt Place", FunctionMode.Nominal);
+
+                                        Transition interruptStartTransition = new Transition("Start Interrupt Transition", FunctionMode.Nominal);
+                                        interruptStartTransition.addInPlace(interruptPlace);
+                                        interruptStartTransition.addInPlace((Place) sourceV);
+                                        interruptStartTransition.addOutPlace(submissionIntPlace);
+
+                                        Transition interruptEndTransition = new Transition("End Interrupt Transition", FunctionMode.Nominal);
+                                        interruptEndTransition.addInPlace(submissionIntPlace);
+                                        interruptEndTransition.addOutPlace((Place) destinationV);
+
+                                        // Setting places transitions
+                                        interruptPlace.addOutTransition(interruptStartTransition);
+                                        submissionIntPlace.addInTransition(interruptStartTransition);
+                                        submissionIntPlace.addOutTransition(interruptEndTransition);
+                                        ((Place) sourceV).addOutTransition(interruptStartTransition);
+                                        ((Place) destinationV).addInTransition(interruptEndTransition);
+
+                                        // Setting the submission used for interrupt
+                                        String prefix = "intSubM"+UUID.randomUUID().getMostSignificantBits();
+                                        MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) d.getSelectedMission()).getSubmissionInstance(d.getSelectedMission(), prefix, prefix, mediator.getProjectSpec().getGlobalVariableToValue());
+                                        mediator.getProjectSpec().addSubMissionPlan(submissionSpec, mSpec);
+                                        submissionIntPlace.setSubMissions(new ArrayList<MissionPlanSpecification>(Arrays.asList(submissionSpec)));
+                                        submissionIntPlace.updateTag();
+                                        
+                                        dreaam.refreshMissionTree();
+                                        dreaam.selectNode(mediator.getProjectSpec().getNode(mSpec));
+
+                                        InEdge intPlaceToStartTrans = new InEdge(interruptPlace, interruptStartTransition, FunctionMode.Nominal);
+//                                        intPlaceToStartTrans.addTokenRequirement(new InTokenRequirement(TokenRequirement.MatchCriteria.RelevantToken, TokenRequirement.MatchQuantity.Number, 1));
+                                        interruptPlace.addOutEdge(intPlaceToStartTrans);
+                                        interruptStartTransition.addInEdge(intPlaceToStartTrans);
+
+                                        InEdge sourceToStartTrans = new InEdge((Place) sourceV, interruptStartTransition, FunctionMode.Nominal);
+//                                        sourceToStartTrans.addTokenRequirement(new InTokenRequirement(TokenRequirement.MatchCriteria.AnyProxy, TokenRequirement.MatchQuantity.Number, 1));
+                                        ((Place) sourceV).addOutEdge(sourceToStartTrans);
+                                        interruptStartTransition.addInEdge(sourceToStartTrans);
+
+                                        InEdge submissionPlaceToEndTrans = new InEdge(submissionIntPlace, interruptEndTransition, FunctionMode.Nominal);
+//                                        submissionPlaceToEndTrans.addTokenRequirement(new InTokenRequirement(TokenRequirement.MatchCriteria.None, TokenRequirement.MatchQuantity.None));
+                                        submissionIntPlace.addOutEdge(sourceToStartTrans);
+//                                        interruptStartTransition.addOutEdge(submissionPlaceToEndTrans);
+
+                                        OutEdge startTransToSubmissionPlace = new OutEdge(interruptStartTransition, submissionIntPlace, FunctionMode.Nominal);
+//                                        startTransToSubmissionPlace.addTokenRequirement(new OutTokenRequirement(TokenRequirement.MatchCriteria.RelevantToken, TokenRequirement.MatchQuantity.All, TokenRequirement.MatchAction.Take));
+                                        interruptStartTransition.addOutEdge(startTransToSubmissionPlace);
+                                        submissionIntPlace.addInEdge(startTransToSubmissionPlace);
+
+                                        OutEdge endTransToDestination = new OutEdge(interruptEndTransition, (Place) destinationV, FunctionMode.Nominal);
+//                                        endTransToDestination.addTokenRequirement(new OutTokenRequirement(TokenRequirement.MatchCriteria.SubMissionToken, TokenRequirement.MatchQuantity.All, TokenRequirement.MatchAction.Add));
+                                        interruptEndTransition.addOutEdge(endTransToDestination);
+                                        ((Place) destinationV).addInEdge(endTransToDestination);
+
+                                        switch (d.getInterruptType()) {
+
+                                            case GENERAL:
+
+                                                intPlaceToStartTrans.addTokenRequirement(new InTokenRequirement(TokenRequirement.MatchCriteria.Generic, TokenRequirement.MatchQuantity.Number, 1));
+                                                sourceToStartTrans.addTokenRequirement(new InTokenRequirement(TokenRequirement.MatchCriteria.AnyProxy, TokenRequirement.MatchQuantity.Number, 1));
+                                                submissionPlaceToEndTrans.addTokenRequirement(new InTokenRequirement(TokenRequirement.MatchCriteria.None, null));
+                                                startTransToSubmissionPlace.addTokenRequirement(new OutTokenRequirement(TokenRequirement.MatchCriteria.AnyProxy, TokenRequirement.MatchQuantity.All, TokenRequirement.MatchAction.Take));
+                                                startTransToSubmissionPlace.addTokenRequirement(new OutTokenRequirement(TokenRequirement.MatchCriteria.Generic, TokenRequirement.MatchQuantity.Number, TokenRequirement.MatchAction.Consume, 1));
+                                                endTransToDestination.addTokenRequirement(new OutTokenRequirement(TokenRequirement.MatchCriteria.SubMissionToken, TokenRequirement.MatchQuantity.All, TokenRequirement.MatchAction.Add));
+
+                                                interruptPlace.setEventSpecs(new ArrayList<ReflectedEventSpecification>(Arrays.asList(new ReflectedEventSpecification("sami.event.InterruptEventOE"))));
+                                                interruptPlace.updateTag();
+
+                                                break;
+                                            case PROXY:
+
+                                                intPlaceToStartTrans.addTokenRequirement(new InTokenRequirement(TokenRequirement.MatchCriteria.RelevantToken, TokenRequirement.MatchQuantity.Number, 1));
+                                                sourceToStartTrans.addTokenRequirement(new InTokenRequirement(TokenRequirement.MatchCriteria.AnyProxy, TokenRequirement.MatchQuantity.Number, 1));
+                                                submissionPlaceToEndTrans.addTokenRequirement(new InTokenRequirement(TokenRequirement.MatchCriteria.None, null));
+                                                startTransToSubmissionPlace.addTokenRequirement(new OutTokenRequirement(TokenRequirement.MatchCriteria.RelevantToken, TokenRequirement.MatchQuantity.All, TokenRequirement.MatchAction.Take));
+                                                endTransToDestination.addTokenRequirement(new OutTokenRequirement(TokenRequirement.MatchCriteria.SubMissionToken, TokenRequirement.MatchQuantity.All, TokenRequirement.MatchAction.Add));
+
+                                                interruptPlace.setEventSpecs(new ArrayList<ReflectedEventSpecification>(Arrays.asList(new ReflectedEventSpecification("sami.event.ProxyInterruptEventOE"))));
+                                                interruptStartTransition.setEventSpecs(new ArrayList<ReflectedEventSpecification>(Arrays.asList(new ReflectedEventSpecification("sami.event.ProxyInterruptEventIE"))));
+                                                interruptPlace.updateTag();
+
+                                                break;
+                                        }
+
+                                        graph.addVertex(interruptPlace);
+                                        layout.setLocation(interruptPlace, snapToGrid(getVertexFreePoint(layout.getX(sourceV) + 15, layout.getY(sourceV) + 15, 50)));
+
+                                        addPositioningVertex(submissionIntPlace, interruptPlace, destinationV);
+                                        addPositioningVertex(interruptStartTransition, sourceV, submissionIntPlace);
+                                        addPositioningVertex(interruptEndTransition, submissionIntPlace, destinationV);
+
+                                        for (ReflectedEventSpecification r : interruptPlace.getEventSpecs()) {
+                                            mSpec.updateEventSpecList(interruptPlace, r);
+                                        }
+                                        for (ReflectedEventSpecification r : submissionIntPlace.getEventSpecs()) {
+                                            mSpec.updateEventSpecList(submissionIntPlace, r);
+                                        }
+                                        for (ReflectedEventSpecification r : interruptStartTransition.getEventSpecs()) {
+                                            mSpec.updateEventSpecList(interruptStartTransition, r);
+                                        }
+                                        for (ReflectedEventSpecification r : interruptEndTransition.getEventSpecs()) {
+                                            mSpec.updateEventSpecList(interruptEndTransition, r);
+                                        }
+                                        
+                                        graph.addEdge(intPlaceToStartTrans, interruptPlace, interruptStartTransition);
+                                        graph.addEdge(sourceToStartTrans, (Place) sourceV, interruptStartTransition);
+                                        graph.addEdge(submissionPlaceToEndTrans, submissionIntPlace, interruptEndTransition);
+
+                                        graph.addEdge(startTransToSubmissionPlace, interruptStartTransition, submissionIntPlace);
+                                        graph.addEdge(endTransToDestination, interruptEndTransition, (Place) destinationV);
+
+                                        mSpec.updateAllTags();
+
+                                    } else {
+                                        LOGGER.severe("No submission for interrupt selected!");
+                                    }
+                                }
+                            }
+                            );
+                            popup.add(new AbstractAction("Add interrupt Block") {
+
+                                @Override
+                                public void actionPerformed(ActionEvent ae) {
+
+                                    writeModel();
+                                    if (selectedSourceDest == null) {
+                                        selectedSourceDest = new ArrayList<Vertex>();
+                                    }
+
+                                    selectedSourceDest.add(vertex);
+                                    vv.repaint();
+                                    SelectNodeD selNode = new SelectNodeD(dreaam, getModel());
+                                    selNode.setVisible(true);
+
+                                    selectedSourceDest.add(selNode.getSelectedDest());
+
+                                    InterruptBlockD d = new InterruptBlockD(null, true);
+                                    d.setVisible(true);
+
+                                    Vertex sourceV = null, destinationV = null, sourceT = null, destinationT = null;
+
+                                    if (d.getSelectedMission() != null) {
+
+                                        // GLOBAL VAR CHECK??
+//                                        System.out.println("GLOBAL VAR REMEMBER");
+                                        MissionPlanSpecification intBlock = ((MissionPlanSpecification) d.getSelectedMission()).getSubmissionInstance(mSpec, null, null, mediator.getProjectSpec().getGlobalVariableToValue());
+
+                                        for (Vertex v : graph.getVertices()) {
+
+                                            if (v.equals(selectedSourceDest.get(0))) {
+                                                sourceV = selectedSourceDest.get(0);
+                                            }
+                                            if (v.equals(selectedSourceDest.get(1))) {
+                                                destinationV = selectedSourceDest.get(1);
+                                            }
+
+                                        }
+
+                                        for (Vertex v : intBlock.getGraph().getVertices()) {
+                                            if (v instanceof Place) {
+                                                Place t = (Place) v;
+
+                                                if (t.isStart()) {
+                                                    t.setIsStart(false);
+                                                    t.updateTag();
+                                                    sourceT = t;
+                                                }
+
+                                                if (t.isEnd()) {
+                                                    t.setIsEnd(false);
+                                                    t.updateTag();
+                                                    destinationT = t;
+                                                }
+                                            }
+                                        }
+
+//                                        System.out.println("test int block:" + intBlock);
+//                                        System.out.println("sourceT: " + sourceT.getTag());
+//                                        System.out.println("destinationT: " + destinationT.getTag());
+
+                                        for (Vertex v : intBlock.getGraph().getVertices()) {
+
+                                            if (v instanceof Place) {
+                                                Place t = (Place) v;
+//                                                System.out.println("TRANSITION: "+t+" - "+t.getInEdges()+" - "+t.getOutEdges()+" - "+t.getInPlaces()+" - "+t.getOutPlaces());
+//                                                System.out.println("TRANSITION 1 step: " + t.getTag() + " - " + t.getInPlaces() + " - " + t.getOutPlaces());
+
+                                                if (t.isStart()) {
+//                                                    System.out.println("test");
+                                                    t.setIsStart(false);
+                                                    t.setBeingModified(false);
+                                                    t.updateTag();
+                                                    graph.addVertex(t);
+                                                }
+
+                                                if (t.isEnd()) {
+//                                                    System.out.println("test Dest");
+                                                    t.setIsEnd(false);
+                                                    t.setBeingModified(false);
+                                                    t.updateTag();
+                                                    graph.addVertex(t);
+                                                }
+                                            }
+
+                                            Point2D p2d = intBlock.getLocations().get(v);
+                                            layout.setLocation(v, p2d.getX(), p2d.getY() - 200);
+
+                                            if (mSpec.getEventSpecList(v) == null) {
+                                                for (ReflectedEventSpecification eventSpec : v.getEventSpecs()) {
+                                                    mSpec.updateEventSpecList(v, eventSpec);
+                                                }
+                                            }
+                                        }
+
+                                        mSpec.updateThisLayout(layout);
+                                        mSpec.updateAllTags();
+
+
+
+                                        for (Object o : intBlock.getGraph().getEdges()) {
+                                            Edge edge = (Edge) o;
+                                            graph.addEdge(edge, edge.getStart(), edge.getEnd());
+                                        }
+
+                                    }
+
+                                    //Connect the source to the interrupt
+                                    startVertexSelected(sourceV);
+                                    endVertexSelected(sourceT);
+
+                                    //Connect the interrupt to the destination
+                                    startVertexSelected(destinationT);
+                                    endVertexSelected(destinationV);
+
+                                    selectedDest = null;
+                                    selectedSourceDest = new ArrayList<Vertex>();
+
+//                                    writeModel();
+                                    vv.repaint();
+                                }
+
+                            });
+
+//                            popup.add(new AbstractAction("Interruptable") {
+//
+//                                @Override
+//                                public void actionPerformed(ActionEvent ae) {
+//                                    // Write things out to make sure that we have variables.
+//                                    writeModel();
+////                                System.out.println("b spec list: " + mSpec.getEventSpecList(vertex));
+//                                    InterruptableD diag = new InterruptableD(dreaam, enabled);
+//
+//                                    // Remove event specs that were mapped to this transition
+//                                    // @todo Probably should edit events instead of clearing and adding
+//                                    mSpec.clearEventSpecList(vertex);
+//
+//                                    diag.setVisible(true);
+//
+//                                    diag.getnPlaces();
+//                                    diag.isUnique();
+//
+//                                    createInterrupt(vertex, diag.isUnique(), diag.getnPlaces(), diag.getInterruptType(), diag.getSelectedS());
+//                                    // This part won't run until the Frame closes
+////                                    ArrayList<ReflectedEventSpecification> selectedEventSpecs = diag.getSelectedEventSpecs();
+////                                    if (selectedEventSpecs != null) {
+////                                        // Have to have the null check in case Ubuntu screws up the JFrame and I have to "x" close the window...
+////                                        for (ReflectedEventSpecification eventSpec : selectedEventSpecs) {
+////                                            // Add the selected events to our maps
+////                                            mSpec.updateEventSpecList(vertex, eventSpec);
+////                                        }
+////                                        vertex.setEventSpecs(selectedEventSpecs);
+////                                    }
+//
+//                                    vv.repaint();
+////                                System.out.println("a spec list: " + mSpec.getEventSpecList(vertex));
+//                                }
+//
+//                            });
                         } else if (vertex instanceof Transition) {
                             popup.add(new AbstractAction("Requirements") {
                                 @Override
@@ -1047,6 +1372,36 @@ public class TaskModelEditor extends JPanel {
                                 }
                             });
                         }
+                        popup.add(new AbstractAction("Delete") {
+                            public void actionPerformed(ActionEvent e) {
+                                boolean reallyRemove = true;
+                                // @todo Consider linking requirements to objects to make the deletion process cleaner
+                                // @todo GetFilledBy only returns one object, if multiple fulfill, not listed
+                                // @todo Cancel/No not handled smoothly when multiple requirements filled by this.
+                                if (mediator.getProjectSpec().getReqs() != null) {
+                                    for (RequirementSpecification requirementSpecification : mediator.getProjectSpec().getReqs()) {
+                                        if (requirementSpecification.getFilledBy() == vertex) {
+                                            int ret = JOptionPane.showConfirmDialog(null, "Requirement: " + requirementSpecification + " is filled by this object, really delete?");
+                                            if (ret == JOptionPane.NO_OPTION || ret == JOptionPane.CANCEL_OPTION) {
+                                                reallyRemove = false;
+                                            } else {
+                                                requirementSpecification.setFilled(false);
+                                                requirementSpecification.setFilledBy(null);
+                                            }
+                                        } else {
+                                            System.out.println("Requirement " + requirementSpecification + " not impacted by " + vertex + " " + requirementSpecification.getFilledBy());
+                                        }
+                                    }
+                                }
+                                if (reallyRemove) {
+                                    if (vertex instanceof Place) {
+                                        removePlace((Place) vertex);
+                                    } else if (vertex instanceof Transition) {
+                                        removeTransition((Transition) vertex);
+                                    }
+                                }
+                            }
+                        });
                         popup.show(vv, me.getX(), me.getY());
                     } else if (edge != null) {
                         JPopupMenu popup = new JPopupMenu();
@@ -1109,6 +1464,23 @@ public class TaskModelEditor extends JPanel {
                                 vv.repaint();
                             }
                         });
+                        popup.add(new AbstractAction("Edit Global Variables") {
+                            @Override
+                            public void actionPerformed(ActionEvent ae) {
+                                SelectGlobalVariableD variableD = new SelectGlobalVariableD(null, true, mediator.getProjectSpec().getGlobalVariableToValue());
+                                variableD.setVisible(true);
+                                if (variableD.confirmedExit()) {
+                                    ArrayList<String> deletedVariables = variableD.getDeletedVariables();
+                                    for (String variable : deletedVariables) {
+                                        mediator.getProjectSpec().deleteGlobalVariable(variable);
+                                    }
+                                    HashMap<String, Object> createdVariables = variableD.getCreatedVariables();
+                                    for (String variable : createdVariables.keySet()) {
+                                        mediator.getProjectSpec().setGlobalVariableValue(variable, createdVariables.get(variable));
+                                    }
+                                }
+                            }
+                        });
                         popup.show(vv, me.getX(), me.getY());
                     }
                 }
@@ -1120,6 +1492,53 @@ public class TaskModelEditor extends JPanel {
                 amDraggingVertex = false;
                 amTranslating = false;
                 prevMousePoint = null;
+            }
+        }
+
+        private void addPositioningVertex(Vertex newTransition, Vertex startPlace, Vertex endPlace) {
+
+            graph.addVertex(newTransition);
+            Point freePoint = getVertexFreePoint(
+                    (int) ((layout.getX(startPlace) + layout.getX(endPlace)) / 2),
+                    (int) ((layout.getY(startPlace) + layout.getY(endPlace)) / 2),
+                    CLICK_RADIUS
+            );
+            layout.setLocation(newTransition, snapToGrid(freePoint));
+        }
+
+        private void createInterrupt(Vertex vertex, boolean unique, Integer nPlaces, Integer interruptType, ArrayList<Place> selectedS) {
+
+            if (vertex instanceof Place) {
+                final Place place = (Place) vertex;
+                ArrayList<Place> newPlaces = new ArrayList<Place>();
+
+                int i = 0;
+
+                Vertex v = vertex;
+                Place p = new Place("", editorMode);
+
+                do {
+                    startVertexSelected(v);
+                    graph.addVertex(place);
+
+                    Point freePoint = getVertexFreePoint(
+                            (int) ((layout.getX(v) + layout.getX(p)) / 2),
+                            (int) ((layout.getY(v) + layout.getY(p)) / 2),
+                            CLICK_RADIUS);
+
+                    layout.setLocation(place, snapToGrid(freePoint));
+                    endVertexSelected(p);
+
+                    v = p;
+                    p = new Place("", editorMode);
+                    i++;
+                } while (i < nPlaces);
+              
+                startVertexSelected(v);
+                endVertexSelected(vertex);
+
+                vv.repaint();
+
             }
         }
 
@@ -1257,38 +1676,32 @@ public class TaskModelEditor extends JPanel {
     }
 
     public void addTemplate(MissionPlanSpecification spec) {
-        throw new NotImplementedException();
-//
-//        Graph<Vertex, Edge> g = spec.getGraph();
-//        if (g != graph && g != null) {
-//            HashMap<Vertex, Vertex> vertexMap = new HashMap<Vertex, Vertex>();
-//            for (Vertex vertex : g.getVertices()) {
-//                if (vertex instanceof Place) {
-//                    Place place = (Place) vertex;
-//                    Place placeCopy = place.copyWithoutConnections();
-//                    vertexMap.put(vertex, placeCopy);
-//                    graph.addVertex(placeCopy);
-//                    layout.setLocation(placeCopy, spec.getLocations().get(vertex));
-//                } else if (vertex instanceof Transition) {
-//                    Transition transition = (Transition) vertex;
-//                    Transition transitionCopy = transition.copyWithoutConnections();
-//                    vertexMap.put(vertex, transitionCopy);
-//                    graph.addVertex(transitionCopy);
-//                    layout.setLocation(transitionCopy, spec.getLocations().get(vertex));
-//                } else {
-//                    LOGGER.severe("Vertex is not an instance of Place OR Transition! " + vertex);
-//                }
-//            }
-//
-//            for (Edge edge : g.getEdges()) {
-//                Edge edgeCopy = edge.copy(vertexMap);
-//                graph.addEdge(edgeCopy, edgeCopy.getStart(), edgeCopy.getEnd());
-//            }
-//            vv.repaint();
-//            // System.out.println("Template added");
-//        } else {
-//            System.out.println("Can't add to self");
-//        }
+        Graph<Vertex, Edge> g = spec.getGraph();
+        if (g != graph && g != null) {
+
+            for (Vertex v : g.getVertices()) {
+
+                graph.addVertex(v);
+
+                layout.setLocation(v, spec.getLocations().get(v));
+
+                if (mSpec.getEventSpecList(v) == null) {
+                    for (ReflectedEventSpecification eventSpec : v.getEventSpecs()) {
+                        mSpec.updateEventSpecList(v, eventSpec);
+                    }
+                }
+            }
+
+            for (Object o : g.getEdges()) {
+                Edge edge = (Edge) o;
+                graph.addEdge(edge, edge.getStart(), edge.getEnd());
+            }
+
+            mSpec.updateThisLayout(layout);
+            mSpec.updateAllTags();
+
+        }
+
     }
 
     public void setGraph(MissionPlanSpecification spec) {
@@ -1316,12 +1729,13 @@ public class TaskModelEditor extends JPanel {
 
             spec.updateThisLayout(layout);    // @help Why are we doing this?
 
+            //@todo Add lookup for plan to translation and zoom
+            vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
             vv.repaint();
-//            System.out.println("Size " + layout.getSize());
         } else {
             this.graph = new DirectedSparseGraph<Vertex, Edge>();
-            // this.graph = new SparseMultigraph<Place, Transition>();
             layout.setGraph(this.graph);
+            vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
             vv.repaint();
         }
     }

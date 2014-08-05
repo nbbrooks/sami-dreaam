@@ -29,6 +29,7 @@ import javax.swing.SwingConstants;
 import sami.event.Event;
 import sami.event.ReflectionHelper;
 import sami.markup.Markup;
+import sami.mission.MissionPlanSpecification;
 import sami.uilanguage.MarkupComponent;
 
 /**
@@ -68,16 +69,17 @@ public class ReflectedEventD extends javax.swing.JDialog {
     // Text field to provide the variable name to write the run-time field's value to (input events only)
     private final HashMap<Field, JTextField> fieldToVariableTF;
     private final ReflectedEventSpecification eventSpec;
-    private final ArrayList<String> missionVariables;
+    private final MissionPlanSpecification mSpec;
     private final VariableSelectedListener variableSelectedListener = new VariableSelectedListener();
+    private final Mediator mediator = new Mediator();
 
     /**
      * Creates new form ReflectedEventD
      */
-    public ReflectedEventD(ReflectedEventSpecification eventSpec, ArrayList<String> missionVariables, java.awt.Frame parent, boolean modal) {
+    public ReflectedEventD(java.awt.Frame parent, boolean modal, ReflectedEventSpecification eventSpec, MissionPlanSpecification mSpec) {
         super(parent, modal);
         this.eventSpec = eventSpec;
-        this.missionVariables = missionVariables;
+        this.mSpec = mSpec;
         try {
             eventClass = Class.forName(eventSpec.getClassName());
             if (InputEvent.class.isAssignableFrom(eventClass)) {
@@ -133,23 +135,25 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
                 fieldPanel.add(description, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
+
                 // Add combo box for selecting variable name
                 addVariableComboBox(field, fieldNameToReadVariable, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
+
                 // Add component for defining value
                 addValueComponent(field, fieldNameToValue, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
+
                 // Add toggle button for setting ability to edit field at run-time
                 addEditableButton(field, fieldNameToEditable, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
+                // Add fieldPanel to paramsPanel
                 maxComponentWidth = Math.max(maxComponentWidth, fieldPanel.getPreferredSize().width);
-                paramsPanel.add(fieldPanel);
                 paramsPanel.add(fieldPanel, paramsConstraints);
                 paramsConstraints.gridy = paramsConstraints.gridy + 1;
 
                 // Add space between each enum's interaction area
-                paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)));
                 paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)), paramsConstraints);
                 paramsConstraints.gridy = paramsConstraints.gridy + 1;
             }
@@ -177,19 +181,20 @@ public class ReflectedEventD extends javax.swing.JDialog {
                     // Add description for this field
                     JLabel description = new JLabel(variableNameToDescription.get(variableFieldName), SwingConstants.LEFT);
                     description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
+                    maxComponentWidth = Math.max(maxComponentWidth, description.getPreferredSize().width);
                     variablePanel.add(description, variableConstraints);
                     variableConstraints.gridy = variableConstraints.gridy + 1;
 
                     // Add text field for setting variable
                     addVariableTextField(variableField, fieldNameToWriteVariable, variablePanel, variableConstraints);
                     variableConstraints.gridy = variableConstraints.gridy + 1;
+
+                    // Add variablePanel to paramsPanel
                     maxComponentWidth = Math.max(maxComponentWidth, variablePanel.getPreferredSize().width);
-                    paramsPanel.add(variablePanel);
                     paramsPanel.add(variablePanel, paramsConstraints);
                     paramsConstraints.gridy = paramsConstraints.gridy + 1;
 
                     // Add space between each enum's interaction area
-                    paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)));
                     paramsPanel.add(Box.createRigidArea(new Dimension(0, 25)), paramsConstraints);
                     paramsConstraints.gridy = paramsConstraints.gridy + 1;
                 }
@@ -216,7 +221,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected void addVariableComboBox(Field field, HashMap<String, String> fieldNameToReadVariable, JPanel panel, GridBagConstraints constraints) {
-        ArrayList<String> existingVariables = (ArrayList< String>) missionVariables.clone();
+        ArrayList<String> existingVariables = mediator.getProjectSpec().getVariables(field);
         existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 
@@ -260,7 +265,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
             visualization = new JLabel("No component", SwingConstants.LEFT);
         }
         maxComponentWidth = Math.max(maxComponentWidth, visualization.getPreferredSize().width);
-        maxComponentWidth = Math.max(maxComponentWidth, visualization.getPreferredSize().width);
         panel.add(visualization, constraints);
     }
 
@@ -301,7 +305,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
             }
         });
         fieldToEditableB.put(field, enableEditB);
-        maxComponentWidth = Math.max(maxComponentWidth, enableEditB.getPreferredSize().width);
         maxComponentWidth = Math.max(maxComponentWidth, enableEditB.getPreferredSize().width);
         panel.add(enableEditB, constraints);
     }
@@ -389,7 +392,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 MarkupComponent markupComponent = fieldToValueComponent.get(field);
                 if (markupComponent != null) {
                     // Store the value from the component
-                    fieldNameToObject.put(field.getName(), UiComponentGenerator.getInstance().getComponentValue(markupComponent, field));
+                    fieldNameToObject.put(field.getName(), UiComponentGenerator.getInstance().getComponentValue(markupComponent, field.getType()));
                 }
             }
         }

@@ -53,7 +53,7 @@ public class DREAAM extends javax.swing.JFrame {
     public static final String LAST_DRM_FOLDER = "LAST_DRM_FOLDER";
     TaskModelEditor taskModelEditor = null;
     DefaultMutableTreeNode treeRoot = null;
-    DefaultMutableTreeNode playsRoot = null;
+    DefaultMutableTreeNode missionsRoot = null;
 //    DefaultMutableTreeNode agentsRoot = null;
     DefaultMutableTreeNode checkersRoot = null;
     DefaultMutableTreeNode helpersRoot = null;
@@ -85,21 +85,19 @@ public class DREAAM extends javax.swing.JFrame {
         // Side panel
         jSplitPane1.setDividerLocation(200);
         treeRoot = (DefaultMutableTreeNode) componentT.getModel().getRoot();
-        playsRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 0);
-//        agentsRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 1);
+        treeRoot.add(mediator.getProjectSpec().getMissionTree());
         checkersRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 1);
         helpersRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 2);
         errorsRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 3);
         componentT.setCellRenderer(new DREAMMTreeCellRenderer());
 
         // Main panel
+        MissionPlanSpecification mSpec = mediator.getProjectSpec().getNewMissionPlanSpecification("Anonymous");
+        taskModelEditor = new TaskModelEditor(this, mSpec);
         mainP.setLayout(new BorderLayout());
-        MissionPlanSpecification spec = mediator.getProjectSpec().getNewMissionPlanSpecification("Anonymous");
-        taskModelEditor = new TaskModelEditor(this, spec);
         mainP.add(taskModelEditor, BorderLayout.CENTER);
 
         // Add items to side panel
-        playsRoot.add(new DefaultMutableTreeNode(spec));
         for (CheckerAgent agent : checkerAgents) {
             checkersRoot.add(new DefaultMutableTreeNode(agent));
         }
@@ -120,19 +118,19 @@ public class DREAAM extends javax.swing.JFrame {
                 int pathCount = objectPath.length;
                 if ((me.isControlDown() || me.isPopupTrigger())) {
 
-                    if (treePath.getLastPathComponent() == playsRoot) {
+                    if (treePath.getLastPathComponent() == missionsRoot) {
 
                         JPopupMenu menu = new JPopupMenu();
                         menu.add(new AbstractAction("Add new play") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
-                                newMissionSpec();
+                                addNewRootMissionSpec();
                             }
                         });
 
                         menu.show(componentT, me.getX(), me.getY());
                     } else if (pathCount > 1
-                            && objectPath[pathCount - 2] == playsRoot
+                            && objectPath[pathCount - 2] == missionsRoot
                             && ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject() instanceof MissionPlanSpecification) {
                         // Plan spec under Plays menu
                         JPopupMenu menu = new JPopupMenu();
@@ -150,7 +148,7 @@ public class DREAAM extends javax.swing.JFrame {
                                 if (result != null) {
                                     MissionPlanSpecification mps = (MissionPlanSpecification) ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject();
                                     mps.setName(result);
-                                    ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(playsRoot);
+                                    refreshMissionTree();
                                 }
                             }
                         });
@@ -161,16 +159,16 @@ public class DREAAM extends javax.swing.JFrame {
 
                                 boolean reallyDelete = true;
 
-                                if (mediator.getReqs() != null) {
+                                if (mediator.getProjectSpec().getReqs() != null) {
 
-                                    for (RequirementSpecification requirementSpecification : mediator.getReqs()) {
+                                    for (RequirementSpecification requirementSpecification : mediator.getProjectSpec().getReqs()) {
                                         if (requirementSpecification.getFilledBy() == mps) {
                                             int response = JOptionPane.showConfirmDialog(null, "Are you sure, requirement " + requirementSpecification + " is filled by this specification?");
                                             reallyDelete = reallyDelete && response != JOptionPane.CANCEL_OPTION;
                                         }
                                     }
                                     for (Vertex vertex : mps.getGraph().getVertices()) {
-                                        for (RequirementSpecification requirementSpecification : mediator.getReqs()) {
+                                        for (RequirementSpecification requirementSpecification : mediator.getProjectSpec().getReqs()) {
                                             if (requirementSpecification.getFilledBy() == vertex) {
                                                 int response = JOptionPane.showConfirmDialog(null, "Are you sure, requirement " + requirementSpecification + " is filled by place " + vertex + " in this mission model");
                                                 reallyDelete = reallyDelete && response != JOptionPane.CANCEL_OPTION;
@@ -180,16 +178,14 @@ public class DREAAM extends javax.swing.JFrame {
                                 }
 
                                 if (reallyDelete) {
-                                    //@todo: remove in and out vertices and edges from Vertex
-                                    playsRoot.remove((DefaultMutableTreeNode) treePath.getLastPathComponent());
-                                    ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(playsRoot);
-                                    mediator.remove(mps);
-
-                                    if (playsRoot.getChildCount() == 0) {
-                                        newMissionSpec();
-                                        ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(playsRoot);
+                                    mediator.getProjectSpec().removeMissionPlanNode((DefaultMutableTreeNode) treePath.getLastPathComponent());
+                                    refreshMissionTree();
+                                    if (missionsRoot.getChildCount() == 0) {
+                                        // No plans, create new one
+                                        addNewRootMissionSpec();
                                     } else {
-                                        nodeSelected(playsRoot.getLastLeaf());
+                                        // Pick root mission to display
+                                        selectNode(missionsRoot.getNextNode());
                                     }
                                 }
                             }
@@ -277,20 +273,22 @@ public class DREAAM extends javax.swing.JFrame {
                         LOGGER.info("Nothing for " + ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject().getClass());
                     }
                 } else if (treePath != null) {
-                    nodeSelected((DefaultMutableTreeNode) treePath.getLastPathComponent());
+                    selectNode((DefaultMutableTreeNode) treePath.getLastPathComponent());
                 }
             }
         });
         repaint();
 
         // Try to load the last used DRM file
+        boolean loadSuccess = false;
         Preferences p = Preferences.userRoot();
         try {
             String lastDrmPath = p.get(LAST_DRM_FILE, null);
             if (lastDrmPath != null) {
                 if (mediator.open(new File(lastDrmPath))) {
                     // Succeeded loading last used specification
-                    _open();
+                    loadSuccess = true;
+                    loadProject();
                 } else {
                     // Failed to load last used specification
                     Object[] options = {"Load", "New"};
@@ -298,19 +296,23 @@ public class DREAAM extends javax.swing.JFrame {
                     if (answer == JOptionPane.YES_OPTION) {
                         // Get a different specification to try and load
                         if (mediator.open()) {
-                            _open();
+                            loadSuccess = true;
+                            loadProject();
                         } else {
                             // Couldn't load this one either, create a new specification
                             JOptionPane.showMessageDialog(null, "Could not load plan specification (.DRM), creating a new specification");
                         }
-                    } else {
-                        // New specification
                     }
                 }
             }
         } catch (AccessControlException e) {
             LOGGER.severe("Failed to save preferences");
         }
+        if (!loadSuccess) {
+            // New mission
+            loadNewProject();
+        }
+
         // Try to load the last used EPF file
         try {
             String lastEpfPath = p.get(LAST_EPF_FILE, null);
@@ -536,31 +538,41 @@ public class DREAAM extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void newMissionSpec() {
+    private void addNewRootMissionSpec() {
+        // Creates and adds new root mission spec
+        // Updates JTree structure
+        // Expands and selects created mission spec
         Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Requesting a new MissionPlanSpecification", this);
+
+        // Save current mission
         taskModelEditor.writeModel();
-        // Dont't want multiple missions named Anonymous if the developer doesn't rename them manually
+
+        // Don't want multiple missions named Anonymous if the developer doesn't rename them manually
         ArrayList<String> playNames = new ArrayList<String>();
-        Enumeration enumeration = playsRoot.children();
-        while (enumeration.hasMoreElements()) {
-            playNames.add(((DefaultMutableTreeNode) enumeration.nextElement()).toString());
+        ArrayList<MissionPlanSpecification> missions = mediator.getProjectSpec().getAllMissionPlans();
+        for (MissionPlanSpecification mSpec : missions) {
+            playNames.add(mSpec.getName());
         }
         String missionName = DreaamHelper.getUniqueName("Anonymous", playNames);
+
+        // Create and add mission
         MissionPlanSpecification spec = mediator.getProjectSpec().getNewMissionPlanSpecification(missionName);
-        DefaultMutableTreeNode node = new DefaultMutableTreeNode(spec);
-        playsRoot.add(node);
-        taskModelEditor.setGraph(spec);
-        ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(playsRoot);
-        componentT.setSelectionPath(getPath(node));
+        DefaultMutableTreeNode node = mediator.getProjectSpec().addRootMissionPlan(spec);
+        refreshMissionTree();
+        selectNode(node);
     }
 
-    public void addMissionSpec(MissionPlanSpecification spec) {
+    public void addSubMissionSpec(MissionPlanSpecification childMSpec, MissionPlanSpecification parentMSpec) {
+        // Adds sub-mission spec
+        // Updates JTree structure
         Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Adding a MissionPlanSpecification", this);
+
+        // Save current mission
         taskModelEditor.writeModel();
-        mediator.getProjectSpec().addMissionPlan(spec);
-        DefaultMutableTreeNode node = new DefaultMutableTreeNode(spec);
-        playsRoot.add(node);
-        ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(playsRoot);
+
+        // Create and add sub mission
+        mediator.getProjectSpec().addSubMissionPlan(childMSpec, parentMSpec);
+        refreshMissionTree();
     }
 
     // Helper function
@@ -580,61 +592,61 @@ public class DREAAM extends javax.swing.JFrame {
 
     private void openDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openDrmMActionPerformed
         if (mediator.open()) {
-            _open();
+            loadProject();
         }
     }//GEN-LAST:event_openDrmMActionPerformed
 
-    private void _open() {
-        // Clear out stuff from previous DRM
-        playsRoot.removeAllChildren();
+    private void loadProject() {
+        // Clear out errors
         errorsRoot.removeAllChildren();
 
-        // Load the specification and put them in the JTree
-        ArrayList<MissionPlanSpecification> mpSpecs = mediator.getProjectSpec().getMissionPlans();
+        // Load the mission tree
+        treeRoot.remove(0);
+        missionsRoot = mediator.getProjectSpec().getMissionTree();
+        treeRoot.insert(missionsRoot, 0);
+        refreshMissionTree();
+
+        // Load the first mission into the editor
+        ArrayList<MissionPlanSpecification> mpSpecs = mediator.getProjectSpec().getRootMissionPlans();
         if (mpSpecs.size() > 0) {
             Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Setting graph", this);
             taskModelEditor.setGraph(mpSpecs.get(0));
             taskModelEditor.setMode(FunctionMode.Nominal);
-            for (MissionPlanSpecification mp : mpSpecs) {
-                playsRoot.add(new DefaultMutableTreeNode(mp));
-            }
+
+            selectNode(mediator.getProjectSpec().getNode(mpSpecs.get(0)));
         } else {
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "No missions to load", this);
         }
 
-//        ArrayList<RequirementSpecification> reqs = mediator.getReqs();
-//        if (reqs != null && reqs.size() > 0) {
-//            for (RequirementSpecification requirementSpecification : reqs) {
-//                requirementsRoot.add(new DefaultMutableTreeNode(requirementSpecification));
-//            }
-//        }
-        // Redraw tree
-        ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(treeRoot);
-        // Reset view
-        taskModelEditor.vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
-
         setTitle(Preferences.userRoot().get(LAST_DRM_FILE, null));
+    }
+
+    private void loadNewProject() {
+        // Clear out errors
+        errorsRoot.removeAllChildren();
+
+        // Load the mission tree
+        treeRoot.remove(0);
+        missionsRoot = mediator.getProjectSpec().getMissionTree();
+        treeRoot.insert(missionsRoot, 0);
+
+        addNewRootMissionSpec();
     }
 
     private void saveDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmMActionPerformed
         taskModelEditor.writeModel();
-        mediator.getProjectSpec().addMissionPlan(taskModelEditor.getModel());
         mediator.save();
 
     }//GEN-LAST:event_saveDrmMActionPerformed
 
     private void saveDrmAsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmAsMActionPerformed
         taskModelEditor.writeModel();
-        mediator.getProjectSpec().addMissionPlan(taskModelEditor.getModel());
         mediator.saveAs();
     }//GEN-LAST:event_saveDrmAsMActionPerformed
 
     private void newDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newDrmMActionPerformed
-        playsRoot.removeAllChildren();
-        errorsRoot.removeAllChildren();
-
         mediator.newSpec();
-        _open();
+        loadNewProject();
     }//GEN-LAST:event_newDrmMActionPerformed
 
     private void editReqsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editReqsMActionPerformed
@@ -666,7 +678,7 @@ public class DREAAM extends javax.swing.JFrame {
     }//GEN-LAST:event_editReqsMActionPerformed
 
     private void specGUIMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_specGUIMActionPerformed
-        GuiSpecD d = new GuiSpecD(this, true, mediator.getGuiSpecs());
+        GuiSpecD d = new GuiSpecD(this, true, mediator.getProjectSpec().getGuiElements());
         d.setVisible(true);
     }//GEN-LAST:event_specGUIMActionPerformed
 
@@ -773,23 +785,37 @@ public class DREAAM extends javax.swing.JFrame {
         }
     }
 
-    public void nodeSelected(DefaultMutableTreeNode node) {
-        // DefaultMutableTreeNode node = (DefaultMutableTreeNode) componentT.getLastSelectedPathComponent();
-
+    public void selectNode(DefaultMutableTreeNode node) {
+        // Changes editor view
+        // Updates expanded part of JTree
+        // Updates highlighted JTree node
         if (node == null) {
             return;
         }
-
         Object nodeInfo = node.getUserObject();
-        if (node.isLeaf()) {
-            if (nodeInfo instanceof MissionPlanSpecification) {
-                taskModelEditor.writeModel();
-                taskModelEditor.setGraph((MissionPlanSpecification) nodeInfo);
-                taskModelEditor.setMode(FunctionMode.Nominal);
-//                ((MissionPlanSpecification) nodeInfo).printGraph();
-            }
+        if (nodeInfo instanceof MissionPlanSpecification) {
+            taskModelEditor.writeModel();
+            taskModelEditor.setGraph((MissionPlanSpecification) nodeInfo);
+            taskModelEditor.setMode(FunctionMode.Nominal);
+            componentT.expandPath(getPath(node));
+            componentT.setSelectionPath(getPath(node));
         }
         repaint();
+    }
+
+    public void expandNode(DefaultMutableTreeNode node) {
+        // Updates expanded part of JTree
+        if (node == null) {
+            return;
+        }
+        componentT.expandPath(getPath(node));
+        refreshMissionTree();
+    }
+
+    public void refreshMissionTree() {
+        // Refreshes JTree structure
+        ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(missionsRoot);
+        componentT.repaint();
     }
 
     private class DREAMMTreeCellRenderer extends DefaultTreeCellRenderer {
