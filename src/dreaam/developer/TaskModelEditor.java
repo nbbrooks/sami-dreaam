@@ -970,7 +970,7 @@ public class TaskModelEditor extends JPanel {
                             popup.add(new AbstractAction("Edit Sub-missions") {
                                 public void actionPerformed(ActionEvent e) {
 
-                                    SelectSubMissionD d = new SelectSubMissionD(null, true, mSpec, mediator.getProjectSpec(), place.getSubMissions(), place.getSubMissionToTaskMap());
+                                    SelectSubMissionD d = new SelectSubMissionD(null, true, mSpec, mediator.getProjectSpec(), place.getSubMissionTemplates(), place.getSubMissionToTaskMap());
                                     d.setVisible(true);
                                     if (d.confirmedExit()) {
                                         for (MissionPlanSpecification createdSubMMSpec : d.getCreatedSubMissions()) {
@@ -979,7 +979,7 @@ public class TaskModelEditor extends JPanel {
                                         for (MissionPlanSpecification deletedSubMMSpec : d.getDeletedSubMissions()) {
                                             mediator.getProjectSpec().removeMissionPlan(deletedSubMMSpec);
                                         }
-                                        place.setSubMissions(d.getSubMissions());
+                                        place.setSubMissionTemplates(d.getSubMissions());
                                         place.setSubMissionToTaskMap(d.getSubMissionToTaskMap());
                                         place.updateTag();
                                         dreaam.refreshMissionTree();

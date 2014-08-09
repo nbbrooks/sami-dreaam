@@ -345,6 +345,7 @@ public class DREAAM extends javax.swing.JFrame {
         saveDrmAsM = new javax.swing.JMenuItem();
         loadEpfM = new javax.swing.JMenuItem();
         editM = new javax.swing.JMenu();
+        jMenuItem2 = new javax.swing.JMenuItem();
         requirementsM = new javax.swing.JMenu();
         editReqsM = new javax.swing.JMenuItem();
         guiM = new javax.swing.JMenu();
@@ -451,6 +452,15 @@ public class DREAAM extends javax.swing.JFrame {
         jMenuBar1.add(fileM);
 
         editM.setText("Edit");
+
+        jMenuItem2.setText("Rebuild tags");
+        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                rebuildTags(evt);
+            }
+        });
+        editM.add(jMenuItem2);
+
         jMenuBar1.add(editM);
 
         requirementsM.setText("Requirements");
@@ -749,6 +759,13 @@ public class DREAAM extends javax.swing.JFrame {
         loadEpf(environmentLocation);
     }//GEN-LAST:event_loadEpfActionPerformed
 
+    private void rebuildTags(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rebuildTags
+        if(mediator.getProjectSpec() != null) {
+            mediator.getProjectSpec().updateMissionTags();
+        }
+        taskModelEditor.repaint();
+    }//GEN-LAST:event_rebuildTags
+
     public void loadEpf(File epfFile) {
         if (epfFile == null) {
             return;
@@ -883,6 +900,7 @@ public class DREAAM extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSplitPane jSplitPane1;
     private javax.swing.JMenuItem loadEpfM;
