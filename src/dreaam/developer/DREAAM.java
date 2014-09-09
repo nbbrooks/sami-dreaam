@@ -602,6 +602,9 @@ public class DREAAM extends javax.swing.JFrame {
     private void openDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openDrmMActionPerformed
         if (mediator.open()) {
             loadProject();
+        } else {
+            // Couldn't load the plan
+            JOptionPane.showMessageDialog(null, "Could not load plan specification (.DRM) file");
         }
     }//GEN-LAST:event_openDrmMActionPerformed
 
@@ -760,7 +763,7 @@ public class DREAAM extends javax.swing.JFrame {
     }//GEN-LAST:event_loadEpfActionPerformed
 
     private void rebuildTags(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rebuildTags
-        if(mediator.getProjectSpec() != null) {
+        if (mediator.getProjectSpec() != null) {
             mediator.getProjectSpec().updateMissionTags();
         }
         taskModelEditor.repaint();
@@ -793,9 +796,9 @@ public class DREAAM extends javax.swing.JFrame {
             }
 
         } catch (ClassNotFoundException ex) {
-            LOGGER.severe("Class not found exception in EPF load");
+            LOGGER.severe("Class Not Found Exception in EPF load");
         } catch (FileNotFoundException ex) {
-            LOGGER.severe("EPF File not found");
+            LOGGER.severe("File Not Found Exception on EPF load");
         } catch (IOException ex) {
             LOGGER.severe("IO Exception on EPF load");
         }

@@ -149,9 +149,6 @@ public class Mediator {
             try {
                 Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Reading: " + location.toString());
                 ObjectInputStream ois = new ObjectInputStream(new FileInputStream(location));
-                // Need this for try/catch detection of ProjectSpecification readObject UUID mismatch errors, not sure why
-                ois.readObject();
-                // Now do the read again and store it
                 projectSpec = (ProjectSpecification) ois.readObject();
 
                 if (projectSpec == null) {
