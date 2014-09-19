@@ -144,7 +144,9 @@ public class SelectTokenD extends javax.swing.JDialog {
             }
             if (reqPanel.quantityCB.getSelectedItem() != "") {
                 matchQuantity = (MatchQuantity) reqPanel.quantityCB.getSelectedItem();
-                if (matchQuantity == matchQuantity.Number) {
+                if (matchQuantity == MatchQuantity.Number
+                        || matchQuantity == MatchQuantity.GreaterThanEqualTo
+                        || matchQuantity == MatchQuantity.LessThan) {
                     if (!reqPanel.quantityTF.getText().equals("")) {
                         try {
                             quantity = Integer.parseInt(reqPanel.quantityTF.getText());
@@ -161,7 +163,9 @@ public class SelectTokenD extends javax.swing.JDialog {
 
             // Blank out values as necessary (may have been entered when they were valid, but then a value was changed making them obsolete
             //  This is just to make the toString() like nice
-            if (matchQuantity != MatchQuantity.Number) {
+            if (matchQuantity != MatchQuantity.Number
+                    && matchQuantity != MatchQuantity.GreaterThanEqualTo
+                    && matchQuantity != MatchQuantity.LessThan) {
                 quantity = -1;
             }
             if (matchCriteria != MatchCriteria.SpecificTask) {
@@ -228,7 +232,9 @@ public class SelectTokenD extends javax.swing.JDialog {
                 JComboBox quantityCombo = (JComboBox) evt.getSource();
                 if (evt.getStateChange() == ItemEvent.SELECTED) {
                     // Item was just selected
-                    if (quantityCombo.getSelectedItem() == MatchQuantity.Number) {
+                    if (quantityCombo.getSelectedItem() == MatchQuantity.Number
+                            || quantityCombo.getSelectedItem() == MatchQuantity.GreaterThanEqualTo
+                            || quantityCombo.getSelectedItem() == MatchQuantity.LessThan) {
                         // Show quantityTF
                         reqP.quantityTF.setVisible(true);
                     } else {
@@ -298,13 +304,15 @@ public class SelectTokenD extends javax.swing.JDialog {
                     reqP.quantityCB.addItem("");
                     reqP.quantityCB.addItem(MatchQuantity.None);
                     reqP.quantityCB.addItem(MatchQuantity.All);
-                    reqP.quantityCB.addItem(MatchQuantity.Number);
+                    reqP.quantityCB.addItem(MatchQuantity.LessThan);
+                    reqP.quantityCB.addItem(MatchQuantity.GreaterThanEqualTo);
                 } else {
                     // In edge
                     reqP.quantityCB.removeAllItems();
                     reqP.quantityCB.addItem("");
                     reqP.quantityCB.addItem(MatchQuantity.None);
-                    reqP.quantityCB.addItem(MatchQuantity.Number);
+                    reqP.quantityCB.addItem(MatchQuantity.LessThan);
+                    reqP.quantityCB.addItem(MatchQuantity.GreaterThanEqualTo);
                 }
             } else if (edgeType == EdgeType.OutgoingNominal || edgeType == EdgeType.OutgoingRecovery) {
                 if (reqP.criteriaCB.getSelectedItem() == MatchCriteria.SubMissionToken) {
@@ -385,7 +393,7 @@ public class SelectTokenD extends javax.swing.JDialog {
             // Criteria
             // criteriaCB
             criteriaCB = new JComboBox();
-            criteriaCB.insertItemAt(" ", 0);
+            criteriaCB.insertItemAt("", 0);
             criteriaCB.addItem(MatchCriteria.AnyProxy);
             criteriaCB.addItem(MatchCriteria.AnyToken);
             criteriaCB.addItem(MatchCriteria.AnyTask);
@@ -399,7 +407,7 @@ public class SelectTokenD extends javax.swing.JDialog {
             add(criteriaCB);
             // specificTaskCB
             specificTaskCB = new JComboBox();
-            specificTaskCB.insertItemAt(" ", 0);
+            specificTaskCB.insertItemAt("", 0);
             specificTaskCB.insertItemAt("New task token", 1);
             for (TaskSpecification taskTokenSpec : taskTokenSpecs) {
                 specificTaskCB.addItem(taskTokenSpec.getName());
@@ -409,10 +417,11 @@ public class SelectTokenD extends javax.swing.JDialog {
             // Quantity
             // quantityCB
             quantityCB = new JComboBox();
-            quantityCB.insertItemAt(" ", 0);
+            quantityCB.insertItemAt("", 0);
             if (edgeType == EdgeType.IncomingNominal || edgeType == EdgeType.IncomingRecovery) {
                 quantityCB.addItem(MatchQuantity.None);
-                quantityCB.addItem(MatchQuantity.Number);
+                quantityCB.addItem(MatchQuantity.LessThan);
+                quantityCB.addItem(MatchQuantity.GreaterThanEqualTo);
             } else if (edgeType == EdgeType.OutgoingNominal || edgeType == EdgeType.OutgoingRecovery) {
                 quantityCB.addItem(MatchQuantity.All);
                 quantityCB.addItem(MatchQuantity.Number);
@@ -428,7 +437,7 @@ public class SelectTokenD extends javax.swing.JDialog {
             // actionCB
             if (edgeType == EdgeType.OutgoingNominal || edgeType == EdgeType.OutgoingRecovery) {
                 actionCB = new JComboBox();
-                actionCB.insertItemAt(" ", 0);
+                actionCB.insertItemAt("", 0);
                 for (MatchAction criteria : MatchAction.values()) {
                     actionCB.addItem(criteria);
                 }
@@ -480,7 +489,9 @@ public class SelectTokenD extends javax.swing.JDialog {
             if (value.getMatchQuantity() != null) {
                 quantityCB.setSelectedItem(value.getMatchQuantity());
                 quantityCB.setVisible(true);
-                if (value.getMatchQuantity() == MatchQuantity.Number) {
+                if (value.getMatchQuantity() == MatchQuantity.Number
+                        || value.getMatchQuantity() == MatchQuantity.GreaterThanEqualTo
+                        || value.getMatchQuantity() == MatchQuantity.LessThan) {
                     quantityTF.setText(value.getQuantity() + "");
                     quantityTF.setVisible(true);
                 }

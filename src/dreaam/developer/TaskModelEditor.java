@@ -416,6 +416,14 @@ public class TaskModelEditor extends JPanel {
                     expandNeighborVisibility(mml.edgeStartVertex, GuiConfig.VisibilityMode.Full, 1, new ArrayList<Vertex>());
                 }
                 break;
+            case All:
+                for (Vertex vertex : graph.getVertices()) {
+                    vertex.setVisibilityMode(GuiConfig.VisibilityMode.Full);
+                }
+                for (Edge edge : graph.getEdges()) {
+                    edge.setVisibilityMode(GuiConfig.VisibilityMode.Full);
+                }
+                break;
         }
     }
 

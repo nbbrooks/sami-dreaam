@@ -120,7 +120,7 @@ public class DREAAM extends javax.swing.JFrame {
                     if (treePath.getLastPathComponent() == missionsRoot) {
 
                         JPopupMenu menu = new JPopupMenu();
-                        menu.add(new AbstractAction("Add new play") {
+                        menu.add(new AbstractAction("Add new mission") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
                                 addNewRootMissionSpec();
@@ -143,11 +143,39 @@ public class DREAAM extends javax.swing.JFrame {
                         menu.add(new AbstractAction("Rename") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
-                                String result = JOptionPane.showInputDialog(null, "Rename mission:");
+                                String result = JOptionPane.showInputDialog(null, "New mission name:");
                                 if (result != null) {
                                     MissionPlanSpecification mps = (MissionPlanSpecification) ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject();
                                     mps.setName(result);
                                     refreshMissionTree();
+                                }
+                            }
+                        });
+                        menu.add(new AbstractAction("Duplicate") {
+                            @Override
+                            public void actionPerformed(ActionEvent ae) {
+                                String result = JOptionPane.showInputDialog(null, "Duplicate mission name:");
+                                if (result != null) {
+                                    // Ensure entered mission name is unique
+                                    ArrayList<String> playNames = new ArrayList<String>();
+                                    ArrayList<MissionPlanSpecification> missions = mediator.getProjectSpec().getAllMissionPlans();
+                                    for (MissionPlanSpecification mSpec : missions) {
+                                        playNames.add(mSpec.getName());
+                                    }
+                                    result = DreaamHelper.getUniqueName(result, playNames);
+                                    MissionPlanSpecification mps = (MissionPlanSpecification) ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject();
+                                    LOGGER.info("Duplicating " + mps.getName() + " and naming " + result);
+
+                                    // Save current mission
+                                    taskModelEditor.writeModel();
+
+                                    // Clone and add to mission list
+                                    MissionPlanSpecification duplicate = mps.deepClone();
+                                    duplicate.setName(result);
+                                    DefaultMutableTreeNode node = mediator.getProjectSpec().addRootMissionPlan(duplicate);
+                                    refreshMissionTree();
+                                    selectNode(node);
+
                                 }
                             }
                         });
@@ -357,6 +385,7 @@ public class DREAAM extends javax.swing.JFrame {
         modeMenu = new javax.swing.JMenu();
         nominalMode = new javax.swing.JMenuItem();
         recoveryMode = new javax.swing.JMenuItem();
+        jMenuItem3 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -528,6 +557,14 @@ public class DREAAM extends javax.swing.JFrame {
             }
         });
         modeMenu.add(recoveryMode);
+
+        jMenuItem3.setText("All");
+        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                allModeActionPerformed(evt);
+            }
+        });
+        modeMenu.add(jMenuItem3);
 
         jMenuBar1.add(modeMenu);
 
@@ -769,6 +806,10 @@ public class DREAAM extends javax.swing.JFrame {
         taskModelEditor.repaint();
     }//GEN-LAST:event_rebuildTags
 
+    private void allModeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_allModeActionPerformed
+        taskModelEditor.setMode(FunctionMode.All);
+    }//GEN-LAST:event_allModeActionPerformed
+
     public void loadEpf(File epfFile) {
         if (epfFile == null) {
             return;
@@ -904,6 +945,7 @@ public class DREAAM extends javax.swing.JFrame {
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
+    private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSplitPane jSplitPane1;
     private javax.swing.JMenuItem loadEpfM;
