@@ -7,7 +7,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.ScrollPane;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -24,6 +23,7 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import sami.event.Event;
@@ -47,7 +47,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     private final static int BUTTON_HEIGHT = 50;
     private final static int BORDER = 5;
     private int maxComponentWidth = 100;
-    private ScrollPane scrollPane;
+    private JScrollPane scrollPane;
     private JPanel paramsPanel;
     private JButton okButton;
     // Class held by event spec
@@ -335,8 +335,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
         addParamComponents();
         paramsPanel.revalidate();
 
-        scrollPane = new ScrollPane();
-        scrollPane.add(paramsPanel);
+        scrollPane = new JScrollPane(paramsPanel);
         scrollPane.setPreferredSize(paramsPanel.getPreferredSize());
 
         okButton = new javax.swing.JButton();
