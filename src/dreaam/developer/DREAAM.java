@@ -385,7 +385,8 @@ public class DREAAM extends javax.swing.JFrame {
         modeMenu = new javax.swing.JMenu();
         nominalMode = new javax.swing.JMenuItem();
         recoveryMode = new javax.swing.JMenuItem();
-        jMenuItem3 = new javax.swing.JMenuItem();
+        allMode = new javax.swing.JMenuItem();
+        mockupMode = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -558,13 +559,21 @@ public class DREAAM extends javax.swing.JFrame {
         });
         modeMenu.add(recoveryMode);
 
-        jMenuItem3.setText("All");
-        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+        allMode.setText("All");
+        allMode.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 allModeActionPerformed(evt);
             }
         });
-        modeMenu.add(jMenuItem3);
+        modeMenu.add(allMode);
+
+        mockupMode.setText("Mockup");
+        mockupMode.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                mockupModeActionPerformed(evt);
+            }
+        });
+        modeMenu.add(mockupMode);
 
         jMenuBar1.add(modeMenu);
 
@@ -810,6 +819,10 @@ public class DREAAM extends javax.swing.JFrame {
         taskModelEditor.setMode(FunctionMode.All);
     }//GEN-LAST:event_allModeActionPerformed
 
+    private void mockupModeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mockupModeActionPerformed
+        taskModelEditor.setMode(FunctionMode.Mockup);
+    }//GEN-LAST:event_mockupModeActionPerformed
+
     public void loadEpf(File epfFile) {
         if (epfFile == null) {
             return;
@@ -936,6 +949,7 @@ public class DREAAM extends javax.swing.JFrame {
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu agentM;
+    private javax.swing.JMenuItem allMode;
     private javax.swing.JTree componentT;
     private javax.swing.JMenu editM;
     private javax.swing.JMenuItem editReqsM;
@@ -945,11 +959,11 @@ public class DREAAM extends javax.swing.JFrame {
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
-    private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSplitPane jSplitPane1;
     private javax.swing.JMenuItem loadEpfM;
     private javax.swing.JPanel mainP;
+    private javax.swing.JMenuItem mockupMode;
     private javax.swing.JMenu modeMenu;
     private javax.swing.JMenuItem newDrmM;
     private javax.swing.JMenuItem nominalMode;

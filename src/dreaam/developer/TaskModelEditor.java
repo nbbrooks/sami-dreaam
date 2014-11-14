@@ -32,6 +32,10 @@ import sami.mission.Edge;
 import sami.mission.InEdge;
 import sami.mission.InTokenRequirement;
 import sami.mission.MissionPlanSpecification;
+import sami.mission.MockupInEdge;
+import sami.mission.MockupOutEdge;
+import sami.mission.MockupPlace;
+import sami.mission.MockupTransition;
 import sami.mission.OutEdge;
 import sami.mission.OutTokenRequirement;
 import sami.mission.Place;
@@ -172,99 +176,97 @@ public class TaskModelEditor extends JPanel {
         // VERTEX
         vv.getRenderContext()
                 .setVertexDrawPaintTransformer(new Transformer<Vertex, Paint>() {
-                    @Override
-                    public Paint transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                                if (vertex.getBeingModified()) {
-                                    return GuiConfig.SEL_VERTEX_COLOR;
-                                } else {
-                                    return GuiConfig.VERTEX_COLOR;
-                                }
-                            case Background:
-                                if (vertex.getBeingModified()) {
-                                    return GuiConfig.SEL_VERTEX_COLOR;
-                                } else {
-                                    return GuiConfig.BKGND_VERTEX_COLOR;
-                                }
-                            case None:
-                            default:
-                                return null;
+            @Override
+            public Paint transform(Vertex vertex) {
+                switch (vertex.getVisibilityMode()) {
+                    case Full:
+                        if (vertex.getBeingModified()) {
+                            return GuiConfig.SEL_VERTEX_COLOR;
+                        } else {
+                            return GuiConfig.VERTEX_COLOR;
                         }
-                    }
-                });
+                    case Background:
+                        if (vertex.getBeingModified()) {
+                            return GuiConfig.SEL_VERTEX_COLOR;
+                        } else {
+                            return GuiConfig.BKGND_VERTEX_COLOR;
+                        }
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
 
         vv.getRenderContext()
                 .setVertexFillPaintTransformer(new Transformer<Vertex, Paint>() {
-                    @Override
-                    public Paint transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                                if (vertex instanceof Place) {
-                                    Place place = (Place) vertex;
-                                    if (place.isStart()) {
-                                        return GuiConfig.START_PLACE_COLOR;
-                                    } else if (place.isEnd()) {
-                                        return GuiConfig.END_PLACE_COLOR;
-                                    } else {
-                                        return GuiConfig.PLACE_COLOR;
-                                    }
-                                } else if (vertex instanceof Transition) {
-                                    return GuiConfig.TRANSITION_COLOR;
-                                }
-                                return null;
-                            case Background:
-                                return GuiConfig.BKGND_VERTEX_COLOR;
-                            case None:
-                            default:
-                                return null;
+            @Override
+            public Paint transform(Vertex vertex) {
+                switch (vertex.getVisibilityMode()) {
+                    case Full:
+                        if (vertex instanceof Place) {
+                            Place place = (Place) vertex;
+                            if (place.isStart()) {
+                                return GuiConfig.START_PLACE_COLOR;
+                            } else if (place.isEnd()) {
+                                return GuiConfig.END_PLACE_COLOR;
+                            } else {
+                                return GuiConfig.PLACE_COLOR;
+                            }
+                        } else if (vertex instanceof Transition) {
+                            return GuiConfig.TRANSITION_COLOR;
                         }
-                    }
-                });
+                        return null;
+                    case Background:
+                        return GuiConfig.BKGND_VERTEX_COLOR;
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
 
         vv.getRenderContext()
                 .setVertexFontTransformer(new Transformer<Vertex, Font>() {
-                    @Override
-                    public Font transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                            case Background:
-                                return new java.awt.Font("Dialog", Font.PLAIN, 14);
-                            case None:
-                            default:
-                                return null;
-                        }
-                    }
-                });
+            @Override
+            public Font transform(Vertex vertex) {
+                switch (vertex.getVisibilityMode()) {
+                    case Full:
+                    case Background:
+                        return new java.awt.Font("Dialog", Font.PLAIN, 14);
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
 
-        vv.getRenderContext()
-                .setVertexLabelTransformer(new Transformer<Vertex, String>() {
-                    @Override
-                    public String transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                                return vertex.getShortTag();
-                            case Background:
-                            case None:
-                            default:
-                                return null;
-                        }
-                    }
-                });
+        vv.getRenderContext().setVertexLabelTransformer(new Transformer<Vertex, String>() {
+            @Override
+            public String transform(Vertex vertex) {
+                switch (vertex.getVisibilityMode()) {
+                    case Full:
+                        return vertex.getShortTag();
+                    case Background:
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
 
-        vv.getRenderContext()
-                .setVertexShapeTransformer(new Transformer<Vertex, Shape>() {
-                    @Override
-                    public Shape transform(Vertex vertex) {
-                        if (vertex instanceof Transition) {
-                            return ((Transition) vertex).getShape();
-                        } else if (vertex instanceof Place) {
-                            return ((Place) vertex).getShape();
-                        } else {
-                            return null;
-                        }
-                    }
-                });
+        vv.getRenderContext().setVertexShapeTransformer(new Transformer<Vertex, Shape>() {
+            @Override
+            public Shape transform(Vertex vertex) {
+                if (vertex instanceof Transition) {
+                    return ((Transition) vertex).getShape();
+                } else if (vertex instanceof Place) {
+                    return ((Place) vertex).getShape();
+                } else {
+                    return null;
+                }
+            }
+        });
 
         vv.getRenderContext().setVertexStrokeTransformer(new Transformer<Vertex, Stroke>() {
             @Override
@@ -379,10 +381,12 @@ public class TaskModelEditor extends JPanel {
         switch (editorMode) {
             case Nominal:
                 for (Vertex vertex : graph.getVertices()) {
-                    if (vertex.getFunctionMode() == FunctionMode.Nominal) {
-                        vertex.setVisibilityMode(GuiConfig.VisibilityMode.Full);
-                    } else if (vertex.getFunctionMode() == FunctionMode.Recovery) {
-                        vertex.setVisibilityMode(GuiConfig.VisibilityMode.None);
+                    switch (vertex.getFunctionMode()) {
+                        case Nominal:
+                            vertex.setVisibilityMode(GuiConfig.VisibilityMode.Full);
+                            break;
+                        default:
+                            vertex.setVisibilityMode(GuiConfig.VisibilityMode.None);
                     }
                 }
                 for (Edge edge : graph.getEdges()) {
@@ -418,10 +422,42 @@ public class TaskModelEditor extends JPanel {
                 break;
             case All:
                 for (Vertex vertex : graph.getVertices()) {
-                    vertex.setVisibilityMode(GuiConfig.VisibilityMode.Full);
+                    switch (vertex.getFunctionMode()) {
+                        case Mockup:
+                            vertex.setVisibilityMode(GuiConfig.VisibilityMode.None);
+                            break;
+                        default:
+                            vertex.setVisibilityMode(GuiConfig.VisibilityMode.Full);
+                    }
                 }
                 for (Edge edge : graph.getEdges()) {
-                    edge.setVisibilityMode(GuiConfig.VisibilityMode.Full);
+                    switch (edge.getFunctionMode()) {
+                        case Mockup:
+                            edge.setVisibilityMode(GuiConfig.VisibilityMode.None);
+                            break;
+                        default:
+                            edge.setVisibilityMode(GuiConfig.VisibilityMode.Full);
+                    }
+                }
+                break;
+            case Mockup:
+                for (Vertex vertex : graph.getVertices()) {
+                    switch (vertex.getFunctionMode()) {
+                        case Mockup:
+                            vertex.setVisibilityMode(GuiConfig.VisibilityMode.Full);
+                            break;
+                        default:
+                            vertex.setVisibilityMode(GuiConfig.VisibilityMode.None);
+                    }
+                }
+                for (Edge edge : graph.getEdges()) {
+                    switch (edge.getFunctionMode()) {
+                        case Mockup:
+                            edge.setVisibilityMode(GuiConfig.VisibilityMode.Full);
+                            break;
+                        default:
+                            edge.setVisibilityMode(GuiConfig.VisibilityMode.None);
+                    }
                 }
                 break;
         }
@@ -716,6 +752,14 @@ public class TaskModelEditor extends JPanel {
                         refreshGraphVisibility();
                     }
                     break;
+                case Mockup:
+                    if (vertex.getFunctionMode() == FunctionMode.Mockup) {
+                        amCreatingEdge = true;
+                        edgeStartVertex = vertex;
+                        edgeStartVertex.setBeingModified(true);
+                        refreshGraphVisibility();
+                    }
+                    break;
             }
             vv.repaint();
         }
@@ -734,7 +778,18 @@ public class TaskModelEditor extends JPanel {
                 // An edge from this place->transition or transition-> does not exist
                 Transition startTransition = (Transition) edgeStartVertex;
                 Place endPlace = (Place) vertex;
-                OutEdge newEdge = new OutEdge(startTransition, endPlace, editorMode);
+                boolean isMockup = false;
+                if (editorMode == FunctionMode.Mockup
+                        && startTransition instanceof MockupTransition
+                        && endPlace instanceof MockupPlace) {
+                    isMockup = true;
+                }
+                OutEdge newEdge;
+                if (isMockup) {
+                    newEdge = new MockupOutEdge((MockupTransition) startTransition, (MockupPlace) endPlace);
+                } else {
+                    newEdge = new OutEdge(startTransition, endPlace, editorMode);
+                }
                 startTransition.addOutEdge(newEdge);
                 endPlace.addInEdge(newEdge);
                 graph.addEdge(newEdge, startTransition, endPlace);
@@ -745,7 +800,17 @@ public class TaskModelEditor extends JPanel {
                 // An edge from this place->transition or transition-> does not exist
                 Place startPlace = (Place) edgeStartVertex;
                 Transition endTransition = (Transition) vertex;
-                InEdge newEdge = new InEdge(startPlace, endTransition, editorMode);
+                boolean isMockup = false;
+                if (editorMode == FunctionMode.Mockup
+                        && startPlace instanceof MockupPlace
+                        && endTransition instanceof MockupTransition) {
+                }
+                InEdge newEdge;
+                if (isMockup) {
+                    newEdge = new MockupInEdge((MockupPlace) startPlace, (MockupTransition) endTransition);
+                } else {
+                    newEdge = new InEdge(startPlace, endTransition, editorMode);
+                }
                 startPlace.addOutEdge(newEdge);
                 endTransition.addInEdge(newEdge);
                 graph.addEdge(newEdge, startPlace, endTransition);
@@ -756,7 +821,18 @@ public class TaskModelEditor extends JPanel {
                 // Trying to create an edge between two places, add an intermittent transition as well
                 Place startPlace = (Place) edgeStartVertex;
                 Place endPlace = (Place) vertex;
-                Transition newTransition = new Transition("", editorMode);
+                Transition newTransition;
+                boolean isMockup = false;
+                if (editorMode == FunctionMode.Mockup
+                        && startPlace instanceof MockupPlace
+                        && endPlace instanceof MockupPlace) {
+                    isMockup = true;
+                }
+                if (isMockup) {
+                    newTransition = new MockupTransition("");
+                } else {
+                    newTransition = new Transition("", editorMode);
+                }
                 graph.addVertex(newTransition);
                 Point freePoint = getVertexFreePoint(
                         (int) ((layout.getX(startPlace) + layout.getX(endPlace)) / 2),
@@ -764,12 +840,22 @@ public class TaskModelEditor extends JPanel {
                         CLICK_RADIUS);
                 layout.setLocation(newTransition, snapToGrid(freePoint));
 
-                InEdge newEdge1 = new InEdge(startPlace, newTransition, editorMode);
+                InEdge newEdge1;
+                if (isMockup) {
+                    newEdge1 = new MockupInEdge((MockupPlace) startPlace, (MockupTransition) newTransition);
+                } else {
+                    newEdge1 = new InEdge(startPlace, newTransition, editorMode);
+                }
                 startPlace.addOutEdge(newEdge1);
                 newTransition.addInEdge(newEdge1);
                 graph.addEdge(newEdge1, startPlace, newTransition);
 
-                OutEdge newEdge2 = new OutEdge(newTransition, endPlace, editorMode);
+                OutEdge newEdge2;
+                if (isMockup) {
+                    newEdge2 = new MockupOutEdge((MockupTransition) newTransition, (MockupPlace) endPlace);
+                } else {
+                    newEdge2 = new OutEdge(newTransition, endPlace, editorMode);
+                }
                 newTransition.addOutEdge(newEdge2);
                 endPlace.addInEdge(newEdge2);
                 graph.addEdge(newEdge2, newTransition, endPlace);
@@ -782,7 +868,18 @@ public class TaskModelEditor extends JPanel {
                 // Trying to create an edge between two transitions, add an intermittent place as well
                 Transition startTransition = (Transition) edgeStartVertex;
                 Transition endTransition = (Transition) vertex;
-                Place newPlace = new Place("", editorMode);
+                Place newPlace;
+                boolean isMockup = false;
+                if (editorMode == FunctionMode.Mockup
+                        && startTransition instanceof MockupTransition
+                        && endTransition instanceof MockupTransition) {
+                    isMockup = true;
+                }
+                if (isMockup) {
+                    newPlace = new MockupPlace("");
+                } else {
+                    newPlace = new Place("", editorMode);
+                }
                 graph.addVertex(newPlace);
                 Point freePoint = getVertexFreePoint(
                         (int) ((layout.getX(startTransition) + layout.getX(endTransition)) / 2),
@@ -790,12 +887,22 @@ public class TaskModelEditor extends JPanel {
                         CLICK_RADIUS);
                 layout.setLocation(newPlace, snapToGrid(freePoint));
 
-                OutEdge newEdge1 = new OutEdge(startTransition, newPlace, editorMode);
+                OutEdge newEdge1;
+                if (isMockup) {
+                    newEdge1 = new MockupOutEdge((MockupTransition) startTransition, (MockupPlace) newPlace);
+                } else {
+                    newEdge1 = new OutEdge(startTransition, newPlace, editorMode);
+                }
                 startTransition.addOutEdge(newEdge1);
                 newPlace.addInEdge(newEdge1);
                 graph.addEdge(newEdge1, startTransition, newPlace);
 
-                InEdge newEdge2 = new InEdge(newPlace, endTransition, editorMode);
+                InEdge newEdge2;
+                if (isMockup) {
+                    newEdge2 = new MockupInEdge((MockupPlace) newPlace, (MockupTransition) endTransition);
+                } else {
+                    newEdge2 = new InEdge(newPlace, endTransition, editorMode);
+                }
                 newPlace.addOutEdge(newEdge2);
                 endTransition.addInEdge(newEdge2);
                 graph.addEdge(newEdge2, newPlace, endTransition);
@@ -909,7 +1016,91 @@ public class TaskModelEditor extends JPanel {
                 if (pickSupport != null) {
                     final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
                     final Edge edge = getNearestEdge(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
-                    if (vertex != null) {
+                    if (vertex != null && (vertex instanceof MockupPlace || vertex instanceof MockupTransition)) {
+                        // Right click place or transition -> show options
+                        JPopupMenu popup = new JPopupMenu();
+                        popup.add(new AbstractAction("Edit Mockup") {
+                            public void actionPerformed(ActionEvent e) {
+                                // Write things out to make sure that we have variables.
+                                writeModel();
+                                if (vertex instanceof MockupPlace) {
+                                    MockupPlace mockupPlace = (MockupPlace) vertex;
+                                    MockupDetailsD diag = new MockupDetailsD(null, true, mockupPlace);
+                                    diag.setVisible(true);
+                                    // This part won't run until the Frame closes
+                                    mockupPlace.setName(diag.getName());
+                                    mockupPlace.setMockupOutputEventMarkups(diag.getMockupOutputEventMarkups());
+                                    mockupPlace.setMockupSubMissionType(diag.getMockupSubMissionType());
+                                    mockupPlace.setMockupTokens(diag.getMockupTokens());
+                                } else if (vertex instanceof MockupTransition) {
+                                    MockupTransition mockupTransition = (MockupTransition) vertex;
+                                    MockupDetailsD diag = new MockupDetailsD(null, true, mockupTransition);
+                                    diag.setVisible(true);
+                                    // This part won't run until the Frame closes
+                                    mockupTransition.setName(diag.getName());
+                                    mockupTransition.setMockupInputEventMarkups(diag.getMockupInputEventMarkups());
+                                    mockupTransition.setMockupInputEventStatus(diag.getMockupInputEventStatus());
+                                }
+                                vv.repaint();
+                            }
+                        });
+                        popup.add(new AbstractAction("Rename") {
+                            public void actionPerformed(ActionEvent e) {
+                                String name = JOptionPane.showInputDialog(vv, "Vertex name", vertex.getName());
+                                if (name == null) {
+                                    name = "";
+                                }
+                                vertex.setName(name);
+                                vv.repaint();
+                            }
+                        });
+                        if (vertex instanceof MockupPlace) {
+                            final MockupPlace place = (MockupPlace) vertex;
+                            if (place.isStart()) {
+                                popup.add(new AbstractAction("Unset start") {
+                                    public void actionPerformed(ActionEvent e) {
+                                        place.setIsStart(false);
+                                        vv.repaint();
+                                    }
+                                });
+                            } else {
+                                popup.add(new AbstractAction("Set start") {
+                                    public void actionPerformed(ActionEvent e) {
+                                        place.setIsStart(true);
+                                        vv.repaint();
+                                    }
+                                });
+                            }
+                            if (place.isEnd()) {
+                                popup.add(new AbstractAction("Unset end") {
+                                    public void actionPerformed(ActionEvent e) {
+                                        place.setIsEnd(false);
+                                        vv.repaint();
+                                    }
+                                });
+                            } else {
+                                popup.add(new AbstractAction("Set end") {
+                                    public void actionPerformed(ActionEvent e) {
+                                        place.setIsEnd(true);
+                                        if (place.getOutEdges().size() > 0) {
+                                            JOptionPane.showMessageDialog(vv, "An end state has output transitions, these will never be used");
+                                        }
+                                        vv.repaint();
+                                    }
+                                });
+                            }
+                        }
+                        popup.add(new AbstractAction("Delete") {
+                            public void actionPerformed(ActionEvent e) {
+                                if (vertex instanceof MockupPlace) {
+                                    removePlace((MockupPlace) vertex);
+                                } else if (vertex instanceof MockupTransition) {
+                                    removeTransition((MockupTransition) vertex);
+                                }
+                            }
+                        });
+                        popup.show(vv, me.getX(), me.getY());
+                    } else if (vertex != null) {
                         // Right click place or transition -> show options
                         JPopupMenu popup = new JPopupMenu();
                         popup.add(new AbstractAction("Rename") {
@@ -919,9 +1110,6 @@ public class TaskModelEditor extends JPanel {
                                     name = "";
                                 }
                                 vertex.setName(name);
-                                //@needed?
-                                edu.uci.ics.jung.visualization.renderers.DefaultVertexLabelRenderer vertexLabelRenderer = (edu.uci.ics.jung.visualization.renderers.DefaultVertexLabelRenderer) vv.getRenderContext().getVertexLabelRenderer();
-                                vertexLabelRenderer.repaint();
                                 vv.repaint();
                             }
                         });
@@ -1069,6 +1257,35 @@ public class TaskModelEditor extends JPanel {
                             }
                         });
                         popup.show(vv, me.getX(), me.getY());
+                    } else if (edge != null && (edge instanceof MockupInEdge || edge instanceof MockupOutEdge)) {
+                        JPopupMenu popup = new JPopupMenu();
+                        popup.add(new AbstractAction("Edit Mockup") {
+                            public void actionPerformed(ActionEvent e) {
+                                // Write things out to make sure that we have variables.
+                                writeModel();
+                                if (edge instanceof MockupInEdge) {
+                                    MockupInEdge mockupInEdge = (MockupInEdge) edge;
+                                    MockupDetailsD diag = new MockupDetailsD(null, true, mockupInEdge);
+                                    diag.setVisible(true);
+                                    // This part won't run until the Frame closes
+                                    mockupInEdge.setMockupTokenRequirements(diag.getMockupTokenRequirements());
+                                } else if (edge instanceof MockupOutEdge) {
+                                    MockupOutEdge mockupOutEdge = (MockupOutEdge) edge;
+                                    MockupDetailsD diag = new MockupDetailsD(null, true, mockupOutEdge);
+                                    diag.setVisible(true);
+                                    // This part won't run until the Frame closes
+                                    mockupOutEdge.setMockupTokenRequirements(diag.getMockupTokenRequirements());
+                                }
+                                vv.repaint();
+                            }
+                        });
+                        popup.add(new AbstractAction("Delete") {
+                            @Override
+                            public void actionPerformed(ActionEvent ae) {
+                                removeEdge(edge);
+                            }
+                        });
+                        popup.show(vv, me.getX(), me.getY());
                     } else if (edge != null) {
                         JPopupMenu popup = new JPopupMenu();
                         popup.add(new AbstractAction("Edit Tokens") {
@@ -1113,8 +1330,12 @@ public class TaskModelEditor extends JPanel {
                         popup.add(new AbstractAction("New Place") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
-                                //System.out.println("Adding place");
-                                Place place = new Place("", editorMode);
+                                Place place;
+                                if (editorMode == FunctionMode.Mockup) {
+                                    place = new MockupPlace("");
+                                } else {
+                                    place = new Place("", editorMode);
+                                }
                                 graph.addVertex(place);
                                 layout.setLocation(place, snapToGrid(graphPoint));
                                 vv.repaint();
@@ -1123,8 +1344,12 @@ public class TaskModelEditor extends JPanel {
                         popup.add(new AbstractAction("New Transition") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
-                                //System.out.println("Adding transition");
-                                Transition transition = new Transition("", editorMode);
+                                Transition transition;
+                                if (editorMode == FunctionMode.Mockup) {
+                                    transition = new MockupTransition("");
+                                } else {
+                                    transition = new Transition("", editorMode);
+                                }
                                 graph.addVertex(transition);
                                 layout.setLocation(transition, snapToGrid(graphPoint));
                                 vv.repaint();

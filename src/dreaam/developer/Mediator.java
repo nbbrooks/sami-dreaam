@@ -3,8 +3,10 @@ package dreaam.developer;
 import dreaam.agent.Platform;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.AccessControlException;
@@ -164,8 +166,14 @@ public class Mediator {
                     }
                     return true;
                 }
+            } catch (FileNotFoundException ex) {
+                LOGGER.severe("Exception in DRM open - DRM file not found");
+            } catch (InvalidClassException ex) {
+                LOGGER.severe("Exception in DRM open - DRM version mismatch");
+            } catch (SecurityException ex) {
+                LOGGER.severe("Exception in DRM open - error in JDK SHA implementation");
             } catch (Exception ex) {
-                LOGGER.severe("Exception in DRM open - incompatible file");
+                LOGGER.severe("Exception in DRM open: " + ex.getLocalizedMessage());
             }
 
             return false;
