@@ -133,7 +133,7 @@ public class TaskModelEditor extends JPanel {
                 switch (edge.getVisibilityMode()) {
                     case Full:
                     case Background:
-                        return new java.awt.Font("Dialog", Font.PLAIN, 14);
+                        return GuiConfig.TEXT_FONT;
                     case None:
                     default:
                         return null;
@@ -161,9 +161,9 @@ public class TaskModelEditor extends JPanel {
                 switch (edge.getVisibilityMode()) {
                     case Full:
                         if (edge.getFunctionMode() == FunctionMode.Recovery) {
-                            return new BasicStroke(1, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER, 10.0f, new float[]{10.0f, 10.0f}, 0.0f);
+                            return GuiConfig.RECOVERY_STROKE;
                         } else {
-                            return new BasicStroke(1);
+                            return GuiConfig.NOMINAL_STROKE;
                         }
                     case Background:
                     case None:
@@ -233,7 +233,7 @@ public class TaskModelEditor extends JPanel {
                 switch (vertex.getVisibilityMode()) {
                     case Full:
                     case Background:
-                        return new java.awt.Font("Dialog", Font.PLAIN, 14);
+                        return GuiConfig.TEXT_FONT;
                     case None:
                     default:
                         return null;
@@ -275,29 +275,29 @@ public class TaskModelEditor extends JPanel {
                     case Full:
                         if (vertex.getBeingModified()) {
                             if (vertex.getFunctionMode() == FunctionMode.Recovery) {
-                                return new BasicStroke(10, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER, 10.0f, new float[]{10.0f, 10.0f}, 0.0f);
+                                return GuiConfig.RECOVERY_STROKE_SEL;
                             } else {
-                                return new BasicStroke(10);
+                                return GuiConfig.NOMINAL_STROKE_SEL;
                             }
                         } else {
                             if (vertex.getFunctionMode() == FunctionMode.Recovery) {
-                                return new BasicStroke(1, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER, 10.0f, new float[]{10.0f, 10.0f}, 0.0f);
+                                return GuiConfig.RECOVERY_STROKE;
                             } else {
-                                return new BasicStroke(1);
+                                return GuiConfig.NOMINAL_STROKE;
                             }
                         }
                     case Background:
                         if (vertex.getBeingModified()) {
                             if (vertex.getFunctionMode() == FunctionMode.Recovery) {
-                                return new BasicStroke(10, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER, 10.0f, new float[]{10.0f, 10.0f}, 0.0f);
+                                return GuiConfig.RECOVERY_STROKE_SEL;
                             } else {
-                                return new BasicStroke(10);
+                                return GuiConfig.NOMINAL_STROKE_SEL;
                             }
                         } else {
                             if (vertex.getFunctionMode() == FunctionMode.Recovery) {
-                                return new BasicStroke(1, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER, 10.0f, new float[]{10.0f, 10.0f}, 0.0f);
+                                return GuiConfig.RECOVERY_STROKE;
                             } else {
-                                return new BasicStroke(1);
+                                return GuiConfig.NOMINAL_STROKE;
                             }
                         }
                     case None:
@@ -804,6 +804,7 @@ public class TaskModelEditor extends JPanel {
                 if (editorMode == FunctionMode.Mockup
                         && startPlace instanceof MockupPlace
                         && endTransition instanceof MockupTransition) {
+                    isMockup = true;
                 }
                 InEdge newEdge;
                 if (isMockup) {
