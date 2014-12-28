@@ -141,6 +141,7 @@ public class TaskModelEditor extends JPanel {
             }
         });
 
+        vv.getRenderContext().setLabelOffset(GuiConfig.LABEL_OFFSET);
         vv.getRenderContext().setEdgeLabelTransformer(new Transformer<Edge, String>() {
             @Override
             public String transform(Edge edge) {

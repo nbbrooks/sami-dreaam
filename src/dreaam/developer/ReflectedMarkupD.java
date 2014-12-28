@@ -386,7 +386,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
      * @param option
      */
     protected void addValueComponent(String enumName, String constantName, Field optionField, JPanel constantPanel, GridBagConstraints constraints, MarkupOption option) {
-        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent(optionField.getType(), new ArrayList<Markup>());
+        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent(optionField.getType(), optionField, new ArrayList<Markup>());
         JComponent visualization = null;
         Object definition = null;
         if (option != null) {

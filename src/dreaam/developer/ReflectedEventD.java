@@ -240,7 +240,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToValue, JPanel panel, GridBagConstraints constraints) {
-        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((java.lang.reflect.Type) field.getType(), new ArrayList<Markup>());
+        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((java.lang.reflect.Type) field.getType(), field, new ArrayList<Markup>());
         JComponent visualization = null;
         if (markupComponent != null && markupComponent.getComponent() != null) {
             visualization = markupComponent.getComponent();
