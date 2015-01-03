@@ -391,7 +391,10 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 MarkupComponent markupComponent = fieldToValueComponent.get(field);
                 if (markupComponent != null) {
                     // Store the value from the component
-                    fieldNameToObject.put(field.getName(), UiComponentGenerator.getInstance().getComponentValue(markupComponent, field.getType()));
+                    Object value = UiComponentGenerator.getInstance().getComponentValue(markupComponent, field.getType());
+                    if (value != null) {
+                        fieldNameToObject.put(field.getName(), value);
+                    }
                 }
             }
         }
