@@ -34,6 +34,7 @@ import sami.config.DomainConfigManager;
 import sami.engine.Engine;
 import sami.environment.EnvironmentProperties;
 import sami.mission.MissionPlanSpecification;
+import sami.mission.ProjectSpecification;
 import sami.mission.RequirementSpecification;
 import sami.mission.Vertex;
 import sami.mission.Vertex.FunctionMode;
@@ -337,8 +338,10 @@ public class DREAAM extends javax.swing.JFrame {
         }
         if (!loadSuccess) {
             // New mission
-            loadNewProject();
+            addNewRootMissionSpec();
+            resetSidebar();
         }
+        updateTitle();
 
         // Try to load the last used EPF file
         try {
@@ -676,10 +679,18 @@ public class DREAAM extends javax.swing.JFrame {
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "No missions to load", this);
         }
 
-        setTitle(Preferences.userRoot().get(LAST_DRM_FILE, null));
+        updateTitle();
     }
 
-    private void loadNewProject() {
+    private void updateTitle() {
+        if (mediator.getProjectFile() == null) {
+            setTitle("Not saved");
+        } else {
+            setTitle(mediator.getProjectFile().getAbsolutePath());
+        }
+    }
+
+    private void resetSidebar() {
         // Clear out errors
         errorsRoot.removeAllChildren();
 
@@ -687,24 +698,25 @@ public class DREAAM extends javax.swing.JFrame {
         treeRoot.remove(0);
         missionsRoot = mediator.getProjectSpec().getMissionTree();
         treeRoot.insert(missionsRoot, 0);
-
-        addNewRootMissionSpec();
     }
 
     private void saveDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmMActionPerformed
         taskModelEditor.writeModel();
         mediator.save();
-
+        updateTitle();
     }//GEN-LAST:event_saveDrmMActionPerformed
 
     private void saveDrmAsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmAsMActionPerformed
         taskModelEditor.writeModel();
         mediator.saveAs();
+        updateTitle();
     }//GEN-LAST:event_saveDrmAsMActionPerformed
 
     private void newDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newDrmMActionPerformed
         mediator.newSpec();
-        loadNewProject();
+        addNewRootMissionSpec();
+        resetSidebar();
+        updateTitle();
     }//GEN-LAST:event_newDrmMActionPerformed
 
     private void editReqsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editReqsMActionPerformed

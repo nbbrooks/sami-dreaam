@@ -31,6 +31,10 @@ public class Mediator {
     public ProjectSpecification getProjectSpec() {
         return instance.getProjectSpec();
     }
+    
+    public File getProjectFile() {
+        return instance.getProjectFile();
+    }
 
     public void newSpec() {
         instance.newSpec();
@@ -68,6 +72,10 @@ public class Mediator {
 
             return projectSpec;
         }
+        
+        private File getProjectFile() {
+            return projectSpecLocation;
+        }
 
         private void newSpec() {
             if (projectSpec != null && projectSpec.needsSaving()) {
@@ -77,6 +85,7 @@ public class Mediator {
                 }
             }
             projectSpec = new ProjectSpecification();
+            projectSpecLocation = null;
         }
 
         private void save() {
