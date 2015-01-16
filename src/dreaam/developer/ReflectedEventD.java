@@ -144,6 +144,10 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 addValueComponent(field, fieldNameToValue, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
+                // Add text field for saving defined value to variable
+                addVariableTextField(field, fieldNameToWriteVariable, fieldPanel, fieldConstraints);
+                fieldConstraints.gridy = fieldConstraints.gridy + 1;
+
                 // Add toggle button for setting ability to edit field at run-time
                 addEditableButton(field, fieldNameToEditable, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;

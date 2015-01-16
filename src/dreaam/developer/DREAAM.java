@@ -34,7 +34,6 @@ import sami.config.DomainConfigManager;
 import sami.engine.Engine;
 import sami.environment.EnvironmentProperties;
 import sami.mission.MissionPlanSpecification;
-import sami.mission.ProjectSpecification;
 import sami.mission.RequirementSpecification;
 import sami.mission.Vertex;
 import sami.mission.Vertex.FunctionMode;

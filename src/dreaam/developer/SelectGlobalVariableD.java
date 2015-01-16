@@ -146,7 +146,13 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         variableD.setVisible(true);
 
         if (variableD.confirmedExit()) {
-            variables.put(variableD.getName(), variableD.getValue());
+            String variable = variableD.getName();
+            if (variable.length() > 0 && !variable.startsWith("@")) {
+                variable = "@" + variable;
+            }
+            if (variable.length() > 1 && variable.startsWith("@")) {
+                variables.put(variable, variableD.getValue());
+            }
             refreshVariableP();
         }
     }
@@ -170,8 +176,8 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
 
     public HashMap<String, Object> getCreatedVariables() {
         HashMap<String, Object> createdVariables = new HashMap<String, Object>();
-        for(String variable : variables.keySet()) {
-            if(!existingVariables.containsKey(variable)) {
+        for (String variable : variables.keySet()) {
+            if (!existingVariables.containsKey(variable)) {
                 createdVariables.put(variable, variables.get(variable));
             }
         }
@@ -180,8 +186,8 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
 
     public ArrayList<String> getDeletedVariables() {
         ArrayList<String> deletedVariables = new ArrayList<String>();
-        for(String variable : existingVariables.keySet()) {
-            if(!variables.containsKey(variable)) {
+        for (String variable : existingVariables.keySet()) {
+            if (!variables.containsKey(variable)) {
                 deletedVariables.add(variable);
             }
         }
@@ -230,7 +236,7 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
                     }
                 }
             });
-            
+
             deleteB = new JButton("Delete");
             deleteB.setPreferredSize(new Dimension(10, 10));
             deleteB.addActionListener(new ActionListener() {
