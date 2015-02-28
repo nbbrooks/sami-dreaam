@@ -53,13 +53,15 @@ public class SelectSubMissionD extends javax.swing.JDialog {
         super(parent, modal);
         this.parentMSpec = parentMSpec;
         this.pSpec = pSpec;
-        this.subMSpecs = (ArrayList<MissionPlanSpecification>) existingSubMSpecs.clone();
-        if (subMSpecs == null) {
-            subMSpecs = new ArrayList<MissionPlanSpecification>();
+        if (existingSubMSpecs == null) {
+            this.subMSpecs = new ArrayList<MissionPlanSpecification>();
+        } else {
+            this.subMSpecs = (ArrayList<MissionPlanSpecification>) existingSubMSpecs.clone();
         }
-        this.mSpecTaskMap = (HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>) existingMSpecTaskMap.clone();
-        if (mSpecTaskMap == null) {
-            mSpecTaskMap = new HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>();
+        if (existingMSpecTaskMap == null) {
+            this.mSpecTaskMap = new HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>();
+        } else {
+            this.mSpecTaskMap = (HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>) existingMSpecTaskMap.clone();
         }
         initComponents();
         setTitle("SelectSubMissionDNew");

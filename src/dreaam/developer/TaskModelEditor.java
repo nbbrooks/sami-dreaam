@@ -177,70 +177,70 @@ public class TaskModelEditor extends JPanel {
         // VERTEX
         vv.getRenderContext()
                 .setVertexDrawPaintTransformer(new Transformer<Vertex, Paint>() {
-            @Override
-            public Paint transform(Vertex vertex) {
-                switch (vertex.getVisibilityMode()) {
-                    case Full:
-                        if (vertex.getBeingModified()) {
-                            return GuiConfig.SEL_VERTEX_COLOR;
-                        } else {
-                            return GuiConfig.VERTEX_COLOR;
+                    @Override
+                    public Paint transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                                if (vertex.getBeingModified()) {
+                                    return GuiConfig.SEL_VERTEX_COLOR;
+                                } else {
+                                    return GuiConfig.VERTEX_COLOR;
+                                }
+                            case Background:
+                                if (vertex.getBeingModified()) {
+                                    return GuiConfig.SEL_VERTEX_COLOR;
+                                } else {
+                                    return GuiConfig.BKGND_VERTEX_COLOR;
+                                }
+                            case None:
+                            default:
+                                return null;
                         }
-                    case Background:
-                        if (vertex.getBeingModified()) {
-                            return GuiConfig.SEL_VERTEX_COLOR;
-                        } else {
-                            return GuiConfig.BKGND_VERTEX_COLOR;
-                        }
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
+                    }
+                });
 
         vv.getRenderContext()
                 .setVertexFillPaintTransformer(new Transformer<Vertex, Paint>() {
-            @Override
-            public Paint transform(Vertex vertex) {
-                switch (vertex.getVisibilityMode()) {
-                    case Full:
-                        if (vertex instanceof Place) {
-                            Place place = (Place) vertex;
-                            if (place.isStart()) {
-                                return GuiConfig.START_PLACE_COLOR;
-                            } else if (place.isEnd()) {
-                                return GuiConfig.END_PLACE_COLOR;
-                            } else {
-                                return GuiConfig.PLACE_COLOR;
-                            }
-                        } else if (vertex instanceof Transition) {
-                            return GuiConfig.TRANSITION_COLOR;
+                    @Override
+                    public Paint transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                                if (vertex instanceof Place) {
+                                    Place place = (Place) vertex;
+                                    if (place.isStart()) {
+                                        return GuiConfig.START_PLACE_COLOR;
+                                    } else if (place.isEnd()) {
+                                        return GuiConfig.END_PLACE_COLOR;
+                                    } else {
+                                        return GuiConfig.PLACE_COLOR;
+                                    }
+                                } else if (vertex instanceof Transition) {
+                                    return GuiConfig.TRANSITION_COLOR;
+                                }
+                                return null;
+                            case Background:
+                                return GuiConfig.BKGND_VERTEX_COLOR;
+                            case None:
+                            default:
+                                return null;
                         }
-                        return null;
-                    case Background:
-                        return GuiConfig.BKGND_VERTEX_COLOR;
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
+                    }
+                });
 
         vv.getRenderContext()
                 .setVertexFontTransformer(new Transformer<Vertex, Font>() {
-            @Override
-            public Font transform(Vertex vertex) {
-                switch (vertex.getVisibilityMode()) {
-                    case Full:
-                    case Background:
-                        return GuiConfig.TEXT_FONT;
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
+                    @Override
+                    public Font transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                            case Background:
+                                return GuiConfig.TEXT_FONT;
+                            case None:
+                            default:
+                                return null;
+                        }
+                    }
+                });
 
         vv.getRenderContext().setVertexLabelTransformer(new Transformer<Vertex, String>() {
             @Override
@@ -932,8 +932,7 @@ public class TaskModelEditor extends JPanel {
 //            System.out.println("\t" + me.getModifiersEx() + "\t" + (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)));
 
             final Point2D framePoint = me.getPoint();
-            if (((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) == (MouseEvent.BUTTON1_DOWN_MASK))
-                    && !me.isShiftDown()) {
+            if (((me.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) != 0 || (me.getModifiersEx() & MouseEvent.SHIFT_DOWN_MASK) == 0)) {
                 // Mouse1
                 // Select a vertex (needs to be in mousePressed to begin dragging)
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
@@ -946,14 +945,13 @@ public class TaskModelEditor extends JPanel {
                         }
                     }
                 }
-            } else if (((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) == MouseEvent.BUTTON2_DOWN_MASK)
-                    || ((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) == MouseEvent.BUTTON1_DOWN_MASK && me.isShiftDown())
-                    || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) == (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) {
+            } else if ((me.getModifiersEx() & MouseEvent.BUTTON2_DOWN_MASK) != 0
+                    || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK)) != 0
+                    || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) != 0) {
                 // Mouse 2 OR Mouse1+Shift OR Mouse1+Mouse3
                 // Begin translating
                 amTranslating = true;
                 prevMousePoint = (Point2D) framePoint.clone();
-            } else if (me.getButton() == MouseEvent.BUTTON3) {
             }
         }
 
@@ -988,8 +986,7 @@ public class TaskModelEditor extends JPanel {
 
             final Point framePoint = me.getPoint();
             final Point2D graphPoint = vv.getRenderContext().getMultiLayerTransformer().inverseTransform(framePoint);
-            if (me.getButton() == MouseEvent.BUTTON1
-                    && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) == 0
+            if (((me.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) != 0 || (me.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) == 0)
                     && !amDraggingVertex) {
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
@@ -1011,8 +1008,7 @@ public class TaskModelEditor extends JPanel {
                         vv.repaint();
                     }
                 }
-            } else if (me.getButton() == MouseEvent.BUTTON3
-                    && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) == 0
+            } else if (((me.getModifiersEx() & MouseEvent.BUTTON3_DOWN_MASK) != 0 || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) != 0)
                     && !amTranslating) {
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
@@ -1377,9 +1373,7 @@ public class TaskModelEditor extends JPanel {
                         popup.show(vv, me.getX(), me.getY());
                     }
                 }
-            }
-
-            if ((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) == 0) {
+            } else {
                 selectedVertex = null;
                 dragVertex = null;
                 amDraggingVertex = false;

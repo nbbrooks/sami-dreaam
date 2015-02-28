@@ -44,10 +44,11 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
     public SelectGlobalVariableD(java.awt.Frame parent, boolean modal, HashMap<String, Object> existingVariables) {
         super(parent, modal);
         this.existingVariables = existingVariables;
-        this.variables = (HashMap<String, Object>) existingVariables.clone();
         if (existingVariables == null) {
             existingVariables = new HashMap<String, Object>();
-            variables = new HashMap<String, Object>();
+            this.variables = new HashMap<String, Object>();
+        } else {
+            this.variables = (HashMap<String, Object>) existingVariables.clone();
         }
         initComponents();
         setTitle("SelectGlobalVariableD");

@@ -115,7 +115,7 @@ public class DREAAM extends javax.swing.JFrame {
 
                 Object[] objectPath = treePath.getPath();
                 int pathCount = objectPath.length;
-                if ((me.isControlDown() || me.isPopupTrigger())) {
+                if((me.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) != 0 || me.isPopupTrigger()) {
 
                     if (treePath.getLastPathComponent() == missionsRoot) {
 
