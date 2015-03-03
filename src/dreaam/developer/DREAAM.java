@@ -12,10 +12,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,33 +19,28 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javax.swing.AbstractAction;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.tree.*;
 import sami.config.DomainConfigManager;
-import sami.engine.Engine;
-import sami.environment.EnvironmentProperties;
+import sami.engine.Mediator;
 import sami.mission.MissionPlanSpecification;
+import sami.mission.ProjectListenerInt;
 import sami.mission.RequirementSpecification;
 import sami.mission.Vertex;
 import sami.mission.Vertex.FunctionMode;
+import static sami.ui.MissionMonitor.LAST_DRM_FILE;
 import static sami.ui.MissionMonitor.LAST_EPF_FILE;
-import static sami.ui.MissionMonitor.LAST_EPF_FOLDER;
 
 /**
  *
  * @author pscerri
  */
-public class DREAAM extends javax.swing.JFrame {
+public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
 
     private static final Logger LOGGER = Logger.getLogger(DREAAM.class.getName());
-    public static final String LAST_PROJECT_NAME = "LAST_PROJECT_NAME";
-    public static final String LAST_DRM_FILE = "LAST_DRM_NAME";
-    public static final String LAST_DRM_FOLDER = "LAST_DRM_FOLDER";
     TaskModelEditor taskModelEditor = null;
     DefaultMutableTreeNode treeRoot = null;
     DefaultMutableTreeNode missionsRoot = null;
@@ -57,7 +48,7 @@ public class DREAAM extends javax.swing.JFrame {
     DefaultMutableTreeNode checkersRoot = null;
     DefaultMutableTreeNode helpersRoot = null;
     DefaultMutableTreeNode errorsRoot = null;
-    Mediator mediator = new Mediator();
+    Mediator mediator = Mediator.getInstance();
     ArrayList<CheckerAgent> checkerAgents;
     ArrayList<HelperAgent> helperAgents;
     Platform platform;
@@ -84,14 +75,14 @@ public class DREAAM extends javax.swing.JFrame {
         // Side panel
         jSplitPane1.setDividerLocation(200);
         treeRoot = (DefaultMutableTreeNode) componentT.getModel().getRoot();
-        treeRoot.add(mediator.getProjectSpec().getMissionTree());
+        treeRoot.add(mediator.getProject().getMissionTree());
         checkersRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 1);
         helpersRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 2);
         errorsRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 3);
         componentT.setCellRenderer(new DREAMMTreeCellRenderer());
 
         // Main panel
-        MissionPlanSpecification mSpec = mediator.getProjectSpec().getNewMissionPlanSpecification("Anonymous");
+        MissionPlanSpecification mSpec = mediator.getProject().getNewMissionPlanSpecification("Anonymous");
         taskModelEditor = new TaskModelEditor(this, mSpec);
         mainP.setLayout(new BorderLayout());
         mainP.add(taskModelEditor, BorderLayout.CENTER);
@@ -115,7 +106,7 @@ public class DREAAM extends javax.swing.JFrame {
 
                 Object[] objectPath = treePath.getPath();
                 int pathCount = objectPath.length;
-                if((me.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) != 0 || me.isPopupTrigger()) {
+                if ((me.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) != 0 || me.isPopupTrigger()) {
 
                     if (treePath.getLastPathComponent() == missionsRoot) {
 
@@ -158,7 +149,7 @@ public class DREAAM extends javax.swing.JFrame {
                                 if (result != null) {
                                     // Ensure entered mission name is unique
                                     ArrayList<String> playNames = new ArrayList<String>();
-                                    ArrayList<MissionPlanSpecification> missions = mediator.getProjectSpec().getAllMissionPlans();
+                                    ArrayList<MissionPlanSpecification> missions = mediator.getProject().getAllMissionPlans();
                                     for (MissionPlanSpecification mSpec : missions) {
                                         playNames.add(mSpec.getName());
                                     }
@@ -172,7 +163,7 @@ public class DREAAM extends javax.swing.JFrame {
                                     // Clone and add to mission list
                                     MissionPlanSpecification duplicate = mps.deepClone();
                                     duplicate.setName(result);
-                                    DefaultMutableTreeNode node = mediator.getProjectSpec().addRootMissionPlan(duplicate);
+                                    DefaultMutableTreeNode node = mediator.getProject().addRootMissionPlan(duplicate);
                                     refreshMissionTree();
                                     selectNode(node);
 
@@ -186,16 +177,16 @@ public class DREAAM extends javax.swing.JFrame {
 
                                 boolean reallyDelete = true;
 
-                                if (mediator.getProjectSpec().getReqs() != null) {
+                                if (mediator.getProject().getReqs() != null) {
 
-                                    for (RequirementSpecification requirementSpecification : mediator.getProjectSpec().getReqs()) {
+                                    for (RequirementSpecification requirementSpecification : mediator.getProject().getReqs()) {
                                         if (requirementSpecification.getFilledBy() == mps) {
                                             int response = JOptionPane.showConfirmDialog(null, "Are you sure, requirement " + requirementSpecification + " is filled by this specification?");
                                             reallyDelete = reallyDelete && response != JOptionPane.CANCEL_OPTION;
                                         }
                                     }
                                     for (Vertex vertex : mps.getGraph().getVertices()) {
-                                        for (RequirementSpecification requirementSpecification : mediator.getProjectSpec().getReqs()) {
+                                        for (RequirementSpecification requirementSpecification : mediator.getProject().getReqs()) {
                                             if (requirementSpecification.getFilledBy() == vertex) {
                                                 int response = JOptionPane.showConfirmDialog(null, "Are you sure, requirement " + requirementSpecification + " is filled by place " + vertex + " in this mission model");
                                                 reallyDelete = reallyDelete && response != JOptionPane.CANCEL_OPTION;
@@ -205,7 +196,7 @@ public class DREAAM extends javax.swing.JFrame {
                                 }
 
                                 if (reallyDelete) {
-                                    mediator.getProjectSpec().removeMissionPlanNode((DefaultMutableTreeNode) treePath.getLastPathComponent());
+                                    mediator.getProject().removeMissionPlanNode((DefaultMutableTreeNode) treePath.getLastPathComponent());
                                     refreshMissionTree();
                                     if (missionsRoot.getChildCount() == 0) {
                                         // No plans, create new one
@@ -304,53 +295,33 @@ public class DREAAM extends javax.swing.JFrame {
                 }
             }
         });
-        repaint();
+        
+        Mediator.getInstance().addProjectListener(this);
 
         // Try to load the last used DRM file
-        boolean loadSuccess = false;
+        LOGGER.info("Load DRM");
         Preferences p = Preferences.userRoot();
         try {
             String lastDrmPath = p.get(LAST_DRM_FILE, null);
             if (lastDrmPath != null) {
-                if (mediator.open(new File(lastDrmPath))) {
-                    // Succeeded loading last used specification
-                    loadSuccess = true;
-                    loadProject();
-                } else {
-                    // Failed to load last used specification
-                    Object[] options = {"Load", "New"};
-                    int answer = JOptionPane.showOptionDialog(null, "Could not load last used plan specification (.DRM): create load different file or create new file?", "Load or new?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
-                    if (answer == JOptionPane.YES_OPTION) {
-                        // Get a different specification to try and load
-                        if (mediator.open()) {
-                            loadSuccess = true;
-                            loadProject();
-                        } else {
-                            // Couldn't load this one either, create a new specification
-                            JOptionPane.showMessageDialog(null, "Could not load plan specification (.DRM), creating a new specification");
-                        }
-                    }
-                }
+                Mediator.getInstance().openProject(new File(lastDrmPath));
             }
         } catch (AccessControlException e) {
-            LOGGER.severe("Failed to save preferences");
+            LOGGER.severe("Failed to load last used DRM");
         }
-        if (!loadSuccess) {
-            // New mission
-            addNewRootMissionSpec();
-            resetSidebar();
-        }
-        updateTitle();
-
+        
         // Try to load the last used EPF file
+        LOGGER.info("Load EPF");
         try {
             String lastEpfPath = p.get(LAST_EPF_FILE, null);
             if (lastEpfPath != null) {
-                loadEpf(new File(lastEpfPath));
+                Mediator.getInstance().openEnvironment(new File(lastEpfPath));
             }
         } catch (AccessControlException e) {
             LOGGER.severe("Failed to load last used EPF");
         }
+        
+        repaint();
     }
 
     /**
@@ -606,15 +577,15 @@ public class DREAAM extends javax.swing.JFrame {
 
         // Don't want multiple missions named Anonymous if the developer doesn't rename them manually
         ArrayList<String> playNames = new ArrayList<String>();
-        ArrayList<MissionPlanSpecification> missions = mediator.getProjectSpec().getAllMissionPlans();
+        ArrayList<MissionPlanSpecification> missions = mediator.getProject().getAllMissionPlans();
         for (MissionPlanSpecification mSpec : missions) {
             playNames.add(mSpec.getName());
         }
         String missionName = DreaamHelper.getUniqueName("Anonymous", playNames);
 
         // Create and add mission
-        MissionPlanSpecification spec = mediator.getProjectSpec().getNewMissionPlanSpecification(missionName);
-        DefaultMutableTreeNode node = mediator.getProjectSpec().addRootMissionPlan(spec);
+        MissionPlanSpecification spec = mediator.getProject().getNewMissionPlanSpecification(missionName);
+        DefaultMutableTreeNode node = mediator.getProject().addRootMissionPlan(spec);
         refreshMissionTree();
         selectNode(node);
     }
@@ -628,7 +599,7 @@ public class DREAAM extends javax.swing.JFrame {
         taskModelEditor.writeModel();
 
         // Create and add sub mission
-        mediator.getProjectSpec().addSubMissionPlan(childMSpec, parentMSpec);
+        mediator.getProject().addSubMissionPlan(childMSpec, parentMSpec);
         refreshMissionTree();
     }
 
@@ -648,32 +619,37 @@ public class DREAAM extends javax.swing.JFrame {
     }
 
     private void openDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openDrmMActionPerformed
-        if (mediator.open()) {
-            loadProject();
-        } else {
+        boolean success = mediator.openProject();
+        if (!success) {
             // Couldn't load the plan
             JOptionPane.showMessageDialog(null, "Could not load plan specification (.DRM) file");
         }
     }//GEN-LAST:event_openDrmMActionPerformed
 
-    private void loadProject() {
+    @Override
+    public void projectUpdated() {
+        applyProjectValues();
+    }
+
+    private void applyProjectValues() {
         // Clear out errors
         errorsRoot.removeAllChildren();
 
-        // Load the mission tree
+        // Clear mission tree
         treeRoot.remove(0);
-        missionsRoot = mediator.getProjectSpec().getMissionTree();
+        // Load the new mission tree
+        missionsRoot = mediator.getProject().getMissionTree();
         treeRoot.insert(missionsRoot, 0);
         refreshMissionTree();
 
         // Load the first mission into the editor
-        ArrayList<MissionPlanSpecification> mpSpecs = mediator.getProjectSpec().getRootMissionPlans();
+        ArrayList<MissionPlanSpecification> mpSpecs = mediator.getProject().getRootMissionPlans();
         if (mpSpecs.size() > 0) {
             Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Setting graph", this);
             taskModelEditor.setGraph(mpSpecs.get(0));
             taskModelEditor.setMode(FunctionMode.Nominal);
 
-            selectNode(mediator.getProjectSpec().getNode(mpSpecs.get(0)));
+            selectNode(mediator.getProject().getNode(mpSpecs.get(0)));
         } else {
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "No missions to load", this);
         }
@@ -695,24 +671,24 @@ public class DREAAM extends javax.swing.JFrame {
 
         // Load the mission tree
         treeRoot.remove(0);
-        missionsRoot = mediator.getProjectSpec().getMissionTree();
+        missionsRoot = mediator.getProject().getMissionTree();
         treeRoot.insert(missionsRoot, 0);
     }
 
     private void saveDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmMActionPerformed
         taskModelEditor.writeModel();
-        mediator.save();
+        mediator.saveProject();
         updateTitle();
     }//GEN-LAST:event_saveDrmMActionPerformed
 
     private void saveDrmAsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmAsMActionPerformed
         taskModelEditor.writeModel();
-        mediator.saveAs();
+        mediator.saveProjectAs();
         updateTitle();
     }//GEN-LAST:event_saveDrmAsMActionPerformed
 
     private void newDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newDrmMActionPerformed
-        mediator.newSpec();
+        mediator.newProject();
         addNewRootMissionSpec();
         resetSidebar();
         updateTitle();
@@ -747,7 +723,7 @@ public class DREAAM extends javax.swing.JFrame {
     }//GEN-LAST:event_editReqsMActionPerformed
 
     private void specGUIMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_specGUIMActionPerformed
-        GuiSpecD d = new GuiSpecD(this, true, mediator.getProjectSpec().getGuiElements());
+        GuiSpecD d = new GuiSpecD(this, true, mediator.getProject().getGuiElements());
         d.setVisible(true);
     }//GEN-LAST:event_specGUIMActionPerformed
 
@@ -803,25 +779,20 @@ public class DREAAM extends javax.swing.JFrame {
     }//GEN-LAST:event_recoveryModeActionPerformed
 
     private void loadEpfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadEpfActionPerformed
-        File environmentLocation = null;
-
-        if (environmentLocation == null) {
-            Preferences p = Preferences.userRoot();
-            String lastEpfFolder = p.get(LAST_EPF_FOLDER, "");
-            JFileChooser chooser = new JFileChooser(lastEpfFolder);
-            FileNameExtensionFilter filter = new FileNameExtensionFilter("EPF specification files", "epf");
-            chooser.setFileFilter(filter);
-            int ret = chooser.showOpenDialog(null);
-            if (ret == JFileChooser.APPROVE_OPTION) {
-                environmentLocation = chooser.getSelectedFile();
-            }
+        if (mediator.openEnvironment()) {
+            loadEnvironment();
+        } else {
+            // Couldn't load the plan
+            JOptionPane.showMessageDialog(null, "Could not load plan specification (.DRM) file");
         }
-        loadEpf(environmentLocation);
     }//GEN-LAST:event_loadEpfActionPerformed
 
+    private void loadEnvironment() {
+    }
+
     private void rebuildTags(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rebuildTags
-        if (mediator.getProjectSpec() != null) {
-            mediator.getProjectSpec().updateMissionTags();
+        if (mediator.getProject() != null) {
+            mediator.getProject().updateMissionTags();
         }
         taskModelEditor.repaint();
     }//GEN-LAST:event_rebuildTags
@@ -833,41 +804,6 @@ public class DREAAM extends javax.swing.JFrame {
     private void mockupModeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mockupModeActionPerformed
         taskModelEditor.setMode(FunctionMode.Mockup);
     }//GEN-LAST:event_mockupModeActionPerformed
-
-    public void loadEpf(File epfFile) {
-        if (epfFile == null) {
-            return;
-        }
-        EnvironmentProperties environmentProperties = null;
-        try {
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(epfFile));
-            environmentProperties = (EnvironmentProperties) ois.readObject();
-
-            LOGGER.info("Reading environment properties at [" + epfFile + "]");
-
-            if (environmentProperties == null) {
-                LOGGER.log(Level.WARNING, "Failed to load environment properties at [" + epfFile + "]");
-                JOptionPane.showMessageDialog(null, "Environment properties failed load");
-            } else {
-                Preferences p = Preferences.userRoot();
-                try {
-                    p.put(LAST_EPF_FILE, epfFile.getAbsolutePath());
-                    p.put(LAST_EPF_FOLDER, epfFile.getParent());
-                } catch (AccessControlException e) {
-                    LOGGER.severe("Failed to save preferences");
-                }
-
-                Engine.getInstance().setEnvironmentProperties(environmentProperties);
-            }
-
-        } catch (ClassNotFoundException ex) {
-            LOGGER.severe("Class Not Found Exception in EPF load");
-        } catch (FileNotFoundException ex) {
-            LOGGER.severe("File Not Found Exception on EPF load");
-        } catch (IOException ex) {
-            LOGGER.severe("IO Exception on EPF load");
-        }
-    }
 
     public void selectNode(DefaultMutableTreeNode node) {
         // Changes editor view
