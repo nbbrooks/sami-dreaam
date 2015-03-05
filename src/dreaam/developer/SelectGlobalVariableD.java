@@ -11,10 +11,9 @@ import java.util.logging.Logger;
 import javax.swing.*;
 
 /**
- * Dialog window that lets you select InputEvents and OutputEvents for SAMI
- * transitions
- *
- * @author pscerri
+ * Dialogue for adding, removing, and modifying global variables
+
+ * @author nbb
  */
 public class SelectGlobalVariableD extends javax.swing.JDialog {
 

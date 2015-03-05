@@ -9,6 +9,7 @@ import sami.mission.Transition;
 import sami.mission.Vertex;
 import edu.uci.ics.jung.graph.Graph;
 import java.util.ArrayList;
+import sami.engine.Mediator;
 
 /**
  *
@@ -20,13 +21,13 @@ public class TestGeneration {
     ArrayList<TestCase> testCases = null;
 
     public TestGeneration() {
-        Mediator mediator = new Mediator();
+        Mediator mediator = Mediator.getInstance();
 
         ArrayList<Node> cases = new ArrayList<Node>();
 
         System.out.println("Starting test case generation");
 
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
             Graph<Vertex, Edge> graph = missionPlanSpecification.getGraph();
             // Grab the start place
             Place start = null;

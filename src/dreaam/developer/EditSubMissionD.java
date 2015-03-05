@@ -25,6 +25,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle;
+import sami.engine.Mediator;
 import sami.mission.TaskSpecification;
 
 /**
@@ -44,7 +45,6 @@ public class EditSubMissionD extends javax.swing.JDialog {
         Event, Manual
     };
 
-    private Mediator mediator = new Mediator();
     private MissionPlanSpecification parentMSpec;
     private MissionPlanSpecification selectedMSpec = null;
     private ArrayList<TaskSpecification> selectedMTaskSpecList = new ArrayList<TaskSpecification>();
@@ -137,7 +137,7 @@ public class EditSubMissionD extends javax.swing.JDialog {
 
         // Scroll list for selecting plan to use as submission
         planLabel = new JLabel("Plan to use as sub mission");
-        planCB = new JComboBox(mediator.getProjectSpec().getRootMissionPlans().toArray());
+        planCB = new JComboBox(mediator.getProject().getRootMissionPlans().toArray());
         selectedMSpec = (MissionPlanSpecification) planCB.getSelectedItem();
         planCB.addActionListener(new ActionListener() {
 

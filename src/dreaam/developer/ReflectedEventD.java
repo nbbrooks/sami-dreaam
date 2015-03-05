@@ -26,6 +26,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import sami.engine.Mediator;
 import sami.event.Event;
 import sami.event.ReflectionHelper;
 import sami.markup.Markup;
@@ -43,6 +44,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
 
         INPUT, OUTPUT
     };
+
     private final static Logger LOGGER = Logger.getLogger(ReflectedEventD.class.getName());
     private final static int BUTTON_HEIGHT = 50;
     private final static int BORDER = 5;
@@ -71,7 +73,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     private final ReflectedEventSpecification eventSpec;
     private final MissionPlanSpecification mSpec;
     private final VariableSelectedListener variableSelectedListener = new VariableSelectedListener();
-    private final Mediator mediator = new Mediator();
+    private final Mediator mediator = Mediator.getInstance();
 
     /**
      * Creates new form ReflectedEventD
@@ -225,7 +227,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected void addVariableComboBox(Field field, HashMap<String, String> fieldNameToReadVariable, JPanel panel, GridBagConstraints constraints) {
-        ArrayList<String> existingVariables = mediator.getProjectSpec().getVariables(field);
+        ArrayList<String> existingVariables = mediator.getProject().getVariables(field);
         existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 

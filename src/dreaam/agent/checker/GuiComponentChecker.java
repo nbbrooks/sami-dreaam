@@ -20,7 +20,7 @@ public class GuiComponentChecker extends CheckerAgent {
         ArrayList<AgentMessage> msgs = new ArrayList<AgentMessage>();
 
         boolean hasInformationMessage = false;
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
             for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
                 if (vertex instanceof Place) {
                     for (OutputEvent outputEvent : ((Place) vertex).getOutputEvents()) {
@@ -34,7 +34,7 @@ public class GuiComponentChecker extends CheckerAgent {
 
         if (hasInformationMessage) {
             boolean hasComponentForMessages = false;
-            for (GuiElementSpec s : mediator.getProjectSpec().getGuiElements()) {
+            for (GuiElementSpec s : mediator.getProject().getGuiElements()) {
                 if (s.getElementName().equalsIgnoreCase("Alert Window")) {
                     hasComponentForMessages = true;
                 }

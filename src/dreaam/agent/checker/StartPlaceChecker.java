@@ -18,7 +18,7 @@ public class StartPlaceChecker extends CheckerAgent {
     public ArrayList<AgentMessage> getMessages() {
         ArrayList<AgentMessage> msgs = new ArrayList<AgentMessage>();
         String msg = null;
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
             msg = null;
             Place start = null;
             for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {

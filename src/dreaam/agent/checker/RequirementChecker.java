@@ -1,9 +1,8 @@
 package dreaam.agent.checker;
 
-import dreaam.agent.checker.CheckerAgent;
 import sami.mission.RequirementSpecification;
-import dreaam.developer.Mediator;
 import java.util.ArrayList;
+import sami.engine.Mediator;
 
 /**
  *
@@ -17,7 +16,7 @@ public class RequirementChecker extends CheckerAgent {
     @Override
     public ArrayList<AgentMessage> getMessages() {
         ArrayList<AgentMessage> msgs = new ArrayList<AgentMessage>();
-        ArrayList<RequirementSpecification> reqs = (new Mediator()).getProjectSpec().getReqs();
+        ArrayList<RequirementSpecification> reqs = Mediator.getInstance().getProject().getReqs();
         if (reqs != null) {
             for (RequirementSpecification requirementSpecification : reqs) {
                 if (!requirementSpecification.isFilled()) {

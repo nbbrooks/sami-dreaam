@@ -7,38 +7,38 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
+import sami.engine.Mediator;
 
 /**
  *
  * @author pscerri
  */
 public class GuiSpecD extends javax.swing.JDialog {
-    
-    String [] types = { "Map", "Compass", "Weapon State", "Alert Window", "Weather" };
-    
+
+    String[] types = {"Map", "Compass", "Weapon State", "Alert Window", "Weather"};
+
     HashMap<String, MyRenderer> mapping = new HashMap<String, MyRenderer>();
-    
+
     /**
      * Creates new form GuiSpecD
      */
     public GuiSpecD(java.awt.Frame parent, boolean modal, ArrayList<GuiElementSpec> selected) {
         super(parent, modal);
         initComponents();
-     
-        mainP.setLayout(new GridLayout(0,1));
-        
+
+        mainP.setLayout(new GridLayout(0, 1));
+
         for (String string : types) {
             MyRenderer r = new MyRenderer(string);
             if (selected != null) {
-                
+
                 for (GuiElementSpec gUIElementSpec : selected) {
                     if (gUIElementSpec.matches(string)) {
                         r.setSelected();
                         r.s.setValue(gUIElementSpec.getRelativeSize());
                     }
                 }
-                
-                
+
             }
             mainP.add(r);
             mapping.put(string, r);
@@ -106,28 +106,29 @@ public class GuiSpecD extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-                
+
         setVisible(false);
-        
+
         ArrayList<GuiElementSpec> elements = new ArrayList<GuiElementSpec>();
-        
+
         for (String string : types) {
             MyRenderer r = mapping.get(string);
             if (r.isSelected()) {
                 GuiElementSpec spec = new GuiElementSpec(string);
-                spec.setRelativeSize(r.s.getValue());                
+                spec.setRelativeSize(r.s.getValue());
                 elements.add(spec);
             }
         }
-        
-        (new Mediator()).getProjectSpec().setGuiElements(elements);
-        
+
+        Mediator.getInstance().getProject().setGuiElements(elements);
+
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private class MyRenderer extends JPanel {
-        
+
         JCheckBox cb = new JCheckBox();
         JSlider s = new JSlider(0, 200, 100);
+
         public MyRenderer(Object o) {
             setLayout(new FlowLayout());
             cb.setEnabled(true);
@@ -136,7 +137,7 @@ public class GuiSpecD extends javax.swing.JDialog {
             add(s);
             setBorder(new EtchedBorder(2));
         }
-        
+
         boolean isSelected() {
             return cb.isSelected();
         }
@@ -144,9 +145,9 @@ public class GuiSpecD extends javax.swing.JDialog {
         private void setSelected() {
             cb.setSelected(true);
         }
-        
+
     }
-    
+
     /**
      * @param args the command line arguments
      */

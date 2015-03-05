@@ -22,7 +22,7 @@ public class AbortMissionChecker extends CheckerAgent {
         boolean hasAbortMissionTransition;
         ArrayList<AgentMessage> msgs = new ArrayList<AgentMessage>();
         // Check that each place has a transition with a AbortMissionReceived trigger
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
             for (Vertex v : missionPlanSpecification.getGraph().getVertices()) {
                 if (v instanceof Place && !((Place) v).isEnd()) {
                     hasAbortMissionTransition = false;

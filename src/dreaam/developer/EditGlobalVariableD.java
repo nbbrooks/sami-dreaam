@@ -28,14 +28,14 @@ import sami.markup.Markup;
 import sami.uilanguage.MarkupComponent;
 
 /**
- *
- * @author pscerri
+ * Dialogue for specifying a global variables
+ * 
+ * @author nbb
  */
 public class EditGlobalVariableD extends javax.swing.JDialog {
 
     private static final Logger LOGGER = Logger.getLogger(EditGlobalVariableD.class.getName());
 
-    private Mediator mediator = new Mediator();
     // All fields are valid?
     private boolean valid = false;
     private ActivityListener activityListener = new ActivityListener();

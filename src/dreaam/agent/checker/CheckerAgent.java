@@ -1,7 +1,7 @@
 package dreaam.agent.checker;
 
-import dreaam.developer.Mediator;
 import java.util.ArrayList;
+import sami.engine.Mediator;
 
 /**
  *
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 public abstract class CheckerAgent {
 
     private boolean enabled = true;
-    public Mediator mediator = new Mediator();
+    public Mediator mediator = Mediator.getInstance();
 
     abstract public ArrayList<AgentMessage> getMessages();
 

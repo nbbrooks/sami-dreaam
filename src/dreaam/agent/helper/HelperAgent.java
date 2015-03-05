@@ -1,10 +1,10 @@
 package dreaam.agent.helper;
 
-import dreaam.developer.Mediator;
 import dreaam.developer.TaskModelEditor;
 import java.awt.Point;
 import java.awt.geom.Point2D;
 import java.util.Map;
+import sami.engine.Mediator;
 import sami.mission.Place;
 import sami.mission.Transition;
 import sami.mission.Vertex;
@@ -16,7 +16,7 @@ import sami.mission.Vertex;
 public abstract class HelperAgent {
 
     private boolean enabled = true;
-    public Mediator mediator = new Mediator();
+    public Mediator mediator = Mediator.getInstance();
 
     abstract public void run();
 

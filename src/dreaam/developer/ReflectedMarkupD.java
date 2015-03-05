@@ -22,6 +22,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
+import sami.engine.Mediator;
 import sami.event.Event;
 import sami.event.ReflectionHelper;
 import sami.markup.Markup;
@@ -59,7 +60,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
     private HashMap<String, HashMap<String, Object>> optionFieldNameToDefinition = new HashMap<String, HashMap<String, Object>>();
     private Class markupClass = null;
     private HashMap<String, Object> fieldNameToDefinition = new HashMap<String, Object>();
-    private final Mediator mediator = new Mediator();
+    private final Mediator mediator = Mediator.getInstance();
 
     /**
      * Creates new form ReflectedEventD
@@ -354,7 +355,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
      * @param option
      */
     protected void addVariableComboBox(String enumName, String enumValueName, Field optionField, JPanel constantPanel, GridBagConstraints constraints, MarkupOption option) {
-        ArrayList<String> existingVariables = mediator.getProjectSpec().getVariables(optionField);
+        ArrayList<String> existingVariables = mediator.getProject().getVariables(optionField);
         existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 

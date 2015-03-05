@@ -26,6 +26,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import org.apache.commons.collections15.Transformer;
+import sami.engine.Mediator;
 import sami.event.ReflectedEventSpecification;
 import sami.gui.GuiConfig;
 import sami.mission.Edge;
@@ -66,7 +67,7 @@ public class TaskModelEditor extends JPanel {
     DirectedSparseGraph<Vertex, Edge> graph;
     AbstractLayout<Vertex, Edge> layout;
     MissionPlanSpecification mSpec = null;
-    Mediator mediator = new Mediator();
+    Mediator mediator = Mediator.getInstance();
     VisualizationViewer<Vertex, Edge> vv;   // The visual component and renderer for the graph
     String instructions = "Guess";
     EditingModalGraphMouse<Vertex, Edge> graphMouse = null;
@@ -1164,20 +1165,20 @@ public class TaskModelEditor extends JPanel {
                             popup.add(new AbstractAction("Edit Sub-missions") {
                                 public void actionPerformed(ActionEvent e) {
 
-                                    SelectSubMissionD d = new SelectSubMissionD(null, true, mSpec, mediator.getProjectSpec(), place.getSubMissionTemplates(), place.getSubMissionToTaskMap());
+                                    SelectSubMissionD d = new SelectSubMissionD(null, true, mSpec, mediator.getProject(), place.getSubMissionTemplates(), place.getSubMissionToTaskMap());
                                     d.setVisible(true);
                                     if (d.confirmedExit()) {
                                         for (MissionPlanSpecification createdSubMMSpec : d.getCreatedSubMissions()) {
-                                            mediator.getProjectSpec().addSubMissionPlan(createdSubMMSpec, mSpec);
+                                            mediator.getProject().addSubMissionPlan(createdSubMMSpec, mSpec);
                                         }
                                         for (MissionPlanSpecification deletedSubMMSpec : d.getDeletedSubMissions()) {
-                                            mediator.getProjectSpec().removeMissionPlan(deletedSubMMSpec);
+                                            mediator.getProject().removeMissionPlan(deletedSubMMSpec);
                                         }
                                         place.setSubMissionTemplates(d.getSubMissions());
                                         place.setSubMissionToTaskMap(d.getSubMissionToTaskMap());
                                         place.updateTag();
                                         dreaam.refreshMissionTree();
-                                        dreaam.selectNode(mediator.getProjectSpec().getNode(mSpec));
+                                        dreaam.selectNode(mediator.getProject().getNode(mSpec));
                                     }
                                     vv.repaint();
                                 }
@@ -1230,8 +1231,8 @@ public class TaskModelEditor extends JPanel {
                                 // @todo Consider linking requirements to objects to make the deletion process cleaner
                                 // @todo GetFilledBy only returns one object, if multiple fulfill, not listed
                                 // @todo Cancel/No not handled smoothly when multiple requirements filled by this.
-                                if (mediator.getProjectSpec().getReqs() != null) {
-                                    for (RequirementSpecification requirementSpecification : mediator.getProjectSpec().getReqs()) {
+                                if (mediator.getProject().getReqs() != null) {
+                                    for (RequirementSpecification requirementSpecification : mediator.getProject().getReqs()) {
                                         if (requirementSpecification.getFilledBy() == vertex) {
                                             int ret = JOptionPane.showConfirmDialog(null, "Requirement: " + requirementSpecification + " is filled by this object, really delete?");
                                             if (ret == JOptionPane.NO_OPTION || ret == JOptionPane.CANCEL_OPTION) {
@@ -1356,16 +1357,16 @@ public class TaskModelEditor extends JPanel {
                         popup.add(new AbstractAction("Edit Global Variables") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
-                                SelectGlobalVariableD variableD = new SelectGlobalVariableD(null, true, mediator.getProjectSpec().getGlobalVariableToValue());
+                                SelectGlobalVariableD variableD = new SelectGlobalVariableD(null, true, mediator.getProject().getGlobalVariableToValue());
                                 variableD.setVisible(true);
                                 if (variableD.confirmedExit()) {
                                     ArrayList<String> deletedVariables = variableD.getDeletedVariables();
                                     for (String variable : deletedVariables) {
-                                        mediator.getProjectSpec().deleteGlobalVariable(variable);
+                                        mediator.getProject().deleteGlobalVariable(variable);
                                     }
                                     HashMap<String, Object> createdVariables = variableD.getCreatedVariables();
                                     for (String variable : createdVariables.keySet()) {
-                                        mediator.getProjectSpec().setGlobalVariableValue(variable, createdVariables.get(variable));
+                                        mediator.getProject().setGlobalVariableValue(variable, createdVariables.get(variable));
                                     }
                                 }
                             }

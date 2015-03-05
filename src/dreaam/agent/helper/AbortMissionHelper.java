@@ -37,7 +37,7 @@ public class AbortMissionHelper extends HelperAgent {
         OutTokenRequirement takeAllTokenReq = new OutTokenRequirement(TokenRequirement.MatchCriteria.AnyToken, TokenRequirement.MatchQuantity.All, TokenRequirement.MatchAction.Take);
         boolean createdTransition = false, createdPlace = false;
 
-        for (MissionPlanSpecification missionPlanSpecification : mediator.getProjectSpec().getAllMissionPlans()) {
+        for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
             // Fetch transition that handles AbortMissionReceived events
             Transition endTransition = missionToTransition.get(missionPlanSpecification);
             if (endTransition == null) {

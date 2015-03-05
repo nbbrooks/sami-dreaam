@@ -4,6 +4,7 @@ import sami.mission.RequirementSpecification;
 import java.awt.GridLayout;
 import java.util.Hashtable;
 import javax.swing.JCheckBox;
+import sami.engine.Mediator;
 
 /**
  *
@@ -23,9 +24,9 @@ public class SelectReqD extends javax.swing.JDialog {
         setTitle("SelectReqD");
         this.o = o;
         reqP.setLayout(new GridLayout(0, 1));
-        Mediator mediator = new Mediator();
-        if (mediator.getProjectSpec().getReqs() != null) {
-            for (RequirementSpecification r : mediator.getProjectSpec().getReqs()) {
+        Mediator mediator = Mediator.getInstance();
+        if (mediator.getProject().getReqs() != null) {
+            for (RequirementSpecification r : mediator.getProject().getReqs()) {
                 JCheckBox cb = new JCheckBox(r.toString());
                 mapping.put(r, cb);
                 cb.setSelected(r.isFilled());
