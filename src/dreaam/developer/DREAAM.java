@@ -647,7 +647,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         ArrayList<MissionPlanSpecification> mpSpecs = mediator.getProject().getRootMissionPlans();
         if (mpSpecs.size() > 0) {
             Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Setting graph", this);
-            taskModelEditor.setGraph(mpSpecs.get(0));
+            taskModelEditor.setMissionSpecification(mpSpecs.get(0));
             taskModelEditor.setMode(FunctionMode.Nominal);
 
             selectNode(mediator.getProject().getNode(mpSpecs.get(0)));
@@ -816,7 +816,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         Object nodeInfo = node.getUserObject();
         if (nodeInfo instanceof MissionPlanSpecification) {
             taskModelEditor.writeModel();
-            taskModelEditor.setGraph((MissionPlanSpecification) nodeInfo);
+            taskModelEditor.setMissionSpecification((MissionPlanSpecification) nodeInfo);
 //            taskModelEditor.setMode(FunctionMode.Nominal);
             componentT.expandPath(getPath(node));
             componentT.setSelectionPath(getPath(node));

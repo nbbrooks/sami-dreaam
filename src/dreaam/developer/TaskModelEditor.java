@@ -2,9 +2,11 @@ package dreaam.developer;
 
 import dreaam.developer.SelectTokenD.EdgeType;
 import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
+import edu.uci.ics.jung.algorithms.layout.DAGLayout;
 import edu.uci.ics.jung.algorithms.layout.GraphElementAccessor;
 import edu.uci.ics.jung.algorithms.layout.StaticLayout;
 import edu.uci.ics.jung.graph.DirectedSparseGraph;
+import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.SparseMultigraph;
 import edu.uci.ics.jung.visualization.GraphZoomScrollPane;
 import edu.uci.ics.jung.visualization.Layer;
@@ -16,9 +18,11 @@ import edu.uci.ics.jung.visualization.control.ScalingControl;
 import edu.uci.ics.jung.visualization.transform.MutableTransformer;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -64,7 +68,7 @@ public class TaskModelEditor extends JPanel {
     public static final int CLICK_RADIUS = 5;
     // Length of grid segment for "snapping" vertices
     public static final int GRID_LENGTH = 50;
-    DirectedSparseGraph<Vertex, Edge> graph;
+    Graph<Vertex, Edge> graph;
     AbstractLayout<Vertex, Edge> layout;
     MissionPlanSpecification mSpec = null;
     Mediator mediator = Mediator.getInstance();
@@ -76,17 +80,250 @@ public class TaskModelEditor extends JPanel {
     private DREAAM dreaam;
     TaskModelEditor.MyMouseListener mml;
 
+    GraphZoomScrollPane panel;
+    JPanel controls;
+
     public TaskModelEditor(DREAAM dreaam, MissionPlanSpecification spec) {
         this(spec);
         this.dreaam = dreaam;
     }
 
+    private void createViewerPanel() {
+        // Create visualization
+        layout = new DAGLayout<Vertex, Edge>(new SparseMultigraph<Vertex, Edge>());
+        vv = new VisualizationViewer<Vertex, Edge>(layout);
+
+        // Visualization settings
+        vv.setBackground(GuiConfig.BACKGROUND_COLOR);
+
+        // EDGE
+        vv.getRenderContext().setArrowDrawPaintTransformer(new Transformer<Edge, Paint>() {
+            public Paint transform(Edge edge) {
+                switch (edge.getVisibilityMode()) {
+                    case Full:
+                    case Background:
+                        return GuiConfig.EDGE_COLOR;
+                    case None:
+                    default:
+                        return GuiConfig.INVIS_EDGE_COLOR;
+                }
+            }
+        });
+
+        vv.getRenderContext().setArrowFillPaintTransformer(new Transformer<Edge, Paint>() {
+            public Paint transform(Edge edge) {
+                switch (edge.getVisibilityMode()) {
+                    case Full:
+                    case Background:
+                        return GuiConfig.EDGE_COLOR;
+                    case None:
+                    default:
+                        return GuiConfig.INVIS_EDGE_COLOR;
+                }
+            }
+        });
+
+        vv.getRenderContext().setEdgeDrawPaintTransformer(new Transformer<Edge, Paint>() {
+            public Paint transform(Edge edge) {
+                switch (edge.getVisibilityMode()) {
+                    case Full:
+                    case Background:
+                        return GuiConfig.EDGE_COLOR;
+                    case None:
+                    default:
+                        return GuiConfig.INVIS_EDGE_COLOR;
+                }
+            }
+        });
+
+        vv.getRenderContext().setEdgeFontTransformer(new Transformer<Edge, Font>() {
+            @Override
+            public Font transform(Edge edge) {
+                switch (edge.getVisibilityMode()) {
+                    case Full:
+                    case Background:
+                        return GuiConfig.TEXT_FONT;
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
+
+        vv.getRenderContext().setLabelOffset(GuiConfig.LABEL_OFFSET);
+        vv.getRenderContext().setEdgeLabelTransformer(new Transformer<Edge, String>() {
+            @Override
+            public String transform(Edge edge) {
+                switch (edge.getVisibilityMode()) {
+                    case Full:
+                        return edge.getShortTag();
+                    case Background:
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
+
+        vv.getRenderContext().setEdgeStrokeTransformer(new Transformer<Edge, Stroke>() {
+            @Override
+            public Stroke transform(Edge edge) {
+                switch (edge.getVisibilityMode()) {
+                    case Full:
+                        if (edge.getFunctionMode() == Vertex.FunctionMode.Recovery) {
+                            return GuiConfig.RECOVERY_STROKE;
+                        } else {
+                            return GuiConfig.NOMINAL_STROKE;
+                        }
+                    case Background:
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
+
+        // VERTEX
+        vv.getRenderContext()
+                .setVertexDrawPaintTransformer(new Transformer<Vertex, Paint>() {
+                    @Override
+                    public Paint transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                                return GuiConfig.VERTEX_COLOR;
+                            case Background:
+                                return GuiConfig.BKGND_VERTEX_COLOR;
+                            case None:
+                            default:
+                                return null;
+                        }
+                    }
+                });
+
+        vv.getRenderContext()
+                .setVertexFillPaintTransformer(new Transformer<Vertex, Paint>() {
+                    @Override
+                    public Paint transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                                if (vertex instanceof Place) {
+                                    Place place = (Place) vertex;
+                                    if (place.isStart()) {
+                                        return GuiConfig.START_PLACE_COLOR;
+                                    } else if (place.isEnd()) {
+                                        return GuiConfig.END_PLACE_COLOR;
+                                    } else {
+                                        return GuiConfig.PLACE_COLOR;
+                                    }
+                                } else if (vertex instanceof Transition) {
+                                    return GuiConfig.TRANSITION_COLOR;
+                                }
+                                return null;
+                            case Background:
+                                return GuiConfig.BKGND_VERTEX_COLOR;
+                            case None:
+                            default:
+                                return null;
+                        }
+                    }
+                });
+
+        vv.getRenderContext()
+                .setVertexFontTransformer(new Transformer<Vertex, Font>() {
+                    @Override
+                    public Font transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                            case Background:
+                                return GuiConfig.TEXT_FONT;
+                            case None:
+                            default:
+                                return null;
+                        }
+                    }
+                });
+
+        vv.getRenderContext().setVertexLabelTransformer(new Transformer<Vertex, String>() {
+            @Override
+            public String transform(Vertex vertex) {
+                switch (vertex.getVisibilityMode()) {
+                    case Full:
+                        return vertex.getShortTag();
+                    case Background:
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
+
+        vv.getRenderContext().setVertexShapeTransformer(new Transformer<Vertex, Shape>() {
+            @Override
+            public Shape transform(Vertex vertex) {
+                if (vertex instanceof Transition) {
+                    return ((Transition) vertex).getShape();
+                } else if (vertex instanceof Place) {
+                    return ((Place) vertex).getShape();
+                } else {
+                    return null;
+                }
+            }
+        });
+
+        vv.getRenderContext().setVertexStrokeTransformer(new Transformer<Vertex, Stroke>() {
+            @Override
+            public Stroke transform(Vertex vertex) {
+                switch (vertex.getVisibilityMode()) {
+                    case Full:
+                        if (vertex.getFunctionMode() == Vertex.FunctionMode.Recovery) {
+                            return GuiConfig.RECOVERY_STROKE;
+                        } else {
+                            return GuiConfig.NOMINAL_STROKE;
+                        }
+                    case Background:
+                        if (vertex.getFunctionMode() == Vertex.FunctionMode.Recovery) {
+                            return GuiConfig.RECOVERY_STROKE;
+                        } else {
+                            return GuiConfig.NOMINAL_STROKE;
+                        }
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
+
+        vv.setVertexToolTipTransformer(
+                new Transformer<Vertex, String>() {
+                    @Override
+                    public String transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                                return vertex.getTag();
+                            case Background:
+                            case None:
+                            default:
+                                return null;
+                        }
+                    }
+                });
+
+        // Add mouse listener to visualization for panning and zooming the Petri Net
+        MyMouseListener mml = new MyMouseListener();
+        vv.addMouseListener(mml);
+        vv.addMouseMotionListener(mml);
+        vv.addMouseWheelListener(mml);
+    }
+
     public TaskModelEditor(MissionPlanSpecification spec) {
+        // Create mission view panel
+        createViewerPanel();
+
         graph = new DirectedSparseGraph<Vertex, Edge>();
         layout = new StaticLayout<Vertex, Edge>(graph, new Dimension(600, 600));
         vv = new VisualizationViewer<Vertex, Edge>(layout);
         vv.setBackground(GuiConfig.BACKGROUND_COLOR);
-        setGraph(spec);
+        setMissionSpecification(spec);
 
         // EDGE
         vv.getRenderContext().setArrowDrawPaintTransformer(new Transformer<Edge, Paint>() {
@@ -324,19 +561,16 @@ public class TaskModelEditor extends JPanel {
                     }
                 });
 
-        final GraphZoomScrollPane panel = new GraphZoomScrollPane(vv);
-
-        setLayout(
-                new BorderLayout());
+        setLayout(new BorderLayout());
+        panel = new GraphZoomScrollPane(vv);
         add(panel, BorderLayout.CENTER);
+
         // Comment this line in and the next four out to switch to my mouse handler
         mml = new TaskModelEditor.MyMouseListener();
-
         vv.addMouseListener(mml);
-
         vv.addMouseMotionListener(mml);
-
         vv.addMouseWheelListener(mml);
+
         final ScalingControl scaler = new CrossoverScalingControl();
         JButton plus = new JButton("+");
 
@@ -360,10 +594,19 @@ public class TaskModelEditor extends JPanel {
             }
         });
 
-        JPanel controls = new JPanel();
+        JButton snapView = new JButton("Snap View");
+        snapView.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                snapViewToVisible();
+                vv.repaint();
+            }
+        });
+
+        controls = new JPanel();
         controls.add(plus);
         controls.add(minus);
         controls.add(help);
+        controls.add(snapView);
         add(controls, BorderLayout.SOUTH);
 
     }
@@ -1557,44 +1800,29 @@ public class TaskModelEditor extends JPanel {
 //        }
     }
 
-    public void setGraph(MissionPlanSpecification spec) {
+    public void setMissionSpecification(MissionPlanSpecification spec) {
         this.mSpec = spec;
-
         if (spec.getGraph() != null) {
+            graph = spec.getGraph();
+            layout.setGraph(graph);
             spec.updateAllTags();
+            mSpec.updateLayout(layout);
 
-            // this.graph = (DirectedSparseGraph)spec.getGraph();
-            SparseMultigraph uGraph = (SparseMultigraph) spec.getGraph();
-            this.graph = new DirectedSparseGraph<Vertex, Edge>();
-            for (Object o : uGraph.getVertices()) {
-                graph.addVertex((Vertex) o);
-            }
-            for (Object o : uGraph.getEdges()) {
-                Edge edge = (Edge) o;
-                graph.addEdge(edge, edge.getStart(), edge.getEnd());
-            }
-
+            refreshGraphVisibility();
+//            snapViewToVisible();
             MultiLayerTransformer mlt = vv.getRenderContext().getMultiLayerTransformer();
             mlt.getTransformer(Layer.LAYOUT).getTransform().setTransform(spec.getLayoutTransform());
             mlt.getTransformer(Layer.VIEW).getTransform().setTransform(spec.getView());
-
-            layout.setGraph(graph);
-
-            spec.updateThisLayout(layout);    // @help Why are we doing this?
-
-            //@todo Add lookup for plan to translation and zoom
-            vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
-            vv.repaint();
         } else {
-            this.graph = new DirectedSparseGraph<Vertex, Edge>();
+            graph = new DirectedSparseGraph<Vertex, Edge>();
             layout.setGraph(this.graph);
             vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
-            vv.repaint();
         }
+        vv.repaint();
     }
 
     public void reloadGraph() {
-        setGraph(mSpec);
+        setMissionSpecification(mSpec);
     }
 
     /*
@@ -1668,5 +1896,129 @@ public class TaskModelEditor extends JPanel {
         mSpec.removeEdge(edge);
 
         vv.repaint();
+    }
+
+    private void snapViewToVisible() {
+        double[] corners = getVisibleMissionDims();
+        setCorners(corners);
+    }
+
+    /**
+     * Adjust visualization transform so that a specified rectangle in vertex
+     * space is visible
+     *
+     * @param corners A double[4] set to {min x point, min y point, max x point,
+     * max y point}
+     */
+    private void setCorners(double[] corners) {
+        if (Double.isNaN(corners[0]) || Double.isNaN(corners[1]) || Double.isNaN(corners[2]) || Double.isNaN(corners[3])) {
+            return;
+        }
+
+        // Pad edges to account for shape dimensions, event/markup text, etc
+        // @todo could have this customized to corner vertices' properties
+        corners[0] -= 15;
+        corners[1] -= 15;
+        corners[2] += 30;
+        corners[3] += 30;
+
+        // Calculate scale and translation transform
+        double[] transform = new double[6];
+        transform[0] = -panel.getWidth() / (corners[0] - corners[2]);
+        transform[3] = -panel.getHeight() / (corners[1] - corners[3]);
+        // Use 1:1 zoom ratio
+        double adjScale = Math.min(transform[0], transform[3]);
+        transform[0] = adjScale;
+        transform[3] = adjScale;
+        transform[4] = -corners[0] * transform[0];
+        transform[5] = -corners[1] * transform[3];
+        AffineTransform at = new AffineTransform(transform);
+        // Mimic CrossoverScalingControl zooming
+        //  View layer's scale must be <= 1
+        //  Layout layers's scale must be >= 1
+        MultiLayerTransformer mlt = vv.getRenderContext().getMultiLayerTransformer();
+        if (adjScale < 1) {
+            mlt.getTransformer(Layer.VIEW).getTransform().setTransform(at);
+            mlt.getTransformer(Layer.LAYOUT).getTransform().setToScale(1.0, 1.0);
+        } else {
+            mlt.getTransformer(Layer.LAYOUT).getTransform().setTransform(at);
+            mlt.getTransformer(Layer.VIEW).getTransform().setToScale(1.0, 1.0);
+        }
+    }
+
+    /**
+     * Return area capturing all places with tokens
+     *
+     * @return A double[4] set to {min x point, min y point, max x point, max y
+     * point}
+     */
+    private double[] getActiveMissionDims() {
+        return getCorners(0);
+    }
+
+    /**
+     * Return area capturing all places with visibility mode full
+     *
+     * @return A double[4] set to {min x point, min y point, max x point, max y
+     * point}
+     */
+    private double[] getVisibleMissionDims() {
+        return getCorners(1);
+    }
+
+    /**
+     * Return area capturing all vertices, ignoring visibility mode
+     *
+     * @return A double[4] set to {min x point, min y point, max x point, max y
+     * point}
+     */
+    private double[] getFullMissionDims() {
+        return getCorners(2);
+    }
+
+    private double[] getCorners(int mode) {
+        // Mode
+        //  0: Active
+        //  1: Visible
+        //  2: All
+
+        double[] corners = new double[]{Double.NaN, Double.NaN, Double.NaN, Double.NaN};
+        Map<Vertex, Point2D> locations = mSpec.getLocations();
+        for (Vertex vertex : locations.keySet()) {
+            boolean add = false;
+            switch (mode) {
+                case 0:
+                default:
+                    add = vertex instanceof Place && ((Place) vertex).getIsActive();
+                    break;
+                case 1:
+                    add = vertex.getVisibilityMode() == GuiConfig.VisibilityMode.Full;
+                    break;
+                case 2:
+                    add = true;
+                    break;
+            }
+            if (add) {
+                // Expand area to capture this point
+                if (locations.get(vertex) != null) {
+                    Point2D point = locations.get(vertex);
+                    if (Double.isNaN(corners[0]) || point.getX() < corners[0]) {
+                        corners[0] = point.getX();
+                    }
+                    if (Double.isNaN(corners[2]) || point.getX() > corners[2]) {
+                        corners[2] = point.getX();
+                    }
+                    if (Double.isNaN(corners[1]) || point.getY() < corners[1]) {
+                        corners[1] = point.getY();
+                    }
+                    if (Double.isNaN(corners[3]) || point.getY() > corners[3]) {
+                        corners[3] = point.getY();
+                    }
+                } else {
+                    LOGGER.severe("Vertex [" + vertex + "] has no graph location");
+                }
+            }
+        }
+        return corners;
     }
 }
