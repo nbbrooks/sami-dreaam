@@ -933,7 +933,7 @@ public class TaskModelEditor extends JPanel {
 //            System.out.println("\t" + me.getModifiersEx() + "\t" + (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)));
 
             final Point2D framePoint = me.getPoint();
-            if (((me.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) != 0 || (me.getModifiersEx() & MouseEvent.SHIFT_DOWN_MASK) == 0)) {
+            if (((me.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) != 0 && (me.getModifiersEx() & MouseEvent.SHIFT_DOWN_MASK) == 0)) {
                 // Mouse1
                 // Select a vertex (needs to be in mousePressed to begin dragging)
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
@@ -972,7 +972,7 @@ public class TaskModelEditor extends JPanel {
             } else if (amTranslating && prevMousePoint != null) {
                 // Translate frame
                 // The Render transform doesn't update very quickly, so do it ourselves so translation looks smooth
-                MutableTransformer layout = vv.getRenderContext().getMultiLayerTransformer().getTransformer(Layer.LAYOUT);
+                MutableTransformer layout = vv.getRenderContext().getMultiLayerTransformer().getTransformer(Layer.VIEW);
                 double scale = vv.getRenderContext().getMultiLayerTransformer().getTransformer(Layer.VIEW).getScale();
                 double deltaX = (framePoint.getX() - prevMousePoint.getX()) * 1 / scale;
                 double deltaY = (framePoint.getY() - prevMousePoint.getY()) * 1 / scale;
@@ -987,8 +987,11 @@ public class TaskModelEditor extends JPanel {
 
             final Point framePoint = me.getPoint();
             final Point2D graphPoint = vv.getRenderContext().getMultiLayerTransformer().inverseTransform(framePoint);
-            if (((me.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) != 0 || (me.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) == 0)
+            if (((me.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) != 0
+                    && (me.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) == 0)
                     && !amDraggingVertex) {
+                // Mouse1 only AND not dragging vertex
+                // Select graph element
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
                     final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
@@ -1009,8 +1012,11 @@ public class TaskModelEditor extends JPanel {
                         vv.repaint();
                     }
                 }
-            } else if (((me.getModifiersEx() & MouseEvent.BUTTON3_DOWN_MASK) != 0 || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) != 0)
+            } else if (((me.getModifiersEx() & MouseEvent.BUTTON3_DOWN_MASK) != 0
+                    || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) != 0)
                     && !amTranslating) {
+                // (Mouse 3 OR CTRL + Mouse1) AND not translating
+                // Right click menu
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
                     final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);

@@ -106,10 +106,12 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
 
                 Object[] objectPath = treePath.getPath();
                 int pathCount = objectPath.length;
-                if ((me.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) != 0 || me.isPopupTrigger()) {
-
+                if (((me.getModifiersEx() & MouseEvent.BUTTON3_DOWN_MASK) != 0
+                        || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) != 0)
+                        || me.isPopupTrigger()) {
+                    // (Mouse 3 OR CTRL + Mouse1)
+                    // Right click menu
                     if (treePath.getLastPathComponent() == missionsRoot) {
-
                         JPopupMenu menu = new JPopupMenu();
                         menu.add(new AbstractAction("Add new mission") {
                             @Override
@@ -117,7 +119,6 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                 addNewRootMissionSpec();
                             }
                         });
-
                         menu.show(componentT, me.getX(), me.getY());
                     } else if (pathCount > 1
                             && objectPath[pathCount - 2] == missionsRoot
@@ -295,7 +296,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                 }
             }
         });
-        
+
         Mediator.getInstance().addProjectListener(this);
 
         // Try to load the last used DRM file
@@ -309,7 +310,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         } catch (AccessControlException e) {
             LOGGER.severe("Failed to load last used DRM");
         }
-        
+
         // Try to load the last used EPF file
         LOGGER.info("Load EPF");
         try {
@@ -320,7 +321,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         } catch (AccessControlException e) {
             LOGGER.severe("Failed to load last used EPF");
         }
-        
+
         repaint();
     }
 
