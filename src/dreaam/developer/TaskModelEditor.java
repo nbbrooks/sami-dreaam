@@ -1176,22 +1176,21 @@ public class TaskModelEditor extends JPanel {
 //            System.out.println("\t" + me.getModifiersEx() + "\t" + (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)));
 
             final Point2D framePoint = me.getPoint();
-            if (((me.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) != 0 && (me.getModifiersEx() & MouseEvent.SHIFT_DOWN_MASK) == 0)) {
+            if ((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == MouseEvent.BUTTON1_DOWN_MASK) {
                 // Mouse1
                 // Select a vertex (needs to be in mousePressed to begin dragging)
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
                     final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
-                    final Edge edge = getNearestEdge(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
                     if (vertex != null) {
                         if (!amCreatingEdge && !amDraggingVertex && selectedVertex == null) {
                             selectedVertex = vertex;
                         }
                     }
                 }
-            } else if ((me.getModifiersEx() & MouseEvent.BUTTON2_DOWN_MASK) != 0
-                    || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK)) != 0
-                    || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK)) != 0) {
+            } else if (((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == MouseEvent.BUTTON2_DOWN_MASK)
+                    || ((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK))
+                    || ((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK))) {
                 // Mouse 2 OR Mouse1+Shift OR Mouse1+Mouse3
                 // Begin translating
                 amTranslating = true;
@@ -1230,8 +1229,8 @@ public class TaskModelEditor extends JPanel {
 
             final Point framePoint = me.getPoint();
             final Point2D graphPoint = vv.getRenderContext().getMultiLayerTransformer().inverseTransform(framePoint);
-            if (((me.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) != 0
-                    && (me.getModifiersEx() & MouseEvent.CTRL_DOWN_MASK) == 0)
+            if (me.getButton() == MouseEvent.BUTTON1
+                    && (me.getModifiersEx() & (MouseEvent.BUTTON1_MASK | MouseEvent.BUTTON2_MASK | MouseEvent.BUTTON3_MASK | MouseEvent.SHIFT_MASK | MouseEvent.CTRL_MASK)) == 0
                     && !amDraggingVertex) {
                 // Mouse1 only AND not dragging vertex
                 // Select graph element
@@ -1255,8 +1254,8 @@ public class TaskModelEditor extends JPanel {
                         vv.repaint();
                     }
                 }
-            } else if (((me.getModifiersEx() & MouseEvent.BUTTON3_DOWN_MASK) != 0
-                    || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) != 0)
+            } else if (((me.getButton() == MouseEvent.BUTTON3 && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == 0)
+                    || (me.getButton() == MouseEvent.BUTTON1 && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == MouseEvent.CTRL_DOWN_MASK))
                     && !amTranslating) {
                 // (Mouse 3 OR CTRL + Mouse1) AND not translating
                 // Right click menu

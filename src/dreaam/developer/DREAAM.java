@@ -106,8 +106,8 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
 
                 Object[] objectPath = treePath.getPath();
                 int pathCount = objectPath.length;
-                if (((me.getModifiersEx() & MouseEvent.BUTTON3_DOWN_MASK) != 0
-                        || (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) != 0)
+                if ((me.getButton() == MouseEvent.BUTTON3 && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == 0)
+                        || (me.getButton() == MouseEvent.BUTTON1 && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == MouseEvent.CTRL_DOWN_MASK)
                         || me.isPopupTrigger()) {
                     // (Mouse 3 OR CTRL + Mouse1)
                     // Right click menu
