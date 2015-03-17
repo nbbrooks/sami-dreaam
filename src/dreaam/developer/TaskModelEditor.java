@@ -413,8 +413,7 @@ public class TaskModelEditor extends JPanel {
         });
 
         // VERTEX
-        vv.getRenderContext()
-                .setVertexDrawPaintTransformer(new Transformer<Vertex, Paint>() {
+        vv.getRenderContext().setVertexDrawPaintTransformer(new Transformer<Vertex, Paint>() {
                     @Override
                     public Paint transform(Vertex vertex) {
                         switch (vertex.getVisibilityMode()) {
@@ -437,8 +436,7 @@ public class TaskModelEditor extends JPanel {
                     }
                 });
 
-        vv.getRenderContext()
-                .setVertexFillPaintTransformer(new Transformer<Vertex, Paint>() {
+        vv.getRenderContext().setVertexFillPaintTransformer(new Transformer<Vertex, Paint>() {
                     @Override
                     public Paint transform(Vertex vertex) {
                         switch (vertex.getVisibilityMode()) {
@@ -465,8 +463,7 @@ public class TaskModelEditor extends JPanel {
                     }
                 });
 
-        vv.getRenderContext()
-                .setVertexFontTransformer(new Transformer<Vertex, Font>() {
+        vv.getRenderContext().setVertexFontTransformer(new Transformer<Vertex, Font>() {
                     @Override
                     public Font transform(Vertex vertex) {
                         switch (vertex.getVisibilityMode()) {
@@ -1230,9 +1227,10 @@ public class TaskModelEditor extends JPanel {
             final Point framePoint = me.getPoint();
             final Point2D graphPoint = vv.getRenderContext().getMultiLayerTransformer().inverseTransform(framePoint);
             if (me.getButton() == MouseEvent.BUTTON1
-                    && (me.getModifiersEx() & (MouseEvent.BUTTON1_MASK | MouseEvent.BUTTON2_MASK | MouseEvent.BUTTON3_MASK | MouseEvent.SHIFT_MASK | MouseEvent.CTRL_MASK)) == 0
-                    && !amDraggingVertex) {
-                // Mouse1 only AND not dragging vertex
+                    && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == 0
+                    && !amDraggingVertex
+                    && !amTranslating) {
+                // Mouse1 only AND not dragging vertex AND not translating view
                 // Select graph element
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
@@ -1256,8 +1254,9 @@ public class TaskModelEditor extends JPanel {
                 }
             } else if (((me.getButton() == MouseEvent.BUTTON3 && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == 0)
                     || (me.getButton() == MouseEvent.BUTTON1 && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == MouseEvent.CTRL_DOWN_MASK))
+                    && !amDraggingVertex
                     && !amTranslating) {
-                // (Mouse 3 OR CTRL + Mouse1) AND not translating
+                // (Mouse 3 OR CTRL + Mouse1) AND not dragging vertex AND not translating view
                 // Right click menu
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {

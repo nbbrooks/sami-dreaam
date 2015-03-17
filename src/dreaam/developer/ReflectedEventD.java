@@ -14,6 +14,9 @@ import java.awt.event.ItemListener;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -139,18 +142,34 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 // Add combo box for selecting variable name
+                JLabel cbL = new JLabel("Read variable name");
+                maxComponentWidth = Math.max(maxComponentWidth, cbL.getPreferredSize().width);
+                fieldPanel.add(cbL, fieldConstraints);
+                fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 addVariableComboBox(field, fieldNameToReadVariable, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 // Add component for defining value
-                addValueComponent(field, fieldNameToValue, fieldPanel, fieldConstraints);
+                JLabel definitionL = new JLabel("Definition");
+                maxComponentWidth = Math.max(maxComponentWidth, definitionL.getPreferredSize().width);
+                fieldPanel.add(definitionL, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
+                addValueComponent(field, fieldNameToValue, fieldPanel, fieldConstraints);
+//                fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 // Add text field for saving defined value to variable
+                JLabel writeL = new JLabel("Write variable name");
+                maxComponentWidth = Math.max(maxComponentWidth, writeL.getPreferredSize().width);
+                fieldPanel.add(writeL, fieldConstraints);
+                fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 addVariableTextField(field, fieldNameToWriteVariable, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 // Add toggle button for setting ability to edit field at run-time
+                JLabel editableL = new JLabel("Definition editable at run-time?");
+                maxComponentWidth = Math.max(maxComponentWidth, editableL.getPreferredSize().width);
+                fieldPanel.add(editableL, fieldConstraints);
+                fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 addEditableButton(field, fieldNameToEditable, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
@@ -246,10 +265,68 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToValue, JPanel panel, GridBagConstraints constraints) {
-        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((java.lang.reflect.Type) field.getType(), field, new ArrayList<Markup>());
+        addValueComponent(field, fieldNameToValue, panel, constraints, 0);
+    }
+
+    protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToValue, JPanel panel, GridBagConstraints constraints, int recursionDepth) {
         JComponent visualization = null;
+        if (recursionDepth > 3) {
+            visualization = new JLabel(field.getName() + " (" + field.getType().getSimpleName() + "): No component - max recursion", SwingConstants.LEFT);
+        } else {
+            MarkupComponent markupComponent = getValueComponent(field, fieldNameToValue);
+
+            if (markupComponent != null && markupComponent.getComponent() != null) {
+                visualization = markupComponent.getComponent();
+                fieldToValueComponent.put(field, markupComponent);
+            } else {
+            // There is no component that can directly be used to define a value for this field
+            //  Recursively add components for its fields, if possible
+
+                Class c;
+                try {
+                    c = Class.forName(field.getType().getTypeName());
+                    if (Map.class.isAssignableFrom(c)
+                            || List.class.isAssignableFrom(c)
+                            || Class.class.isAssignableFrom(c)
+                            || Hashtable.class.isAssignableFrom(c)) {
+                        // Can't do these yet
+                        visualization = new JLabel(field.getName() + " (" + field.getType().getSimpleName() + "): No component - unsupported", SwingConstants.LEFT);
+                    } else {
+                        // Create JPanel to house sub-field's components
+                        JPanel recursionPanel = new JPanel();
+                        recursionPanel.setLayout(new GridBagLayout());
+                        recursionPanel.setBorder(BorderFactory.createLineBorder(Color.black));
+
+                        GridBagConstraints recursionConstraints = new GridBagConstraints();
+                        recursionConstraints.fill = GridBagConstraints.HORIZONTAL;
+                        recursionConstraints.gridy = 0;
+                        recursionConstraints.gridx = 0;
+                        recursionConstraints.weightx = 1.0;
+
+                        JLabel recursionL = new JLabel(field.getName() + " (" + field.getType().getSimpleName() + ")");
+                        maxComponentWidth = Math.max(maxComponentWidth, recursionL.getPreferredSize().width);
+                        recursionPanel.add(recursionL, recursionConstraints);
+                        recursionConstraints.gridy = recursionConstraints.gridy + 1;
+
+                        Field[] classFields = c.getDeclaredFields();
+                        for (Field classField : classFields) {
+                            addValueComponent(classField, fieldNameToValue, recursionPanel, recursionConstraints);
+                        }
+                        visualization = recursionPanel;
+                    }
+                } catch (ClassNotFoundException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+        maxComponentWidth = Math.max(maxComponentWidth, visualization.getPreferredSize().width);
+        panel.add(visualization, constraints);
+        constraints.gridy = constraints.gridy + 1;
+    }
+
+    protected MarkupComponent getValueComponent(Field field, HashMap<String, Object> fieldNameToValue) {
+        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((java.lang.reflect.Type) field.getType(), field, new ArrayList<Markup>());
         if (markupComponent != null && markupComponent.getComponent() != null) {
-            visualization = markupComponent.getComponent();
             Object definition = fieldNameToValue.get(field.getName());
             if (definition != null) {
                 // This field already has been defined with a value
@@ -263,15 +340,8 @@ public class ReflectedEventD extends javax.swing.JDialog {
                     UiComponentGenerator.getInstance().setComponentValue(markupComponent, definition);
                 }
             }
-            fieldToValueComponent.put(field, markupComponent);
-        } else {
-            // There is no component that can be used to define a value for this field
-            // The field can only be set to a variable name
-            // Show a message for now, may remove this later...
-            visualization = new JLabel("No component", SwingConstants.LEFT);
         }
-        maxComponentWidth = Math.max(maxComponentWidth, visualization.getPreferredSize().width);
-        panel.add(visualization, constraints);
+        return markupComponent;
     }
 
     protected void addEditableButton(Field field, HashMap<String, Boolean> fieldNameToEditable, JPanel panel, GridBagConstraints constraints) {
