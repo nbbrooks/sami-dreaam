@@ -1,6 +1,5 @@
 package dreaam.developer;
 
-import dreaam.DreaamHelper;
 import dreaam.agent.Platform;
 import dreaam.agent.checker.CheckerAgent;
 import dreaam.agent.checker.CheckerAgent.AgentMessage;
@@ -24,6 +23,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
 import javax.swing.tree.*;
+import sami.CoreHelper;
 import sami.config.DomainConfigManager;
 import sami.engine.Mediator;
 import sami.mission.MissionPlanSpecification;
@@ -154,7 +154,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                     for (MissionPlanSpecification mSpec : missions) {
                                         playNames.add(mSpec.getName());
                                     }
-                                    result = DreaamHelper.getUniqueName(result, playNames);
+                                    result = CoreHelper.getUniqueName(result, playNames);
                                     MissionPlanSpecification mps = (MissionPlanSpecification) ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject();
                                     LOGGER.info("Duplicating " + mps.getName() + " and naming " + result);
 
@@ -582,7 +582,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         for (MissionPlanSpecification mSpec : missions) {
             playNames.add(mSpec.getName());
         }
-        String missionName = DreaamHelper.getUniqueName("Anonymous", playNames);
+        String missionName = CoreHelper.getUniqueName("Anonymous", playNames);
 
         // Create and add mission
         MissionPlanSpecification spec = mediator.getProject().getNewMissionPlanSpecification(missionName);
