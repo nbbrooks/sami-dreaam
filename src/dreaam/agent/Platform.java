@@ -48,7 +48,7 @@ public class Platform {
 //            agents.add(new GUIComponentAnalysisAgent());
             // Load domain specific agents
             try {
-                DefaultMutableTreeNode agentsTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().domainConfiguration.agentTree.clone();
+                DefaultMutableTreeNode agentsTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().getDomainConfiguration().agentTree.clone();
                 Enumeration e = agentsTree.preorderEnumeration();
                 while (e.hasMoreElements()) {
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();

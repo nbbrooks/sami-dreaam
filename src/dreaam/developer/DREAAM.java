@@ -63,8 +63,8 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         LOGGER.info("java.library.path: " + System.getProperty("java.library.path"));
         LOGGER.info("java.ext.dirs: " + System.getProperty("java.ext.dirs"));
         LOGGER.info("java.util.logging.config.file: " + System.getProperty("java.util.logging.config.file"));
-        LOGGER.info("domainConfiguration:\n" + DomainConfigManager.getInstance().domainConfiguration.toString());
-        LOGGER.info("domainConfiguration:\n" + DomainConfigManager.getInstance().domainConfiguration.toVerboseString());
+        LOGGER.info("domainConfiguration:\n" + DomainConfigManager.getInstance().getDomainConfiguration().toString());
+        LOGGER.info("domainConfiguration:\n" + DomainConfigManager.getInstance().getDomainConfiguration().toVerboseString());
 
         initComponents();
         platform = new Platform();

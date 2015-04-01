@@ -2,7 +2,6 @@ package dreaam.developer;
 
 import dreaam.developer.SelectTokenD.EdgeType;
 import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
-import edu.uci.ics.jung.algorithms.layout.DAGLayout;
 import edu.uci.ics.jung.algorithms.layout.GraphElementAccessor;
 import edu.uci.ics.jung.algorithms.layout.StaticLayout;
 import edu.uci.ics.jung.graph.DirectedSparseGraph;
@@ -69,6 +68,8 @@ public class TaskModelEditor extends JPanel {
     // Length of grid segment for "snapping" vertices
     public static final int GRID_LENGTH = 50;
     Graph<Vertex, Edge> graph;
+    // DirectedSparseGraph version of mSpec's SparseMultigraph (DirectedSparseGraph does not implement serialize correctly)
+    private DirectedSparseGraph<Vertex, Edge> transientGraph;
     AbstractLayout<Vertex, Edge> layout;
     MissionPlanSpecification mSpec = null;
     Mediator mediator = Mediator.getInstance();
@@ -88,15 +89,29 @@ public class TaskModelEditor extends JPanel {
         this.dreaam = dreaam;
     }
 
-    private void createViewerPanel() {
-        // Create visualization
-        layout = new DAGLayout<Vertex, Edge>(new SparseMultigraph<Vertex, Edge>());
-        vv = new VisualizationViewer<Vertex, Edge>(layout);
-
+    private void addVisualizationTransformers() {
         // Visualization settings
         vv.setBackground(GuiConfig.BACKGROUND_COLOR);
 
         // EDGE
+        vv.getRenderContext().setEdgeArrowStrokeTransformer(new Transformer<Edge, Stroke>() {
+            @Override
+            public Stroke transform(Edge edge) {
+                switch (edge.getVisibilityMode()) {
+                    case Full:
+                        if (edge.getFunctionMode() == Vertex.FunctionMode.Recovery) {
+                            return GuiConfig.RECOVERY_STROKE;
+                        } else {
+                            return GuiConfig.NOMINAL_STROKE;
+                        }
+                    case Background:
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
+
         vv.getRenderContext().setArrowDrawPaintTransformer(new Transformer<Edge, Paint>() {
             public Paint transform(Edge edge) {
                 switch (edge.getVisibilityMode()) {
@@ -184,107 +199,21 @@ public class TaskModelEditor extends JPanel {
         });
 
         // VERTEX
-        vv.getRenderContext()
-                .setVertexDrawPaintTransformer(new Transformer<Vertex, Paint>() {
-                    @Override
-                    public Paint transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                                return GuiConfig.VERTEX_COLOR;
-                            case Background:
-                                return GuiConfig.BKGND_VERTEX_COLOR;
-                            case None:
-                            default:
-                                return null;
-                        }
-                    }
-                });
-
-        vv.getRenderContext()
-                .setVertexFillPaintTransformer(new Transformer<Vertex, Paint>() {
-                    @Override
-                    public Paint transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                                if (vertex instanceof Place) {
-                                    Place place = (Place) vertex;
-                                    if (place.isStart()) {
-                                        return GuiConfig.START_PLACE_COLOR;
-                                    } else if (place.isEnd()) {
-                                        return GuiConfig.END_PLACE_COLOR;
-                                    } else {
-                                        return GuiConfig.PLACE_COLOR;
-                                    }
-                                } else if (vertex instanceof Transition) {
-                                    return GuiConfig.TRANSITION_COLOR;
-                                }
-                                return null;
-                            case Background:
-                                return GuiConfig.BKGND_VERTEX_COLOR;
-                            case None:
-                            default:
-                                return null;
-                        }
-                    }
-                });
-
-        vv.getRenderContext()
-                .setVertexFontTransformer(new Transformer<Vertex, Font>() {
-                    @Override
-                    public Font transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                            case Background:
-                                return GuiConfig.TEXT_FONT;
-                            case None:
-                            default:
-                                return null;
-                        }
-                    }
-                });
-
-        vv.getRenderContext().setVertexLabelTransformer(new Transformer<Vertex, String>() {
+        vv.getRenderContext().setVertexDrawPaintTransformer(new Transformer<Vertex, Paint>() {
             @Override
-            public String transform(Vertex vertex) {
+            public Paint transform(Vertex vertex) {
                 switch (vertex.getVisibilityMode()) {
                     case Full:
-                        return vertex.getShortTag();
-                    case Background:
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
-
-        vv.getRenderContext().setVertexShapeTransformer(new Transformer<Vertex, Shape>() {
-            @Override
-            public Shape transform(Vertex vertex) {
-                if (vertex instanceof Transition) {
-                    return ((Transition) vertex).getShape();
-                } else if (vertex instanceof Place) {
-                    return ((Place) vertex).getShape();
-                } else {
-                    return null;
-                }
-            }
-        });
-
-        vv.getRenderContext().setVertexStrokeTransformer(new Transformer<Vertex, Stroke>() {
-            @Override
-            public Stroke transform(Vertex vertex) {
-                switch (vertex.getVisibilityMode()) {
-                    case Full:
-                        if (vertex.getFunctionMode() == Vertex.FunctionMode.Recovery) {
-                            return GuiConfig.RECOVERY_STROKE;
+                        if (vertex.getBeingModified()) {
+                            return GuiConfig.SEL_VERTEX_COLOR;
                         } else {
-                            return GuiConfig.NOMINAL_STROKE;
+                            return GuiConfig.VERTEX_COLOR;
                         }
                     case Background:
-                        if (vertex.getFunctionMode() == Vertex.FunctionMode.Recovery) {
-                            return GuiConfig.RECOVERY_STROKE;
+                        if (vertex.getBeingModified()) {
+                            return GuiConfig.SEL_VERTEX_COLOR;
                         } else {
-                            return GuiConfig.NOMINAL_STROKE;
+                            return GuiConfig.BKGND_VERTEX_COLOR;
                         }
                     case None:
                     default:
@@ -293,82 +222,37 @@ public class TaskModelEditor extends JPanel {
             }
         });
 
-        vv.setVertexToolTipTransformer(
-                new Transformer<Vertex, String>() {
-                    @Override
-                    public String transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                                return vertex.getTag();
-                            case Background:
-                            case None:
-                            default:
-                                return null;
-                        }
-                    }
-                });
-
-        // Add mouse listener to visualization for panning and zooming the Petri Net
-        MyMouseListener mml = new MyMouseListener();
-        vv.addMouseListener(mml);
-        vv.addMouseMotionListener(mml);
-        vv.addMouseWheelListener(mml);
-    }
-
-    public TaskModelEditor(MissionPlanSpecification spec) {
-        // Create mission view panel
-        createViewerPanel();
-
-        graph = new DirectedSparseGraph<Vertex, Edge>();
-        layout = new StaticLayout<Vertex, Edge>(graph, new Dimension(600, 600));
-        vv = new VisualizationViewer<Vertex, Edge>(layout);
-        vv.setBackground(GuiConfig.BACKGROUND_COLOR);
-        setMissionSpecification(spec);
-
-        // EDGE
-        vv.getRenderContext().setArrowDrawPaintTransformer(new Transformer<Edge, Paint>() {
-            public Paint transform(Edge edge) {
-                switch (edge.getVisibilityMode()) {
-                    case Full:
-                    case Background:
-                        return GuiConfig.EDGE_COLOR;
-                    case None:
-                    default:
-                        return GuiConfig.INVIS_EDGE_COLOR;
-                }
-            }
-        });
-
-        vv.getRenderContext().setArrowFillPaintTransformer(new Transformer<Edge, Paint>() {
-            public Paint transform(Edge edge) {
-                switch (edge.getVisibilityMode()) {
-                    case Full:
-                    case Background:
-                        return GuiConfig.EDGE_COLOR;
-                    case None:
-                    default:
-                        return GuiConfig.INVIS_EDGE_COLOR;
-                }
-            }
-        });
-
-        vv.getRenderContext().setEdgeDrawPaintTransformer(new Transformer<Edge, Paint>() {
-            public Paint transform(Edge edge) {
-                switch (edge.getVisibilityMode()) {
-                    case Full:
-                    case Background:
-                        return GuiConfig.EDGE_COLOR;
-                    case None:
-                    default:
-                        return GuiConfig.INVIS_EDGE_COLOR;
-                }
-            }
-        });
-
-        vv.getRenderContext().setEdgeFontTransformer(new Transformer<Edge, Font>() {
+        vv.getRenderContext().setVertexFillPaintTransformer(new Transformer<Vertex, Paint>() {
             @Override
-            public Font transform(Edge edge) {
-                switch (edge.getVisibilityMode()) {
+            public Paint transform(Vertex vertex) {
+                switch (vertex.getVisibilityMode()) {
+                    case Full:
+                        if (vertex instanceof Place) {
+                            Place place = (Place) vertex;
+                            if (place.isStart()) {
+                                return GuiConfig.START_PLACE_COLOR;
+                            } else if (place.isEnd()) {
+                                return GuiConfig.END_PLACE_COLOR;
+                            } else {
+                                return GuiConfig.PLACE_COLOR;
+                            }
+                        } else if (vertex instanceof Transition) {
+                            return GuiConfig.TRANSITION_COLOR;
+                        }
+                        return null;
+                    case Background:
+                        return GuiConfig.BKGND_VERTEX_COLOR;
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
+
+        vv.getRenderContext().setVertexFontTransformer(new Transformer<Vertex, Font>() {
+            @Override
+            public Font transform(Vertex vertex) {
+                switch (vertex.getVisibilityMode()) {
                     case Full:
                     case Background:
                         return GuiConfig.TEXT_FONT;
@@ -379,104 +263,6 @@ public class TaskModelEditor extends JPanel {
             }
         });
 
-        vv.getRenderContext().setLabelOffset(GuiConfig.LABEL_OFFSET);
-        vv.getRenderContext().setEdgeLabelTransformer(new Transformer<Edge, String>() {
-            @Override
-            public String transform(Edge edge) {
-                switch (edge.getVisibilityMode()) {
-                    case Full:
-                        return edge.getShortTag();
-                    case Background:
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
-
-        vv.getRenderContext().setEdgeStrokeTransformer(new Transformer<Edge, Stroke>() {
-            @Override
-            public Stroke transform(Edge edge) {
-                switch (edge.getVisibilityMode()) {
-                    case Full:
-                        if (edge.getFunctionMode() == FunctionMode.Recovery) {
-                            return GuiConfig.RECOVERY_STROKE;
-                        } else {
-                            return GuiConfig.NOMINAL_STROKE;
-                        }
-                    case Background:
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
-
-        // VERTEX
-        vv.getRenderContext().setVertexDrawPaintTransformer(new Transformer<Vertex, Paint>() {
-                    @Override
-                    public Paint transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                                if (vertex.getBeingModified()) {
-                                    return GuiConfig.SEL_VERTEX_COLOR;
-                                } else {
-                                    return GuiConfig.VERTEX_COLOR;
-                                }
-                            case Background:
-                                if (vertex.getBeingModified()) {
-                                    return GuiConfig.SEL_VERTEX_COLOR;
-                                } else {
-                                    return GuiConfig.BKGND_VERTEX_COLOR;
-                                }
-                            case None:
-                            default:
-                                return null;
-                        }
-                    }
-                });
-
-        vv.getRenderContext().setVertexFillPaintTransformer(new Transformer<Vertex, Paint>() {
-                    @Override
-                    public Paint transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                                if (vertex instanceof Place) {
-                                    Place place = (Place) vertex;
-                                    if (place.isStart()) {
-                                        return GuiConfig.START_PLACE_COLOR;
-                                    } else if (place.isEnd()) {
-                                        return GuiConfig.END_PLACE_COLOR;
-                                    } else {
-                                        return GuiConfig.PLACE_COLOR;
-                                    }
-                                } else if (vertex instanceof Transition) {
-                                    return GuiConfig.TRANSITION_COLOR;
-                                }
-                                return null;
-                            case Background:
-                                return GuiConfig.BKGND_VERTEX_COLOR;
-                            case None:
-                            default:
-                                return null;
-                        }
-                    }
-                });
-
-        vv.getRenderContext().setVertexFontTransformer(new Transformer<Vertex, Font>() {
-                    @Override
-                    public Font transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                            case Background:
-                                return GuiConfig.TEXT_FONT;
-                            case None:
-                            default:
-                                return null;
-                        }
-                    }
-                });
-
         vv.getRenderContext().setVertexLabelTransformer(new Transformer<Vertex, String>() {
             @Override
             public String transform(Vertex vertex) {
@@ -557,6 +343,16 @@ public class TaskModelEditor extends JPanel {
                         }
                     }
                 });
+    }
+
+    public TaskModelEditor(MissionPlanSpecification spec) {
+        // Create mission view panel
+        graph = new DirectedSparseGraph<Vertex, Edge>();
+        layout = new StaticLayout<Vertex, Edge>(graph, new Dimension(600, 600));
+        vv = new VisualizationViewer<Vertex, Edge>(layout);
+        vv.setBackground(GuiConfig.BACKGROUND_COLOR);
+        addVisualizationTransformers();
+        setMissionSpecification(spec);
 
         setLayout(new BorderLayout());
         panel = new GraphZoomScrollPane(vv);
@@ -587,7 +383,6 @@ public class TaskModelEditor extends JPanel {
         JButton help = new JButton("Help");
         help.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                JOptionPane.showMessageDialog(vv, instructions);
             }
         });
 
@@ -756,7 +551,7 @@ public class TaskModelEditor extends JPanel {
             for (OutEdge edge : place.getInEdges()) {
                 neighborTransition = edge.getStart();
                 if (previouslyVisited.contains(neighborTransition)) {
-                    continue;
+//                    continue;
                 } else if (neighborTransition.getFunctionMode() == functionMode) {
                     edge.setVisibilityMode(visibilityMode);
                     neighborTransition.setVisibilityMode(visibilityMode);
@@ -775,7 +570,7 @@ public class TaskModelEditor extends JPanel {
             for (InEdge edge : place.getOutEdges()) {
                 neighborTransition = edge.getEnd();
                 if (previouslyVisited.contains(neighborTransition)) {
-                    continue;
+//                    continue;
                 } else if (neighborTransition.getFunctionMode() == functionMode) {
                     edge.setVisibilityMode(visibilityMode);
                     neighborTransition.setVisibilityMode(visibilityMode);
@@ -797,7 +592,7 @@ public class TaskModelEditor extends JPanel {
             for (InEdge edge : transition.getInEdges()) {
                 neighborPlace = edge.getStart();
                 if (previouslyVisited.contains(neighborPlace)) {
-                    continue;
+//                    continue;
                 } else if (neighborPlace.getFunctionMode() == functionMode) {
                     edge.setVisibilityMode(visibilityMode);
                     neighborPlace.setVisibilityMode(visibilityMode);
@@ -816,7 +611,7 @@ public class TaskModelEditor extends JPanel {
             for (OutEdge edge : transition.getOutEdges()) {
                 neighborPlace = edge.getEnd();
                 if (previouslyVisited.contains(neighborPlace)) {
-                    continue;
+//                    continue;
                 } else if (neighborPlace.getFunctionMode() == functionMode) {
                     edge.setVisibilityMode(visibilityMode);
                     neighborPlace.setVisibilityMode(visibilityMode);
@@ -842,7 +637,7 @@ public class TaskModelEditor extends JPanel {
             for (InEdge edge : startPlace.getOutEdges()) {
                 endTransition = (Transition) edge.getEnd();
                 if (previouslyVisited.contains(endTransition)) {
-                    continue;
+//                    continue;
                 } else if (endTransition.getFunctionMode() == FunctionMode.Recovery) {
                     edge.setVisibilityMode(visibilityMode);
                     endTransition.setVisibilityMode(visibilityMode);
@@ -862,7 +657,7 @@ public class TaskModelEditor extends JPanel {
             for (OutEdge edge : startTransition.getOutEdges()) {
                 endPlace = (Place) edge.getEnd();
                 if (previouslyVisited.contains(endPlace)) {
-                    continue;
+//                    continue;
                 } else if (endPlace.getFunctionMode() == FunctionMode.Recovery) {
                     edge.setVisibilityMode(visibilityMode);
                     endPlace.setVisibilityMode(visibilityMode);
@@ -1009,9 +804,8 @@ public class TaskModelEditor extends JPanel {
         public void endVertexSelected(Vertex vertex) {
             if (graph.findEdge(edgeStartVertex, vertex) != null) {
                 // Edge already exists
-                amCreatingEdge = false;
                 edgeStartVertex.setBeingModified(false);
-                edgeStartVertex = null;
+                resetSelection();
                 vv.repaint();
                 return;
             }
@@ -1155,9 +949,8 @@ public class TaskModelEditor extends JPanel {
                 newPlace.addOutTransition(endTransition);
                 endTransition.addInPlace(newPlace);
             }
-            amCreatingEdge = false;
             edgeStartVertex.setBeingModified(false);
-            edgeStartVertex = null;
+            resetSelection();
             refreshGraphVisibility();
             vv.repaint();
         }
@@ -1266,6 +1059,7 @@ public class TaskModelEditor extends JPanel {
                         // Right click place or transition -> show options
                         JPopupMenu popup = new JPopupMenu();
                         popup.add(new AbstractAction("Edit Mockup") {
+                            @Override
                             public void actionPerformed(ActionEvent e) {
                                 // Write things out to make sure that we have variables.
                                 writeModel();
@@ -1291,6 +1085,7 @@ public class TaskModelEditor extends JPanel {
                             }
                         });
                         popup.add(new AbstractAction("Rename") {
+                            @Override
                             public void actionPerformed(ActionEvent e) {
                                 String name = JOptionPane.showInputDialog(vv, "Vertex name", vertex.getName());
                                 if (name == null) {
@@ -1304,6 +1099,7 @@ public class TaskModelEditor extends JPanel {
                             final MockupPlace place = (MockupPlace) vertex;
                             if (place.isStart()) {
                                 popup.add(new AbstractAction("Unset start") {
+                                    @Override
                                     public void actionPerformed(ActionEvent e) {
                                         place.setIsStart(false);
                                         vv.repaint();
@@ -1311,6 +1107,7 @@ public class TaskModelEditor extends JPanel {
                                 });
                             } else {
                                 popup.add(new AbstractAction("Set start") {
+                                    @Override
                                     public void actionPerformed(ActionEvent e) {
                                         place.setIsStart(true);
                                         vv.repaint();
@@ -1319,6 +1116,7 @@ public class TaskModelEditor extends JPanel {
                             }
                             if (place.isEnd()) {
                                 popup.add(new AbstractAction("Unset end") {
+                                    @Override
                                     public void actionPerformed(ActionEvent e) {
                                         place.setIsEnd(false);
                                         vv.repaint();
@@ -1326,6 +1124,7 @@ public class TaskModelEditor extends JPanel {
                                 });
                             } else {
                                 popup.add(new AbstractAction("Set end") {
+                                    @Override
                                     public void actionPerformed(ActionEvent e) {
                                         place.setIsEnd(true);
                                         if (place.getOutEdges().size() > 0) {
@@ -1337,6 +1136,7 @@ public class TaskModelEditor extends JPanel {
                             }
                         }
                         popup.add(new AbstractAction("Delete") {
+                            @Override
                             public void actionPerformed(ActionEvent e) {
                                 if (vertex instanceof MockupPlace) {
                                     removePlace((MockupPlace) vertex);
@@ -1350,6 +1150,7 @@ public class TaskModelEditor extends JPanel {
                         // Right click place or transition -> show options
                         JPopupMenu popup = new JPopupMenu();
                         popup.add(new AbstractAction("Rename") {
+                            @Override
                             public void actionPerformed(ActionEvent e) {
                                 String name = JOptionPane.showInputDialog(vv, "Vertex name", vertex.getName());
                                 if (name == null) {
@@ -1622,12 +1423,18 @@ public class TaskModelEditor extends JPanel {
                     }
                 }
             } else {
-                selectedVertex = null;
-                dragVertex = null;
-                amDraggingVertex = false;
-                amTranslating = false;
-                prevMousePoint = null;
+                resetSelection();
             }
+        }
+
+        private void resetSelection() {
+            selectedVertex = null;
+            dragVertex = null;
+            edgeStartVertex = null;
+            amDraggingVertex = false;
+            amCreatingEdge = false;
+            amTranslating = false;
+            prevMousePoint = null;
         }
 
         @Override
@@ -1813,7 +1620,7 @@ public class TaskModelEditor extends JPanel {
             mlt.getTransformer(Layer.VIEW).getTransform().setTransform(spec.getView());
         } else {
             graph = new DirectedSparseGraph<Vertex, Edge>();
-            layout.setGraph(this.graph);
+            layout.setGraph(graph);
             vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
         }
         vv.repaint();
@@ -1829,8 +1636,8 @@ public class TaskModelEditor extends JPanel {
      */
     public void writeModel() {
         if (mSpec != null) {
-
-            // Translate to SparseMultigraph because DirectedSparseGraph is not serializable
+            // Copy the DirectedSparseGraph into a SparseMultigraph
+            //  DirectedSparseGraph does not implement serialize correctly
             SparseMultigraph<Vertex, Edge> uGraph = new SparseMultigraph<Vertex, Edge>();
             for (Vertex o : graph.getVertices()) {
                 uGraph.addVertex(o);

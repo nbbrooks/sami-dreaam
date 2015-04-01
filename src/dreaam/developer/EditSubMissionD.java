@@ -45,6 +45,7 @@ public class EditSubMissionD extends javax.swing.JDialog {
         Event, Manual
     };
 
+    private Mediator mediator = Mediator.getInstance();
     private MissionPlanSpecification parentMSpec;
     private MissionPlanSpecification selectedMSpec = null;
     private ArrayList<TaskSpecification> selectedMTaskSpecList = new ArrayList<TaskSpecification>();

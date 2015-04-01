@@ -246,7 +246,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected void addVariableComboBox(Field field, HashMap<String, String> fieldNameToReadVariable, JPanel panel, GridBagConstraints constraints) {
-        ArrayList<String> existingVariables = mediator.getProject().getVariables(field);
+        ArrayList<String> existingVariables = mediator.getProject().getVariablesInScope(field, mSpec);
         existingVariables.add(0, Event.NONE);
         JComboBox comboBox = new JComboBox(existingVariables.toArray());
 
@@ -279,8 +279,8 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 visualization = markupComponent.getComponent();
                 fieldToValueComponent.put(field, markupComponent);
             } else {
-            // There is no component that can directly be used to define a value for this field
-            //  Recursively add components for its fields, if possible
+                // There is no component that can directly be used to define a value for this field
+                //  Recursively add components for its fields, if possible
 
                 Class c;
                 try {
@@ -325,7 +325,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected MarkupComponent getValueComponent(Field field, HashMap<String, Object> fieldNameToValue) {
-        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((java.lang.reflect.Type) field.getType(), field, new ArrayList<Markup>());
+        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((java.lang.reflect.Type) field.getType(), field, new ArrayList<Markup>(), mSpec, null);
         if (markupComponent != null && markupComponent.getComponent() != null) {
             Object definition = fieldNameToValue.get(field.getName());
             if (definition != null) {

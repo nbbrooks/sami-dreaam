@@ -25,7 +25,7 @@ public class UiComponentGenerator {
 
     private static UiComponentGeneratorInt createInstance() {
         try {
-            ArrayList<String> list = (ArrayList<String>) DomainConfigManager.getInstance().domainConfiguration.componentGeneratorList.clone();
+            ArrayList<String> list = (ArrayList<String>) DomainConfigManager.getInstance().getDomainConfiguration().componentGeneratorList.clone();
             for (String className : list) {
                 Class uiClass = Class.forName(className);
                 Method factoryMethod = uiClass.getDeclaredMethod("getInstance");

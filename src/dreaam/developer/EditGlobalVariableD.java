@@ -134,7 +134,7 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         addComponent(classCB);
 
         // Component for defining the variable
-        markupComponent = UiComponentGenerator.getInstance().getCreationComponent(selectedClass, null, new ArrayList<Markup>());
+        markupComponent = UiComponentGenerator.getInstance().getCreationComponent(selectedClass, null, new ArrayList<Markup>(), null, null);
         markupComponent.getComponent().addFocusListener(activityListener);
         markupComponent.getComponent().addMouseListener(activityListener);
         addComponent(markupComponent.getComponent());
@@ -186,7 +186,7 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
     }
 
     private void updateCreationComponent() {
-        MarkupComponent markupComponentNew = UiComponentGenerator.getInstance().getCreationComponent(selectedClass, null, new ArrayList<Markup>());
+        MarkupComponent markupComponentNew = UiComponentGenerator.getInstance().getCreationComponent(selectedClass, null, new ArrayList<Markup>(), null, null);
         markupComponent.getComponent().addComponentListener(new ComponentListener() {
 
             @Override

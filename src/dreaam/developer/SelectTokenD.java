@@ -553,7 +553,7 @@ public class SelectTokenD extends javax.swing.JDialog {
         }
 
         public void addDomainEvents() {
-            DefaultMutableTreeNode eventTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().domainConfiguration.taskTree;
+            DefaultMutableTreeNode eventTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().getDomainConfiguration().taskTree;
             for (int i = 0; i < eventTree.getChildCount(); i++) {
                 addNode(eventTree.getChildAt(i));
             }

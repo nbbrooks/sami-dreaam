@@ -90,7 +90,7 @@ public class SelectEventD extends javax.swing.JDialog {
     }
 
     public void addDomainEvents(DefaultMutableTreeNode treeRoot) {
-        DefaultMutableTreeNode eventTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().domainConfiguration.eventTree;
+        DefaultMutableTreeNode eventTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().getDomainConfiguration().eventTree;
         for (int i = 0; i < eventTree.getChildCount(); i++) {
             addNode(eventTree.getChildAt(i), treeRoot);
         }

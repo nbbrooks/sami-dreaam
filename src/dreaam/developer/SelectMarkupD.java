@@ -76,7 +76,7 @@ public class SelectMarkupD extends javax.swing.JDialog {
     }
     
     public void addDomainMarkups(DefaultMutableTreeNode treeRoot) {
-        DefaultMutableTreeNode eventTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().domainConfiguration.markupTree;
+        DefaultMutableTreeNode eventTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().getDomainConfiguration().markupTree;
         for (int i = 0; i < eventTree.getChildCount(); i++) {
             addNode(eventTree.getChildAt(i), treeRoot);
         }
