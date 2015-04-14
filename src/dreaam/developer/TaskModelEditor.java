@@ -68,8 +68,6 @@ public class TaskModelEditor extends JPanel {
     // Length of grid segment for "snapping" vertices
     public static final int GRID_LENGTH = 50;
     Graph<Vertex, Edge> graph;
-    // DirectedSparseGraph version of mSpec's SparseMultigraph (DirectedSparseGraph does not implement serialize correctly)
-    private DirectedSparseGraph<Vertex, Edge> transientGraph;
     AbstractLayout<Vertex, Edge> layout;
     MissionPlanSpecification mSpec = null;
     Mediator mediator = Mediator.getInstance();

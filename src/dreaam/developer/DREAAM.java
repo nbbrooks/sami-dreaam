@@ -10,13 +10,10 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.prefs.Preferences;
 import javax.swing.AbstractAction;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -31,8 +28,6 @@ import sami.mission.ProjectListenerInt;
 import sami.mission.RequirementSpecification;
 import sami.mission.Vertex;
 import sami.mission.Vertex.FunctionMode;
-import static sami.ui.MissionMonitor.LAST_DRM_FILE;
-import static sami.ui.MissionMonitor.LAST_EPF_FILE;
 
 /**
  *
@@ -63,8 +58,10 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         LOGGER.info("java.library.path: " + System.getProperty("java.library.path"));
         LOGGER.info("java.ext.dirs: " + System.getProperty("java.ext.dirs"));
         LOGGER.info("java.util.logging.config.file: " + System.getProperty("java.util.logging.config.file"));
-        LOGGER.info("domainConfiguration:\n" + DomainConfigManager.getInstance().getDomainConfiguration().toString());
-        LOGGER.info("domainConfiguration:\n" + DomainConfigManager.getInstance().getDomainConfiguration().toVerboseString());
+        loadFiles();
+        LOGGER.info("drm: " + Mediator.getInstance().getProjectFile().getAbsolutePath());
+        LOGGER.info("epf: " + Mediator.getInstance().getEnvironmentFile().getAbsolutePath());
+        LOGGER.info("dcf: " + DomainConfigManager.getInstance().getDomainConfigurationFile().getAbsolutePath());
 
         initComponents();
         platform = new Platform();
@@ -299,30 +296,79 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
 
         Mediator.getInstance().addProjectListener(this);
 
+        repaint();
+    }
+
+    private void loadFiles() {
+        boolean success;
+        int answer;
+
         // Try to load the last used DRM file
-        LOGGER.info("Load DRM");
-        Preferences p = Preferences.userRoot();
-        try {
-            String lastDrmPath = p.get(LAST_DRM_FILE, null);
-            if (lastDrmPath != null) {
-                Mediator.getInstance().openProject(new File(lastDrmPath));
-            }
-        } catch (AccessControlException e) {
+        success = Mediator.getInstance().openLatestProject();
+        if (!success) {
             LOGGER.severe("Failed to load last used DRM");
+            answer = JOptionPane.showOptionDialog(null, "Failed to load last used DRM: Load different DRM or start new DRM?", "Load different DRM?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+            if (answer == JOptionPane.YES_OPTION) {
+                success = Mediator.getInstance().openProjectFromBrowser();
+            } else {
+                Mediator.getInstance().newProject();
+                success = true;
+            }
+        }
+        while (!success) {
+            LOGGER.severe("Failed to load specified DRM");
+            answer = JOptionPane.showOptionDialog(null, "Failed to load specified DRM: Load different DRM or start new DRM?", "Load different DRM?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+            if (answer == JOptionPane.YES_OPTION) {
+                success = Mediator.getInstance().openProjectFromBrowser();
+            } else {
+                Mediator.getInstance().newProject();
+                success = true;
+            }
         }
 
         // Try to load the last used EPF file
-        LOGGER.info("Load EPF");
-        try {
-            String lastEpfPath = p.get(LAST_EPF_FILE, null);
-            if (lastEpfPath != null) {
-                Mediator.getInstance().openEnvironment(new File(lastEpfPath));
-            }
-        } catch (AccessControlException e) {
+        success = Mediator.getInstance().openLatestEnvironment();
+        if (!success) {
             LOGGER.severe("Failed to load last used EPF");
+            answer = JOptionPane.showOptionDialog(null, "Failed to load last used EPF: Load different EPF or ignore?", "Load different EPF?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+            if (answer == JOptionPane.YES_OPTION) {
+                success = Mediator.getInstance().openEnvironmentFromBrowser();
+            } else {
+                Mediator.getInstance().newEnvironment();
+                success = true;
+            }
+        }
+        while (!success) {
+            LOGGER.severe("Failed to load specified EPF");
+            answer = JOptionPane.showOptionDialog(null, "Failed to load specified EPF: Load different EPF or ignore?", "Load different EPF?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+            if (answer == JOptionPane.YES_OPTION) {
+                success = Mediator.getInstance().openEnvironmentFromBrowser();
+            } else {
+                Mediator.getInstance().newEnvironment();
+                success = true;
+            }
         }
 
-        repaint();
+        // Try to load the last used DCF file
+        success = DomainConfigManager.getInstance().openLatestDomainConfiguration();
+        if (!success) {
+            LOGGER.severe("Failed to load last used DCF");
+            answer = JOptionPane.showOptionDialog(null, "Failed to load last used DCF: Load different DCF or exit?", "Load different DCF?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+            if (answer == JOptionPane.YES_OPTION) {
+                success = DomainConfigManager.getInstance().openDomainConfigurationFromBrowser();
+            } else {
+                System.exit(-1);
+            }
+        }
+        while (!success) {
+            LOGGER.severe("Failed to load specified DCF");
+            answer = JOptionPane.showOptionDialog(null, "Failed to load specified DCF: Load different DCF or exit?", "Load different DCF?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+            if (answer == JOptionPane.YES_OPTION) {
+                success = DomainConfigManager.getInstance().openDomainConfigurationFromBrowser();
+            } else {
+                System.exit(-1);
+            }
+        }
     }
 
     /**
@@ -620,7 +666,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
     }
 
     private void openDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openDrmMActionPerformed
-        boolean success = mediator.openProject();
+        boolean success = mediator.openProjectFromBrowser();
         if (!success) {
             // Couldn't load the plan
             JOptionPane.showMessageDialog(null, "Could not load plan specification (.DRM) file");
@@ -780,7 +826,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
     }//GEN-LAST:event_recoveryModeActionPerformed
 
     private void loadEpfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadEpfActionPerformed
-        if (mediator.openEnvironment()) {
+        if (mediator.openEnvironmentFromBrowser()) {
             loadEnvironment();
         } else {
             // Couldn't load the plan
