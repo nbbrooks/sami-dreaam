@@ -295,6 +295,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         });
 
         Mediator.getInstance().addProjectListener(this);
+        projectUpdated();
 
         repaint();
     }
