@@ -168,6 +168,32 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                 }
                             }
                         });
+                        menu.add(new AbstractAction("Convert to Mockup") {
+                            @Override
+                            public void actionPerformed(ActionEvent ae) {
+                                MissionPlanSpecification mps = (MissionPlanSpecification) ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject();
+                                String result = mps.getName() + " Mockup";
+                                // Ensure entered mission name is unique
+                                ArrayList<String> playNames = new ArrayList<String>();
+                                ArrayList<MissionPlanSpecification> missions = mediator.getProject().getAllMissionPlans();
+                                for (MissionPlanSpecification mSpec : missions) {
+                                    playNames.add(mSpec.getName());
+                                }
+                                result = CoreHelper.getUniqueName(result, playNames);
+                                LOGGER.info("Converting " + mps.getName() + " to mockup " + result);
+
+                                // Save current mission
+                                taskModelEditor.writeModel();
+
+                                // Clone and add to mission list
+                                MissionPlanSpecification mockupConversion = mps.deepClone();
+                                mockupConversion.setName(result);
+                                mockupConversion.convertToMockup();
+                                DefaultMutableTreeNode node = mediator.getProject().addRootMissionPlan(mockupConversion);
+                                refreshMissionTree();
+                                selectNode(node);
+                            }
+                        });
                         menu.add(new AbstractAction("Delete") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {

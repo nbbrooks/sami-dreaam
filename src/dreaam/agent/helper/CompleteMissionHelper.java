@@ -3,10 +3,9 @@ package dreaam.agent.helper;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.logging.Logger;
 import sami.engine.Mediator;
-import sami.event.AbortMission;
-import sami.event.AbortMissionReceived;
+import sami.event.CompleteMission;
+import sami.event.CompleteMissionReceived;
 import sami.event.ReflectedEventSpecification;
 import sami.mission.Edge;
 import sami.mission.InEdge;
@@ -24,15 +23,13 @@ import sami.mission.Vertex.FunctionMode;
  *
  * @author pscerri
  */
-public class AbortMissionHelper extends HelperAgent {
+public class CompleteMissionHelper extends HelperAgent {
 
-    private static final Logger LOGGER = Logger.getLogger(AbortMissionHelper.class.getName());
-
-    final String VERTEX_NAME = "AbortMissionHelper";
+    final String VERTEX_NAME = "CompleteMissionReceivedHelper";
     Hashtable<MissionPlanSpecification, Transition> missionToTransition = new Hashtable<MissionPlanSpecification, Transition>();
     Hashtable<MissionPlanSpecification, Place> missionToPlace = new Hashtable<MissionPlanSpecification, Place>();
 
-    public AbortMissionHelper() {
+    public CompleteMissionHelper() {
     }
 
     @Override
@@ -42,7 +39,7 @@ public class AbortMissionHelper extends HelperAgent {
         boolean createdTransition = false, createdPlace = false;
 
         for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
-            // Fetch transition that handles AbortMissionReceived events
+            // Fetch transition that handles CompleteMissionReceived events
             Transition endTransition = missionToTransition.get(missionPlanSpecification);
             if (endTransition == null) {
                 // First time running helper since creating and/or loading this mission, try to find helper's end place
@@ -62,15 +59,15 @@ public class AbortMissionHelper extends HelperAgent {
                 missionPlanSpecification.getGraph().addVertex(endTransition);
                 Point freePoint = getVertexPoint(missionPlanSpecification.getLocations(), true);
                 missionPlanSpecification.getLocations().put(endTransition, freePoint);
-                // Add AbortMissionReceived to transition
-                ReflectedEventSpecification eventSpec = new ReflectedEventSpecification(AbortMissionReceived.class.getName());
+                // Add CompleteMissionReceived to transition
+                ReflectedEventSpecification eventSpec = new ReflectedEventSpecification(CompleteMissionReceived.class.getName());
                 missionPlanSpecification.updateEventSpecList(endTransition, eventSpec);
                 endTransition.addEventSpec(eventSpec);
                 missionToTransition.put(missionPlanSpecification, endTransition);
                 createdTransition = true;
             }
 
-            // Fetch transition that handles AbortMissionReceived events
+            // Fetch transition that handles CompleteMissionReceived events
             Place endPlace = missionToPlace.get(missionPlanSpecification);
             if (endPlace == null) {
                 // First time running helper since creating and/or loading this mission, try to find helper's end place
@@ -91,14 +88,11 @@ public class AbortMissionHelper extends HelperAgent {
                 endPlace.setIsEnd(true);
                 missionPlanSpecification.getGraph().addVertex(endPlace);
                 Point freePoint2 = getVertexPoint(missionPlanSpecification.getLocations(), false);
-
-                System.out.println("missionPlanSpecification: " + missionPlanSpecification.getName());
-
                 missionPlanSpecification.getLocations().put(endPlace, freePoint2);
-                // Add ProxyAbortMission event to place
-                ReflectedEventSpecification eventSpec2 = new ReflectedEventSpecification(AbortMission.class.getName());
-                missionPlanSpecification.updateEventSpecList(endPlace, eventSpec2);
-                endPlace.addEventSpec(eventSpec2);
+//                // Add proxy CompleteMission event to place
+//                ReflectedEventSpecification eventSpec2 = new ReflectedEventSpecification(CompleteMission.class.getName());
+//                missionPlanSpecification.updateEventSpecList(endPlace, eventSpec2);
+//                endPlace.addEventSpec(eventSpec2);
                 createdPlace = true;
             }
 

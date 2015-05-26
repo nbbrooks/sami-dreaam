@@ -29,8 +29,11 @@ public abstract class HelperAgent {
     }
 
     public static Point getVertexPoint(Map<Vertex, Point2D> locations, boolean forTransition) {
-        if (locations == null || locations.size() == 0) {
+        if (locations == null) {
             return null;
+        }
+        if(locations.isEmpty()) {
+            return new Point(0, 0);
         }
         double maxXTransition = Double.MIN_VALUE;
         double maxXPlace = Double.MIN_VALUE;

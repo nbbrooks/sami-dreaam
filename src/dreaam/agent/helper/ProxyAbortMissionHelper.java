@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.logging.Logger;
+import sami.engine.Mediator;
 import sami.event.ProxyAbortMissionReceived;
 import sami.event.ReflectedEventSpecification;
 import sami.event.SendAbortMission;
@@ -69,7 +70,7 @@ public class ProxyAbortMissionHelper extends HelperAgent {
             if (needEndPlace) {
                 if (endPlace == null) {
                     // First time running helper since creating this mission, construct helper's end place
-                    endPlace = new Place(VERTEX_NAME, FunctionMode.Recovery);
+                    endPlace = new Place(VERTEX_NAME, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
                     endPlace.setIsEnd(true);
                     missionPlanSpecification.getGraph().addVertex(endPlace);
                     Point freePoint = getVertexPoint(missionPlanSpecification.getLocations(), false);
@@ -114,7 +115,7 @@ public class ProxyAbortMissionHelper extends HelperAgent {
                 }
                 for (Place place : unhandledPlaces) {
                     // Create transition with ProxyAbortMissionReceived
-                    Transition newTransition = new Transition(VERTEX_NAME, FunctionMode.Recovery);
+                    Transition newTransition = new Transition(VERTEX_NAME, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
                     missionPlanSpecification.getGraph().addVertex(newTransition);
                     Point freePoint = getVertexPoint(missionPlanSpecification.getLocations(), true);
                     missionPlanSpecification.getLocations().put(newTransition, freePoint);
@@ -125,7 +126,7 @@ public class ProxyAbortMissionHelper extends HelperAgent {
                     transitionLookup.put(place, newTransition);
 
                     // Add edge from nominal place to created transition with Proxy token spec
-                    InEdge inEdge = new InEdge(place, newTransition, FunctionMode.Recovery);
+                    InEdge inEdge = new InEdge(place, newTransition, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
                     inEdge.addTokenRequirement(relProxyTokenReq);
                     place.addOutEdge(inEdge);
                     newTransition.addInEdge(inEdge);
@@ -134,7 +135,7 @@ public class ProxyAbortMissionHelper extends HelperAgent {
                     (newTransition).addInPlace(place);
 
                     // Add edge from created transition to end place
-                    OutEdge outEdge = new OutEdge(newTransition, endPlace, FunctionMode.Recovery);
+                    OutEdge outEdge = new OutEdge(newTransition, endPlace, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
                     outEdge.addTokenRequirement(takeNoneTokenReq);
                     newTransition.addOutEdge(outEdge);
                     endPlace.addInEdge(outEdge);

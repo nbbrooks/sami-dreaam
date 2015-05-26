@@ -3,7 +3,6 @@ package dreaam.developer;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -13,7 +12,6 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.Hashtable;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
@@ -27,6 +25,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
+import sami.engine.Mediator;
 import sami.mission.MockupInEdge;
 import sami.mission.MockupOutEdge;
 import sami.mission.MockupPlace;
@@ -51,25 +50,74 @@ public class MockupDetailsD extends javax.swing.JDialog {
     MockupSMDetailsP smP;
     MockupIeDetailsP ieP;
     MockupEdgeDetailsP edgeP;
+    final JButton highlightB;
 
-    public MockupDetailsD(java.awt.Frame parent, boolean modal, MockupInEdge mockupEdge) {
+    public MockupDetailsD(java.awt.Frame parent, boolean modal, MockupInEdge mockupInEdge) {
         super(parent, modal);
         panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        edgeP = new MockupEdgeDetailsP(mockupEdge.getMockupTokenRequirements());
+        edgeP = new MockupEdgeDetailsP(mockupInEdge.getMockupTokenRequirements());
         panel.add(edgeP);
+
+        highlightB = new JButton();
+        if (mockupInEdge.getIsHighlighted()) {
+            // Field was previously defined and locked
+            highlightB.setText("Highlighted");
+            highlightB.setSelected(true);
+        } else {
+            highlightB.setText("Not Highlighted");
+            highlightB.setSelected(false);
+        }
+        highlightB.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                if (highlightB.isSelected()) {
+                    highlightB.setText("Not Highlighted");
+                    highlightB.setSelected(false);
+                } else {
+                    highlightB.setText("Highlighted");
+                    highlightB.setSelected(true);
+                }
+            }
+        });
+        panel.add(highlightB);
 
         finishLayout();
     }
 
-    public MockupDetailsD(java.awt.Frame parent, boolean modal, MockupOutEdge mockupEdge) {
+    public MockupDetailsD(java.awt.Frame parent, boolean modal, MockupOutEdge mockupOutEdge) {
         super(parent, modal);
         panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        edgeP = new MockupEdgeDetailsP(mockupEdge.getMockupTokenRequirements());
+        edgeP = new MockupEdgeDetailsP(mockupOutEdge.getMockupTokenRequirements());
         panel.add(edgeP);
+
+        highlightB = new JButton();
+        if (mockupOutEdge.getIsHighlighted()) {
+            // Field was previously defined and locked
+            highlightB.setText("Highlighted");
+            highlightB.setSelected(true);
+        } else {
+            highlightB.setText("Not Highlighted");
+            highlightB.setSelected(false);
+        }
+        highlightB.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                if (highlightB.isSelected()) {
+                    highlightB.setText("Not Highlighted");
+                    highlightB.setSelected(false);
+                } else {
+                    highlightB.setText("Highlighted");
+                    highlightB.setSelected(true);
+                }
+            }
+        });
+        panel.add(highlightB);
 
         finishLayout();
     }
@@ -101,6 +149,30 @@ public class MockupDetailsD extends javax.swing.JDialog {
         smP = new MockupSMDetailsP(mockupPlace.getMockupSubMissionType());
         panel.add(smP);
 
+        highlightB = new JButton();
+        if (mockupPlace.getIsHighlighted()) {
+            // Field was previously defined and locked
+            highlightB.setText("Highlighted");
+            highlightB.setSelected(true);
+        } else {
+            highlightB.setText("Not Highlighted");
+            highlightB.setSelected(false);
+        }
+        highlightB.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                if (highlightB.isSelected()) {
+                    highlightB.setText("Not Highlighted");
+                    highlightB.setSelected(false);
+                } else {
+                    highlightB.setText("Highlighted");
+                    highlightB.setSelected(true);
+                }
+            }
+        });
+        panel.add(highlightB);
+
         finishLayout();
     }
 
@@ -124,6 +196,30 @@ public class MockupDetailsD extends javax.swing.JDialog {
 
         ieP = new MockupIeDetailsP(mockupTransition.getMockupInputEventStatus(), mockupTransition.getMockupInputEventMarkups());
         panel.add(ieP);
+
+        highlightB = new JButton();
+        if (mockupTransition.getIsHighlighted()) {
+            // Field was previously defined and locked
+            highlightB.setText("Highlighted");
+            highlightB.setSelected(true);
+        } else {
+            highlightB.setText("Not Highlighted");
+            highlightB.setSelected(false);
+        }
+        highlightB.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                if (highlightB.isSelected()) {
+                    highlightB.setText("Not Highlighted");
+                    highlightB.setSelected(false);
+                } else {
+                    highlightB.setText("Highlighted");
+                    highlightB.setSelected(true);
+                }
+            }
+        });
+        panel.add(highlightB);
 
         finishLayout();
     }
@@ -204,6 +300,13 @@ public class MockupDetailsD extends javax.swing.JDialog {
             return edgeP.getTokenRequirements();
         }
         return null;
+    }
+
+    public boolean getIsHighlighted() {
+        if (highlightB != null) {
+            return highlightB.isSelected();
+        }
+        return false;
     }
 
     interface MockupDetails {
@@ -707,7 +810,7 @@ public class MockupDetailsD extends javax.swing.JDialog {
         Hashtable<String, MockupPlace.MockupSubMissionType> mockupSubMissionStatus = new Hashtable<String, MockupPlace.MockupSubMissionType>();
         mockupSubMissionStatus.put("SM1", MockupSubMissionType.INCOMPLETE);
 
-        MockupPlace place = new MockupPlace("test");
+        MockupPlace place = new MockupPlace("test", Mediator.getInstance().getProject().getAndIncLastElementId());
 //        place.setMockupIsActive(false);
         place.setMockupOutputEventMarkups(mockupOutputEventMarkups);
 //        place.setMockupOutputEvents(mockupOutputEvents);

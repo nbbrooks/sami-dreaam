@@ -97,6 +97,11 @@ public class TaskModelEditor extends JPanel {
             public Stroke transform(Edge edge) {
                 switch (edge.getVisibilityMode()) {
                     case Full:
+                        if (edge instanceof MockupInEdge && ((MockupInEdge) edge).getIsHighlighted()) {
+                            return GuiConfig.NOMINAL_STROKE_SEL;
+                        } else if (edge instanceof MockupOutEdge && ((MockupOutEdge) edge).getIsHighlighted()) {
+                            return GuiConfig.NOMINAL_STROKE_SEL;
+                        }
                         if (edge.getFunctionMode() == Vertex.FunctionMode.Recovery) {
                             return GuiConfig.RECOVERY_STROKE;
                         } else {
@@ -114,6 +119,11 @@ public class TaskModelEditor extends JPanel {
             public Paint transform(Edge edge) {
                 switch (edge.getVisibilityMode()) {
                     case Full:
+                        if (edge instanceof MockupInEdge && ((MockupInEdge) edge).getIsHighlighted()) {
+                            return GuiConfig.SEL_EDGE_COLOR;
+                        } else if (edge instanceof MockupOutEdge && ((MockupOutEdge) edge).getIsHighlighted()) {
+                            return GuiConfig.SEL_EDGE_COLOR;
+                        }
                     case Background:
                         return GuiConfig.EDGE_COLOR;
                     case None:
@@ -127,6 +137,11 @@ public class TaskModelEditor extends JPanel {
             public Paint transform(Edge edge) {
                 switch (edge.getVisibilityMode()) {
                     case Full:
+                        if (edge instanceof MockupInEdge && ((MockupInEdge) edge).getIsHighlighted()) {
+                            return GuiConfig.SEL_EDGE_COLOR;
+                        } else if (edge instanceof MockupOutEdge && ((MockupOutEdge) edge).getIsHighlighted()) {
+                            return GuiConfig.SEL_EDGE_COLOR;
+                        }
                     case Background:
                         return GuiConfig.EDGE_COLOR;
                     case None:
@@ -140,6 +155,11 @@ public class TaskModelEditor extends JPanel {
             public Paint transform(Edge edge) {
                 switch (edge.getVisibilityMode()) {
                     case Full:
+                        if (edge instanceof MockupInEdge && ((MockupInEdge) edge).getIsHighlighted()) {
+                            return GuiConfig.SEL_EDGE_COLOR;
+                        } else if (edge instanceof MockupOutEdge && ((MockupOutEdge) edge).getIsHighlighted()) {
+                            return GuiConfig.SEL_EDGE_COLOR;
+                        }
                     case Background:
                         return GuiConfig.EDGE_COLOR;
                     case None:
@@ -183,6 +203,11 @@ public class TaskModelEditor extends JPanel {
             public Stroke transform(Edge edge) {
                 switch (edge.getVisibilityMode()) {
                     case Full:
+                        if (edge instanceof MockupInEdge && ((MockupInEdge) edge).getIsHighlighted()) {
+                            return GuiConfig.NOMINAL_STROKE_SEL;
+                        } else if (edge instanceof MockupOutEdge && ((MockupOutEdge) edge).getIsHighlighted()) {
+                            return GuiConfig.NOMINAL_STROKE_SEL;
+                        }
                         if (edge.getFunctionMode() == Vertex.FunctionMode.Recovery) {
                             return GuiConfig.RECOVERY_STROKE;
                         } else {
@@ -202,6 +227,11 @@ public class TaskModelEditor extends JPanel {
             public Paint transform(Vertex vertex) {
                 switch (vertex.getVisibilityMode()) {
                     case Full:
+                        if (vertex instanceof MockupPlace && ((MockupPlace) vertex).getIsHighlighted()) {
+                            return GuiConfig.SEL_VERTEX_COLOR;
+                        } else if (vertex instanceof MockupTransition && ((MockupTransition) vertex).getIsHighlighted()) {
+                            return GuiConfig.SEL_VERTEX_COLOR;
+                        }
                         if (vertex.getBeingModified()) {
                             return GuiConfig.SEL_VERTEX_COLOR;
                         } else {
@@ -293,6 +323,11 @@ public class TaskModelEditor extends JPanel {
             public Stroke transform(Vertex vertex) {
                 switch (vertex.getVisibilityMode()) {
                     case Full:
+                        if (vertex instanceof MockupPlace && ((MockupPlace) vertex).getIsHighlighted()) {
+                            return GuiConfig.NOMINAL_STROKE_SEL;
+                        } else if (vertex instanceof MockupTransition && ((MockupTransition) vertex).getIsHighlighted()) {
+                            return GuiConfig.NOMINAL_STROKE_SEL;
+                        }
                         if (vertex.getBeingModified()) {
                             if (vertex.getFunctionMode() == FunctionMode.Recovery) {
                                 return GuiConfig.RECOVERY_STROKE_SEL;
@@ -369,12 +404,14 @@ public class TaskModelEditor extends JPanel {
                 new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         scaler.scale(vv, 1.1f, vv.getCenter());
+                        mml.zoom *= 1.1;
                     }
                 });
         JButton minus = new JButton("-");
         minus.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 scaler.scale(vv, 1 / 1.1f, vv.getCenter());
+                mml.zoom /= 1.1;
             }
         });
 
@@ -820,9 +857,9 @@ public class TaskModelEditor extends JPanel {
                 }
                 OutEdge newEdge;
                 if (isMockup) {
-                    newEdge = new MockupOutEdge((MockupTransition) startTransition, (MockupPlace) endPlace);
+                    newEdge = new MockupOutEdge((MockupTransition) startTransition, (MockupPlace) endPlace, Mediator.getInstance().getProject().getAndIncLastElementId());
                 } else {
-                    newEdge = new OutEdge(startTransition, endPlace, editorMode);
+                    newEdge = new OutEdge(startTransition, endPlace, editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
                 startTransition.addOutEdge(newEdge);
                 endPlace.addInEdge(newEdge);
@@ -842,9 +879,9 @@ public class TaskModelEditor extends JPanel {
                 }
                 InEdge newEdge;
                 if (isMockup) {
-                    newEdge = new MockupInEdge((MockupPlace) startPlace, (MockupTransition) endTransition);
+                    newEdge = new MockupInEdge((MockupPlace) startPlace, (MockupTransition) endTransition, Mediator.getInstance().getProject().getAndIncLastElementId());
                 } else {
-                    newEdge = new InEdge(startPlace, endTransition, editorMode);
+                    newEdge = new InEdge(startPlace, endTransition, editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
                 startPlace.addOutEdge(newEdge);
                 endTransition.addInEdge(newEdge);
@@ -864,9 +901,9 @@ public class TaskModelEditor extends JPanel {
                     isMockup = true;
                 }
                 if (isMockup) {
-                    newTransition = new MockupTransition("");
+                    newTransition = new MockupTransition("", Mediator.getInstance().getProject().getAndIncLastElementId());
                 } else {
-                    newTransition = new Transition("", editorMode);
+                    newTransition = new Transition("", editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
                 graph.addVertex(newTransition);
                 Point freePoint = getVertexFreePoint(
@@ -877,9 +914,9 @@ public class TaskModelEditor extends JPanel {
 
                 InEdge newEdge1;
                 if (isMockup) {
-                    newEdge1 = new MockupInEdge((MockupPlace) startPlace, (MockupTransition) newTransition);
+                    newEdge1 = new MockupInEdge((MockupPlace) startPlace, (MockupTransition) newTransition, Mediator.getInstance().getProject().getAndIncLastElementId());
                 } else {
-                    newEdge1 = new InEdge(startPlace, newTransition, editorMode);
+                    newEdge1 = new InEdge(startPlace, newTransition, editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
                 startPlace.addOutEdge(newEdge1);
                 newTransition.addInEdge(newEdge1);
@@ -887,9 +924,9 @@ public class TaskModelEditor extends JPanel {
 
                 OutEdge newEdge2;
                 if (isMockup) {
-                    newEdge2 = new MockupOutEdge((MockupTransition) newTransition, (MockupPlace) endPlace);
+                    newEdge2 = new MockupOutEdge((MockupTransition) newTransition, (MockupPlace) endPlace, Mediator.getInstance().getProject().getAndIncLastElementId());
                 } else {
-                    newEdge2 = new OutEdge(newTransition, endPlace, editorMode);
+                    newEdge2 = new OutEdge(newTransition, endPlace, editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
                 newTransition.addOutEdge(newEdge2);
                 endPlace.addInEdge(newEdge2);
@@ -911,9 +948,9 @@ public class TaskModelEditor extends JPanel {
                     isMockup = true;
                 }
                 if (isMockup) {
-                    newPlace = new MockupPlace("");
+                    newPlace = new MockupPlace("", Mediator.getInstance().getProject().getAndIncLastElementId());
                 } else {
-                    newPlace = new Place("", editorMode);
+                    newPlace = new Place("", editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
                 graph.addVertex(newPlace);
                 Point freePoint = getVertexFreePoint(
@@ -924,9 +961,9 @@ public class TaskModelEditor extends JPanel {
 
                 OutEdge newEdge1;
                 if (isMockup) {
-                    newEdge1 = new MockupOutEdge((MockupTransition) startTransition, (MockupPlace) newPlace);
+                    newEdge1 = new MockupOutEdge((MockupTransition) startTransition, (MockupPlace) newPlace, Mediator.getInstance().getProject().getAndIncLastElementId());
                 } else {
-                    newEdge1 = new OutEdge(startTransition, newPlace, editorMode);
+                    newEdge1 = new OutEdge(startTransition, newPlace, editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
                 startTransition.addOutEdge(newEdge1);
                 newPlace.addInEdge(newEdge1);
@@ -934,9 +971,9 @@ public class TaskModelEditor extends JPanel {
 
                 InEdge newEdge2;
                 if (isMockup) {
-                    newEdge2 = new MockupInEdge((MockupPlace) newPlace, (MockupTransition) endTransition);
+                    newEdge2 = new MockupInEdge((MockupPlace) newPlace, (MockupTransition) endTransition, Mediator.getInstance().getProject().getAndIncLastElementId());
                 } else {
-                    newEdge2 = new InEdge(newPlace, endTransition, editorMode);
+                    newEdge2 = new InEdge(newPlace, endTransition, editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
                 newPlace.addOutEdge(newEdge2);
                 endTransition.addInEdge(newEdge2);
@@ -1007,6 +1044,8 @@ public class TaskModelEditor extends JPanel {
                 double deltaX = (framePoint.getX() - prevMousePoint.getX()) * 1 / scale;
                 double deltaY = (framePoint.getY() - prevMousePoint.getY()) * 1 / scale;
                 layout.translate(deltaX, deltaY);
+                translationX += deltaX;
+                translationY += deltaY;
                 prevMousePoint = framePoint;
             }
         }
@@ -1070,6 +1109,8 @@ public class TaskModelEditor extends JPanel {
                                     mockupPlace.setMockupOutputEventMarkups(diag.getMockupOutputEventMarkups());
                                     mockupPlace.setMockupSubMissionType(diag.getMockupSubMissionType());
                                     mockupPlace.setMockupTokens(diag.getMockupTokens());
+                                    mockupPlace.setIsHighlighted(diag.getIsHighlighted());
+                                    mockupPlace.updateTag();
                                 } else if (vertex instanceof MockupTransition) {
                                     MockupTransition mockupTransition = (MockupTransition) vertex;
                                     MockupDetailsD diag = new MockupDetailsD(null, true, mockupTransition);
@@ -1078,6 +1119,8 @@ public class TaskModelEditor extends JPanel {
                                     mockupTransition.setName(diag.getName());
                                     mockupTransition.setMockupInputEventMarkups(diag.getMockupInputEventMarkups());
                                     mockupTransition.setMockupInputEventStatus(diag.getMockupInputEventStatus());
+                                    mockupTransition.setIsHighlighted(diag.getIsHighlighted());
+                                    mockupTransition.updateTag();
                                 }
                                 vv.repaint();
                             }
@@ -1314,12 +1357,16 @@ public class TaskModelEditor extends JPanel {
                                     diag.setVisible(true);
                                     // This part won't run until the Frame closes
                                     mockupInEdge.setMockupTokenRequirements(diag.getMockupTokenRequirements());
+                                    mockupInEdge.setIsHighlighted(diag.getIsHighlighted());
+                                    mockupInEdge.updateTag();
                                 } else if (edge instanceof MockupOutEdge) {
                                     MockupOutEdge mockupOutEdge = (MockupOutEdge) edge;
                                     MockupDetailsD diag = new MockupDetailsD(null, true, mockupOutEdge);
                                     diag.setVisible(true);
                                     // This part won't run until the Frame closes
                                     mockupOutEdge.setMockupTokenRequirements(diag.getMockupTokenRequirements());
+                                    mockupOutEdge.setIsHighlighted(diag.getIsHighlighted());
+                                    mockupOutEdge.updateTag();
                                 }
                                 vv.repaint();
                             }
@@ -1377,9 +1424,9 @@ public class TaskModelEditor extends JPanel {
                             public void actionPerformed(ActionEvent ae) {
                                 Place place;
                                 if (editorMode == FunctionMode.Mockup) {
-                                    place = new MockupPlace("");
+                                    place = new MockupPlace("", Mediator.getInstance().getProject().getAndIncLastElementId());
                                 } else {
-                                    place = new Place("", editorMode);
+                                    place = new Place("", editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                                 }
                                 graph.addVertex(place);
                                 layout.setLocation(place, snapToGrid(graphPoint));
@@ -1391,9 +1438,9 @@ public class TaskModelEditor extends JPanel {
                             public void actionPerformed(ActionEvent ae) {
                                 Transition transition;
                                 if (editorMode == FunctionMode.Mockup) {
-                                    transition = new MockupTransition("");
+                                    transition = new MockupTransition("", Mediator.getInstance().getProject().getAndIncLastElementId());
                                 } else {
-                                    transition = new Transition("", editorMode);
+                                    transition = new Transition("", editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                                 }
                                 graph.addVertex(transition);
                                 layout.setLocation(transition, snapToGrid(graphPoint));

@@ -9,6 +9,8 @@ import dreaam.agent.helper.ProxyAbortMissionHelper;
 import dreaam.agent.checker.ProxyAbortMissionChecker;
 import dreaam.agent.checker.CheckerAgent;
 import dreaam.agent.checker.AbortMissionChecker;
+import dreaam.agent.checker.CompleteMissionChecker;
+import dreaam.agent.helper.CompleteMissionHelper;
 import sami.config.DomainConfigManager;
 import sami.config.DomainConfig.LeafNode;
 import java.io.BufferedReader;
@@ -43,7 +45,9 @@ public class Platform {
             checkerAgents.add(new ReachabilityChecker());
             checkerAgents.add(new AbortMissionChecker());
             checkerAgents.add(new ProxyAbortMissionChecker());
+            checkerAgents.add(new CompleteMissionChecker());
             helperAgents.add(new AbortMissionHelper());
+            helperAgents.add(new CompleteMissionHelper());
 //            helperAgents.add(new ProxyAbortMissionHelper());
 //            agents.add(new GUIComponentAnalysisAgent());
             // Load domain specific agents
