@@ -384,18 +384,19 @@ public class TaskModelEditor extends JPanel {
         layout = new StaticLayout<Vertex, Edge>(graph, new Dimension(600, 600));
         vv = new VisualizationViewer<Vertex, Edge>(layout);
         vv.setBackground(GuiConfig.BACKGROUND_COLOR);
+        
+        // Comment this line in and the next four out to switch to my mouse handler
+        mml = new TaskModelEditor.MyMouseListener();
+        vv.addMouseListener(mml);
+        vv.addMouseMotionListener(mml);
+        vv.addMouseWheelListener(mml);
+        
         addVisualizationTransformers();
         setMissionSpecification(spec);
 
         setLayout(new BorderLayout());
         panel = new GraphZoomScrollPane(vv);
         add(panel, BorderLayout.CENTER);
-
-        // Comment this line in and the next four out to switch to my mouse handler
-        mml = new TaskModelEditor.MyMouseListener();
-        vv.addMouseListener(mml);
-        vv.addMouseMotionListener(mml);
-        vv.addMouseWheelListener(mml);
 
         final ScalingControl scaler = new CrossoverScalingControl();
         JButton plus = new JButton("+");
@@ -1009,7 +1010,8 @@ public class TaskModelEditor extends JPanel {
                     final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
                     if (vertex != null) {
                         if (!amCreatingEdge && !amDraggingVertex && selectedVertex == null) {
-                            selectedVertex = vertex;
+                            selectVertex(vertex);
+                            vv.repaint();
                         }
                     }
                 }
@@ -1469,11 +1471,22 @@ public class TaskModelEditor extends JPanel {
                 }
             } else {
                 resetSelection();
+                vv.repaint();
+            }
+        }
+
+        private void selectVertex(Vertex vertex) {
+            if (selectedVertex != null) {
+                selectedVertex.setBeingModified(false);
+            }
+            selectedVertex = vertex;
+            if (selectedVertex != null) {
+                selectedVertex.setBeingModified(true);
             }
         }
 
         private void resetSelection() {
-            selectedVertex = null;
+            selectVertex(null);
             dragVertex = null;
             edgeStartVertex = null;
             amDraggingVertex = false;
@@ -1651,6 +1664,7 @@ public class TaskModelEditor extends JPanel {
     }
 
     public void setMissionSpecification(MissionPlanSpecification spec) {
+        mml.resetSelection();
         this.mSpec = spec;
         if (spec.getGraph() != null) {
             graph = spec.getGraph();
