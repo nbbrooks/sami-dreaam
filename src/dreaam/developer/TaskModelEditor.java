@@ -78,6 +78,7 @@ public class TaskModelEditor extends JPanel {
     private Vertex expandedNomVertex = null;
     private DREAAM dreaam;
     TaskModelEditor.MyMouseListener mml;
+    final ScalingControl scaler;
 
     GraphZoomScrollPane panel;
     JPanel controls;
@@ -384,13 +385,15 @@ public class TaskModelEditor extends JPanel {
         layout = new StaticLayout<Vertex, Edge>(graph, new Dimension(600, 600));
         vv = new VisualizationViewer<Vertex, Edge>(layout);
         vv.setBackground(GuiConfig.BACKGROUND_COLOR);
-        
+
+        scaler = new CrossoverScalingControl();
+
         // Comment this line in and the next four out to switch to my mouse handler
         mml = new TaskModelEditor.MyMouseListener();
         vv.addMouseListener(mml);
         vv.addMouseMotionListener(mml);
         vv.addMouseWheelListener(mml);
-        
+
         addVisualizationTransformers();
         setMissionSpecification(spec);
 
@@ -398,7 +401,6 @@ public class TaskModelEditor extends JPanel {
         panel = new GraphZoomScrollPane(vv);
         add(panel, BorderLayout.CENTER);
 
-        final ScalingControl scaler = new CrossoverScalingControl();
         JButton plus = new JButton("+");
 
         plus.addActionListener(
@@ -797,7 +799,7 @@ public class TaskModelEditor extends JPanel {
     private class MyMouseListener implements MouseListener, MouseMotionListener, MouseWheelListener {
 
         final CrossoverScalingControl scaler = new CrossoverScalingControl();
-        Vertex selectedVertex = null, dragVertex = null, edgeStartVertex = null;
+        Vertex selectedVertex = null, edgeStartVertex = null;
         boolean amDraggingVertex = false, amCreatingEdge = false, amTranslating = false;
         Point2D prevMousePoint = null;
         double translationX = 0, translationY = 0, zoom = 1;
@@ -1010,7 +1012,18 @@ public class TaskModelEditor extends JPanel {
                     final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
                     if (vertex != null) {
                         if (!amCreatingEdge && !amDraggingVertex && selectedVertex == null) {
+                            // Select the vertex
+                            // !amCreatingEdge - have a selected vertex, on mouse release will connect the two graph elements
+                            // !amDraggingVertex - am dragging through another vertex
+                            // selectedVertex == null - I think this is redundant
                             selectVertex(vertex);
+                            vv.repaint();
+                        }
+                    } else {
+                        if (!amDraggingVertex) {
+                            // De-select vertex (if one was selected)
+                            // !amDraggingVertex - am just dragging really fast (outside click radius)
+                            selectVertex(null);
                             vv.repaint();
                         }
                     }
@@ -1033,10 +1046,11 @@ public class TaskModelEditor extends JPanel {
             final Point2D graphPoint = vv.getRenderContext().getMultiLayerTransformer().inverseTransform(framePoint);
 
             if (!amDraggingVertex && selectedVertex != null) {
-                dragVertex = selectedVertex;
                 amDraggingVertex = true;
-            } else if (amDraggingVertex && dragVertex != null) {
-                layout.setLocation(dragVertex, snapToGrid(graphPoint));
+                layout.setLocation(selectedVertex, snapToGrid(graphPoint));
+                vv.repaint();
+            } else if (amDraggingVertex && selectedVertex != null) {
+                layout.setLocation(selectedVertex, snapToGrid(graphPoint));
                 vv.repaint();
             } else if (amTranslating && prevMousePoint != null) {
                 // Translate frame
@@ -1487,7 +1501,6 @@ public class TaskModelEditor extends JPanel {
 
         private void resetSelection() {
             selectVertex(null);
-            dragVertex = null;
             edgeStartVertex = null;
             amDraggingVertex = false;
             amCreatingEdge = false;
@@ -1681,6 +1694,9 @@ public class TaskModelEditor extends JPanel {
             graph = new DirectedSparseGraph<Vertex, Edge>();
             layout.setGraph(graph);
             vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
+        }
+        if (vv.getCenter() != null) {
+            scaler.scale(vv, 1.0f, vv.getCenter());
         }
         vv.repaint();
     }
