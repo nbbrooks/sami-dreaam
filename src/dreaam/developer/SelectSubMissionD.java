@@ -28,6 +28,7 @@ public class SelectSubMissionD extends javax.swing.JDialog {
     private ArrayList<MissionPlanSpecification> createdSubMSpecs = new ArrayList<MissionPlanSpecification>();
     private ArrayList<MissionPlanSpecification> deletedSubMSpecs = new ArrayList<MissionPlanSpecification>();
     private HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>> mSpecTaskMap;
+    private HashMap<MissionPlanSpecification, Boolean> mSpecToIsSharedInstance;
 
     private javax.swing.JButton newB, okB, cancelB;
 
@@ -49,7 +50,7 @@ public class SelectSubMissionD extends javax.swing.JDialog {
     private JScrollPane mSpecSP;
     private JPanel existingMSpecP;
 
-    public SelectSubMissionD(java.awt.Frame parent, boolean modal, MissionPlanSpecification parentMSpec, ProjectSpecification pSpec, ArrayList<MissionPlanSpecification> existingSubMSpecs, HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>> existingMSpecTaskMap) {
+    public SelectSubMissionD(java.awt.Frame parent, boolean modal, MissionPlanSpecification parentMSpec, ProjectSpecification pSpec, ArrayList<MissionPlanSpecification> existingSubMSpecs, HashMap<MissionPlanSpecification, Boolean> existingMSpecToIsSharedInstance, HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>> existingMSpecTaskMap) {
         super(parent, modal);
         this.parentMSpec = parentMSpec;
         this.pSpec = pSpec;
@@ -57,6 +58,16 @@ public class SelectSubMissionD extends javax.swing.JDialog {
             this.subMSpecs = new ArrayList<MissionPlanSpecification>();
         } else {
             this.subMSpecs = (ArrayList<MissionPlanSpecification>) existingSubMSpecs.clone();
+        }
+        if (existingMSpecToIsSharedInstance == null) {
+            this.mSpecToIsSharedInstance = new HashMap<MissionPlanSpecification, Boolean>();
+        } else {
+            this.mSpecToIsSharedInstance = (HashMap<MissionPlanSpecification, Boolean>) existingMSpecToIsSharedInstance.clone();
+        }      
+        if (existingMSpecTaskMap == null) {
+            this.mSpecTaskMap = new HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>();
+        } else {
+            this.mSpecTaskMap = (HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>) existingMSpecTaskMap.clone();
         }
         if (existingMSpecTaskMap == null) {
             this.mSpecTaskMap = new HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>();
@@ -160,16 +171,15 @@ public class SelectSubMissionD extends javax.swing.JDialog {
         subMissionD.setVisible(true);
 
         if (subMissionD.confirmedExit()) {
-            if (subMissionD.getTaskMapMethod() == EditSubMissionD.TaskMapMethod.Event) {
-                MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) subMissionD.getSelectedMission()).getSubmissionInstance(subMissionD.getSelectedMission(), subMissionD.getNamePrefix(), subMissionD.getVariablePrefix(), pSpec.getGlobalVariableToValue());
-                subMSpecs.add(submissionSpec);
-                createdSubMSpecs.add(submissionSpec);
-            } else if (subMissionD.getTaskMapMethod() == EditSubMissionD.TaskMapMethod.Manual) {
-                MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) subMissionD.getSelectedMission()).getSubmissionInstance(subMissionD.getSelectedMission(), subMissionD.getNamePrefix(), subMissionD.getVariablePrefix(), pSpec.getGlobalVariableToValue());
-                subMSpecs.add(submissionSpec);
+            MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) subMissionD.getSelectedMission()).getSubmissionInstance(subMissionD.getSelectedMission(), subMissionD.getNamePrefix(), subMissionD.getVariablePrefix(), pSpec.getGlobalVariableToValue());
+            mSpecTaskMap.put(submissionSpec, subMissionD.getTaskMapping());
+            mSpecToIsSharedInstance.put(submissionSpec, subMissionD.getIsSharedInstantiation());
+            subMSpecs.add(submissionSpec);
+            createdSubMSpecs.add(submissionSpec);
+            if (subMissionD.getTaskMapMethod() == EditSubMissionD.TaskMapMethod.Manual) {
                 mSpecTaskMap.put(submissionSpec, subMissionD.getTaskMapping());
-                createdSubMSpecs.add(submissionSpec);
             }
+
             refreshMSpecP();
         }
     }
@@ -197,6 +207,10 @@ public class SelectSubMissionD extends javax.swing.JDialog {
 
     public ArrayList<MissionPlanSpecification> getDeletedSubMissions() {
         return deletedSubMSpecs;
+    }
+
+    public HashMap<MissionPlanSpecification, Boolean> getSubMissionToIsSharedInstance() {
+        return mSpecToIsSharedInstance;
     }
 
     public HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>> getSubMissionToTaskMap() {

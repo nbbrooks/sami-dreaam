@@ -67,7 +67,7 @@ public class TaskModelEditor extends JPanel {
     public static final int CLICK_RADIUS = 5;
     // Length of grid segment for "snapping" vertices
     public static final int GRID_LENGTH = 50;
-    Graph<Vertex, Edge> graph;
+    Graph<Vertex, Edge> dsgGraph;
     AbstractLayout<Vertex, Edge> layout;
     MissionPlanSpecification mSpec = null;
     Mediator mediator = Mediator.getInstance();
@@ -381,8 +381,8 @@ public class TaskModelEditor extends JPanel {
 
     public TaskModelEditor(MissionPlanSpecification spec) {
         // Create mission view panel
-        graph = new DirectedSparseGraph<Vertex, Edge>();
-        layout = new StaticLayout<Vertex, Edge>(graph, new Dimension(600, 600));
+        dsgGraph = new DirectedSparseGraph<Vertex, Edge>();
+        layout = new StaticLayout<Vertex, Edge>(dsgGraph, new Dimension(600, 600));
         vv = new VisualizationViewer<Vertex, Edge>(layout);
         vv.setBackground(GuiConfig.BACKGROUND_COLOR);
 
@@ -455,7 +455,7 @@ public class TaskModelEditor extends JPanel {
     public void refreshGraphVisibility() {
         switch (editorMode) {
             case Nominal:
-                for (Vertex vertex : graph.getVertices()) {
+                for (Vertex vertex : dsgGraph.getVertices()) {
                     switch (vertex.getFunctionMode()) {
                         case Nominal:
                             vertex.setVisibilityMode(GuiConfig.VisibilityMode.Full);
@@ -464,7 +464,7 @@ public class TaskModelEditor extends JPanel {
                             vertex.setVisibilityMode(GuiConfig.VisibilityMode.None);
                     }
                 }
-                for (Edge edge : graph.getEdges()) {
+                for (Edge edge : dsgGraph.getEdges()) {
                     if (edge.getStart().getFunctionMode() == FunctionMode.Nominal && edge.getEnd().getFunctionMode() == FunctionMode.Nominal) {
                         edge.setVisibilityMode(GuiConfig.VisibilityMode.Full);
                     } else {
@@ -473,7 +473,7 @@ public class TaskModelEditor extends JPanel {
                 }
                 break;
             case Recovery:
-                for (Vertex vertex : graph.getVertices()) {
+                for (Vertex vertex : dsgGraph.getVertices()) {
                     if (vertex.getFunctionMode() == FunctionMode.Recovery) {
                         vertex.setVisibilityMode(GuiConfig.VisibilityMode.Background);
                     } else if (vertex.getFunctionMode() == FunctionMode.Nominal
@@ -484,7 +484,7 @@ public class TaskModelEditor extends JPanel {
                         vertex.setVisibilityMode(GuiConfig.VisibilityMode.Background);
                     }
                 }
-                for (Edge edge : graph.getEdges()) {
+                for (Edge edge : dsgGraph.getEdges()) {
                     edge.setVisibilityMode(GuiConfig.VisibilityMode.None);
                 }
                 if (expandedNomVertex != null) {
@@ -496,7 +496,7 @@ public class TaskModelEditor extends JPanel {
                 }
                 break;
             case All:
-                for (Vertex vertex : graph.getVertices()) {
+                for (Vertex vertex : dsgGraph.getVertices()) {
                     switch (vertex.getFunctionMode()) {
                         case Mockup:
                             vertex.setVisibilityMode(GuiConfig.VisibilityMode.None);
@@ -505,7 +505,7 @@ public class TaskModelEditor extends JPanel {
                             vertex.setVisibilityMode(GuiConfig.VisibilityMode.Full);
                     }
                 }
-                for (Edge edge : graph.getEdges()) {
+                for (Edge edge : dsgGraph.getEdges()) {
                     switch (edge.getFunctionMode()) {
                         case Mockup:
                             edge.setVisibilityMode(GuiConfig.VisibilityMode.None);
@@ -516,7 +516,7 @@ public class TaskModelEditor extends JPanel {
                 }
                 break;
             case Mockup:
-                for (Vertex vertex : graph.getVertices()) {
+                for (Vertex vertex : dsgGraph.getVertices()) {
                     switch (vertex.getFunctionMode()) {
                         case Mockup:
                             vertex.setVisibilityMode(GuiConfig.VisibilityMode.Full);
@@ -525,7 +525,7 @@ public class TaskModelEditor extends JPanel {
                             vertex.setVisibilityMode(GuiConfig.VisibilityMode.None);
                     }
                 }
-                for (Edge edge : graph.getEdges()) {
+                for (Edge edge : dsgGraph.getEdges()) {
                     switch (edge.getFunctionMode()) {
                         case Mockup:
                             edge.setVisibilityMode(GuiConfig.VisibilityMode.Full);
@@ -840,7 +840,7 @@ public class TaskModelEditor extends JPanel {
         }
 
         public void endVertexSelected(Vertex vertex) {
-            if (graph.findEdge(edgeStartVertex, vertex) != null) {
+            if (dsgGraph.findEdge(edgeStartVertex, vertex) != null) {
                 // Edge already exists
                 edgeStartVertex.setBeingModified(false);
                 resetSelection();
@@ -866,7 +866,7 @@ public class TaskModelEditor extends JPanel {
                 }
                 startTransition.addOutEdge(newEdge);
                 endPlace.addInEdge(newEdge);
-                graph.addEdge(newEdge, startTransition, endPlace);
+                dsgGraph.addEdge(newEdge, startTransition, endPlace);
 
                 startTransition.addOutPlace(endPlace);
                 endPlace.addInTransition(startTransition);
@@ -888,7 +888,7 @@ public class TaskModelEditor extends JPanel {
                 }
                 startPlace.addOutEdge(newEdge);
                 endTransition.addInEdge(newEdge);
-                graph.addEdge(newEdge, startPlace, endTransition);
+                dsgGraph.addEdge(newEdge, startPlace, endTransition);
 
                 startPlace.addOutTransition(endTransition);
                 endTransition.addInPlace(startPlace);
@@ -908,7 +908,7 @@ public class TaskModelEditor extends JPanel {
                 } else {
                     newTransition = new Transition("", editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
-                graph.addVertex(newTransition);
+                dsgGraph.addVertex(newTransition);
                 Point freePoint = getVertexFreePoint(
                         (int) ((layout.getX(startPlace) + layout.getX(endPlace)) / 2),
                         (int) ((layout.getY(startPlace) + layout.getY(endPlace)) / 2),
@@ -923,7 +923,7 @@ public class TaskModelEditor extends JPanel {
                 }
                 startPlace.addOutEdge(newEdge1);
                 newTransition.addInEdge(newEdge1);
-                graph.addEdge(newEdge1, startPlace, newTransition);
+                dsgGraph.addEdge(newEdge1, startPlace, newTransition);
 
                 OutEdge newEdge2;
                 if (isMockup) {
@@ -933,7 +933,7 @@ public class TaskModelEditor extends JPanel {
                 }
                 newTransition.addOutEdge(newEdge2);
                 endPlace.addInEdge(newEdge2);
-                graph.addEdge(newEdge2, newTransition, endPlace);
+                dsgGraph.addEdge(newEdge2, newTransition, endPlace);
 
                 startPlace.addOutTransition(newTransition);
                 newTransition.addInPlace(startPlace);
@@ -955,7 +955,7 @@ public class TaskModelEditor extends JPanel {
                 } else {
                     newPlace = new Place("", editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
-                graph.addVertex(newPlace);
+                dsgGraph.addVertex(newPlace);
                 Point freePoint = getVertexFreePoint(
                         (int) ((layout.getX(startTransition) + layout.getX(endTransition)) / 2),
                         (int) ((layout.getY(startTransition) + layout.getY(endTransition)) / 2),
@@ -970,7 +970,7 @@ public class TaskModelEditor extends JPanel {
                 }
                 startTransition.addOutEdge(newEdge1);
                 newPlace.addInEdge(newEdge1);
-                graph.addEdge(newEdge1, startTransition, newPlace);
+                dsgGraph.addEdge(newEdge1, startTransition, newPlace);
 
                 InEdge newEdge2;
                 if (isMockup) {
@@ -980,7 +980,7 @@ public class TaskModelEditor extends JPanel {
                 }
                 newPlace.addOutEdge(newEdge2);
                 endTransition.addInEdge(newEdge2);
-                graph.addEdge(newEdge2, newPlace, endTransition);
+                dsgGraph.addEdge(newEdge2, newPlace, endTransition);
 
                 startTransition.addOutPlace(newPlace);
                 newPlace.addInTransition(startTransition);
@@ -1270,7 +1270,7 @@ public class TaskModelEditor extends JPanel {
                             popup.add(new AbstractAction("Edit Sub-missions") {
                                 public void actionPerformed(ActionEvent e) {
 
-                                    SelectSubMissionD d = new SelectSubMissionD(null, true, mSpec, mediator.getProject(), place.getSubMissionTemplates(), place.getSubMissionToTaskMap());
+                                    SelectSubMissionD d = new SelectSubMissionD(null, true, mSpec, mediator.getProject(), place.getSubMissionTemplates(), place.getSubMissionToIsSharedInstance(), place.getSubMissionToTaskMap());
                                     d.setVisible(true);
                                     if (d.confirmedExit()) {
                                         for (MissionPlanSpecification createdSubMMSpec : d.getCreatedSubMissions()) {
@@ -1280,6 +1280,7 @@ public class TaskModelEditor extends JPanel {
                                             mediator.getProject().removeMissionPlan(deletedSubMMSpec);
                                         }
                                         place.setSubMissionTemplates(d.getSubMissions());
+                                        place.setSubMissionToIsSharedInstance(d.getSubMissionToIsSharedInstance());
                                         place.setSubMissionToTaskMap(d.getSubMissionToTaskMap());
                                         place.updateTag();
                                         dreaam.refreshMissionTree();
@@ -1444,7 +1445,7 @@ public class TaskModelEditor extends JPanel {
                                 } else {
                                     place = new Place("", editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                                 }
-                                graph.addVertex(place);
+                                dsgGraph.addVertex(place);
                                 layout.setLocation(place, snapToGrid(graphPoint));
                                 vv.repaint();
                             }
@@ -1458,7 +1459,7 @@ public class TaskModelEditor extends JPanel {
                                 } else {
                                     transition = new Transition("", editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                                 }
-                                graph.addVertex(transition);
+                                dsgGraph.addVertex(transition);
                                 layout.setLocation(transition, snapToGrid(graphPoint));
                                 vv.repaint();
                             }
@@ -1680,8 +1681,8 @@ public class TaskModelEditor extends JPanel {
         mml.resetSelection();
         this.mSpec = spec;
         if (spec.getGraph() != null) {
-            graph = spec.getGraph();
-            layout.setGraph(graph);
+            dsgGraph = spec.getGraph();
+            layout.setGraph(dsgGraph);
             spec.updateAllTags();
             mSpec.updateLayout(layout);
 
@@ -1691,8 +1692,8 @@ public class TaskModelEditor extends JPanel {
             mlt.getTransformer(Layer.LAYOUT).getTransform().setTransform(spec.getLayoutTransform());
             mlt.getTransformer(Layer.VIEW).getTransform().setTransform(spec.getView());
         } else {
-            graph = new DirectedSparseGraph<Vertex, Edge>();
-            layout.setGraph(graph);
+            dsgGraph = new DirectedSparseGraph<Vertex, Edge>();
+            layout.setGraph(dsgGraph);
             vv.getRenderContext().getMultiLayerTransformer().setToIdentity();
         }
         if (vv.getCenter() != null) {
@@ -1713,16 +1714,15 @@ public class TaskModelEditor extends JPanel {
         if (mSpec != null) {
             // Copy the DirectedSparseGraph into a SparseMultigraph
             //  DirectedSparseGraph does not implement serialize correctly
-            SparseMultigraph<Vertex, Edge> uGraph = new SparseMultigraph<Vertex, Edge>();
-            for (Vertex o : graph.getVertices()) {
-                uGraph.addVertex(o);
+            SparseMultigraph<Vertex, Edge> smGraph = new SparseMultigraph<Vertex, Edge>();
+            for (Vertex o : dsgGraph.getVertices()) {
+                smGraph.addVertex(o);
             }
-            for (Edge o : graph.getEdges()) {
-                uGraph.addEdge(o, o.getStart(), o.getEnd());
+            for (Edge o : dsgGraph.getEdges()) {
+                smGraph.addEdge(o, o.getStart(), o.getEnd());
             }
 
-            mSpec.setGraph(uGraph, layout);
-
+            mSpec.setGraph(smGraph, layout);
             mSpec.setLayout(vv.getRenderContext().getMultiLayerTransformer().getTransformer(Layer.LAYOUT).getTransform());
             mSpec.setView(vv.getRenderContext().getMultiLayerTransformer().getTransformer(Layer.VIEW).getTransform());
         } else {
@@ -1734,14 +1734,14 @@ public class TaskModelEditor extends JPanel {
         // First remove the transition and its edges from our copy of the graph so we don't have to reload the whole thing
         ArrayList<OutEdge> inEdges = (ArrayList<OutEdge>) place.getInEdges();
         for (OutEdge inEdge : inEdges) {
-            graph.removeEdge(inEdge);
+            dsgGraph.removeEdge(inEdge);
         }
         ArrayList<InEdge> outEdges = (ArrayList<InEdge>) place.getOutEdges();
         for (InEdge outEdge : outEdges) {
-            graph.removeEdge(outEdge);
+            dsgGraph.removeEdge(outEdge);
         }
         // Now we can remove the vertex
-        graph.removeVertex(place);
+        dsgGraph.removeVertex(place);
 
         // Now we can remove the transition and its edges from the mission spec and then the actual data structures
         mSpec.removePlace(place);
@@ -1753,14 +1753,14 @@ public class TaskModelEditor extends JPanel {
         // First remove the transition and its edges from our copy of the graph so we don't have to reload the whole thing
         ArrayList<InEdge> inEdges = (ArrayList<InEdge>) transition.getInEdges();
         for (InEdge inEdge : inEdges) {
-            graph.removeEdge(inEdge);
+            dsgGraph.removeEdge(inEdge);
         }
         ArrayList<OutEdge> outEdges = (ArrayList<OutEdge>) transition.getOutEdges();
         for (OutEdge outEdge : outEdges) {
-            graph.removeEdge(outEdge);
+            dsgGraph.removeEdge(outEdge);
         }
         // Now we can remove the vertex
-        graph.removeVertex(transition);
+        dsgGraph.removeVertex(transition);
 
         // Now we can remove the transition and its edges from the mission spec and then the actual data structures
         mSpec.removeTransition(transition);
@@ -1770,7 +1770,7 @@ public class TaskModelEditor extends JPanel {
 
     public void removeEdge(Edge edge) {
         // First remove the edge from our copy of the graph so we don't have to reload the whole thing
-        graph.removeEdge(edge);
+        dsgGraph.removeEdge(edge);
 
         // Now we can remove the edge from the mission spec and then the actual data structure
         mSpec.removeEdge(edge);

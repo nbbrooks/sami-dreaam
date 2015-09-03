@@ -65,7 +65,7 @@ public class ReachabilityChecker extends CheckerAgent {
                     AgentMessage m = new AgentMessage(this, "Unreachable states", os);
                     msgs.add(m);
                 } else {
-                    LOGGER.info("All states were reachable");
+                    LOGGER.fine("All states were reachable");
                 }
             }
 

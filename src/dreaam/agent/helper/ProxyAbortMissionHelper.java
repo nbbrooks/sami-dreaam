@@ -72,6 +72,7 @@ public class ProxyAbortMissionHelper extends HelperAgent {
                     // First time running helper since creating this mission, construct helper's end place
                     endPlace = new Place(VERTEX_NAME, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
                     endPlace.setIsEnd(true);
+                    endPlace.setIsSharedSmEnd(true);
                     missionPlanSpecification.getGraph().addVertex(endPlace);
                     Point freePoint = getVertexPoint(missionPlanSpecification.getLocations(), false);
                     missionPlanSpecification.getLocations().put(endPlace, freePoint);

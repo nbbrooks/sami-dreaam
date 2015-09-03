@@ -37,7 +37,7 @@ public class AbortMissionHelper extends HelperAgent {
 
     @Override
     public void run() {
-        InTokenRequirement noReqTokenReq = new InTokenRequirement(TokenRequirement.MatchCriteria.None, TokenRequirement.MatchQuantity.None);
+        InTokenRequirement noReqTokenReq = new InTokenRequirement(TokenRequirement.MatchCriteria.None, null);
         OutTokenRequirement takeAllTokenReq = new OutTokenRequirement(TokenRequirement.MatchCriteria.AnyToken, TokenRequirement.MatchQuantity.All, TokenRequirement.MatchAction.Take);
         boolean createdTransition = false, createdPlace = false;
 
@@ -89,6 +89,7 @@ public class AbortMissionHelper extends HelperAgent {
                 // First time running helper since creating this mission, construct helper's end transition
                 endPlace = new Place(VERTEX_NAME, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
                 endPlace.setIsEnd(true);
+                endPlace.setIsSharedSmEnd(true);
                 missionPlanSpecification.getGraph().addVertex(endPlace);
                 Point freePoint2 = getVertexPoint(missionPlanSpecification.getLocations(), false);
 

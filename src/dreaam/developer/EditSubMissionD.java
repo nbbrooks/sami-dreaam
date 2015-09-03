@@ -45,10 +45,19 @@ public class EditSubMissionD extends javax.swing.JDialog {
         Event, Manual
     };
 
+    // If a place contains a sub-mission that has already begun and a new set of tokens enters the place, 
+    //  Single:
+    //  Multiple:
+    public enum InstantiationMethod {
+
+        Individual, Shared
+    };
+
     private Mediator mediator = Mediator.getInstance();
     private MissionPlanSpecification parentMSpec;
     private MissionPlanSpecification selectedMSpec = null;
     private ArrayList<TaskSpecification> selectedMTaskSpecList = new ArrayList<TaskSpecification>();
+    private InstantiationMethod selectedInstantiationMethod;
     private TaskMapMethod selectedTaskMapMethod;
     // All fields are valid?
     private boolean valid = false;
@@ -65,6 +74,9 @@ public class EditSubMissionD extends javax.swing.JDialog {
     // Text field for specifying variable prefix
     private JLabel variablePrefixL;
     private JTextField variablePrefixTF;
+    // Combo box for choosing instantiation method
+    private JLabel instantiationMethodL;
+    private JComboBox instantiationMethodCB;
     // Combo box for choosing task allocation method
     private JLabel allocationMethodL;
     private JComboBox taskMapMethodCB;
@@ -95,10 +107,11 @@ public class EditSubMissionD extends javax.swing.JDialog {
         setTitle("SubMissionD");
     }
 
-    public EditSubMissionD(java.awt.Frame parent, boolean modal, MissionPlanSpecification parentMSpec, MissionPlanSpecification subMMSpec, HashMap<TaskSpecification, TaskSpecification> taskMapping) {
+    public EditSubMissionD(java.awt.Frame parent, boolean modal, MissionPlanSpecification parentMSpec, MissionPlanSpecification subMMSpec, boolean isSharedInstance, HashMap<TaskSpecification, TaskSpecification> taskMapping) {
         // Want to edit existing sub-mission
         this(parent, modal, parentMSpec);
         planCB.setSelectedItem(subMMSpec);
+        instantiationMethodCB.setSelectedItem((isSharedInstance ? InstantiationMethod.Shared : InstantiationMethod.Individual));
         if (taskMapping != null) {
             // Sub-mission currently has a Manual task mapping
             for (TaskSpecification taskSpec : taskMapping.keySet()) {
@@ -127,7 +140,7 @@ public class EditSubMissionD extends javax.swing.JDialog {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         layout = new GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
-        int numRows = 11;
+        int numRows = 13;
         rowSeqGroup = layout.createSequentialGroup();
         rowParGroup1 = layout.createParallelGroup();
         colSeqGroup = layout.createSequentialGroup();
@@ -172,6 +185,23 @@ public class EditSubMissionD extends javax.swing.JDialog {
         variablePrefixTF.addMouseListener(activityListener);
         addComponent(variablePrefixL);
         addComponent(variablePrefixTF);
+
+        // Combo box for choosing task allocation method
+        instantiationMethodL = new JLabel("Shared or individual sub-mission instances?");
+        instantiationMethodCB = new JComboBox(InstantiationMethod.values());
+        selectedInstantiationMethod = (InstantiationMethod) instantiationMethodCB.getSelectedItem();
+        instantiationMethodCB.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                if (selectedInstantiationMethod == (InstantiationMethod) instantiationMethodCB.getSelectedItem()) {
+                    return;
+                }
+                selectedInstantiationMethod = (InstantiationMethod) instantiationMethodCB.getSelectedItem();
+            }
+        });
+        addComponent(instantiationMethodL);
+        addComponent(instantiationMethodCB);
 
         // Combo box for choosing task allocation method
         allocationMethodL = new JLabel("Task mapping method?");
@@ -286,6 +316,10 @@ public class EditSubMissionD extends javax.swing.JDialog {
 
     public MissionPlanSpecification getSelectedMission() {
         return selectedMSpec;
+    }
+
+    public boolean getIsSharedInstantiation() {
+        return selectedInstantiationMethod == InstantiationMethod.Shared;
     }
 
     public TaskMapMethod getTaskMapMethod() {
