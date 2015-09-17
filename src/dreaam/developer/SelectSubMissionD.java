@@ -75,7 +75,7 @@ public class SelectSubMissionD extends javax.swing.JDialog {
             this.mSpecTaskMap = (HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>) existingMSpecTaskMap.clone();
         }
         initComponents();
-        setTitle("SelectSubMissionDNew");
+        setTitle("SelectSubMissionD");
     }
 
     private void addComponent(JComponent component) {

@@ -4,6 +4,7 @@ import dreaam.agent.Platform;
 import dreaam.agent.checker.CheckerAgent;
 import dreaam.agent.checker.CheckerAgent.AgentMessage;
 import dreaam.agent.helper.HelperAgent;
+import dreaam.developer.dndtree.DndTree;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -71,12 +72,12 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         // Routine GUI configuration
         // Side panel
         jSplitPane1.setDividerLocation(200);
-        treeRoot = (DefaultMutableTreeNode) componentT.getModel().getRoot();
+        treeRoot = (DefaultMutableTreeNode) dndTree.getModel().getRoot();
         treeRoot.add(mediator.getProject().getMissionTree());
-        checkersRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 1);
-        helpersRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 2);
-        errorsRoot = (DefaultMutableTreeNode) componentT.getModel().getChild(treeRoot, 3);
-        componentT.setCellRenderer(new DREAMMTreeCellRenderer());
+        checkersRoot = (DefaultMutableTreeNode) dndTree.getModel().getChild(treeRoot, 1);
+        helpersRoot = (DefaultMutableTreeNode) dndTree.getModel().getChild(treeRoot, 2);
+        errorsRoot = (DefaultMutableTreeNode) dndTree.getModel().getChild(treeRoot, 3);
+        dndTree.setCellRenderer(new DREAMMTreeCellRenderer());
 
         // Main panel
         MissionPlanSpecification mSpec = mediator.getProject().getNewMissionPlanSpecification("Anonymous");
@@ -93,10 +94,10 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         }
 
         // Set up the mouse handlers
-        componentT.addMouseListener(new MouseAdapter() {
+        dndTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseReleased(MouseEvent me) {
-                final TreePath treePath = componentT.getPathForLocation(me.getX(), me.getY());
+                final TreePath treePath = dndTree.getPathForLocation(me.getX(), me.getY());
                 if (treePath == null) {
                     return;
                 }
@@ -116,7 +117,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                 addNewRootMissionSpec();
                             }
                         });
-                        menu.show(componentT, me.getX(), me.getY());
+                        menu.show(dndTree, me.getX(), me.getY());
                     } else if (pathCount > 1
                             && objectPath[pathCount - 2] == missionsRoot
                             && ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject() instanceof MissionPlanSpecification) {
@@ -240,7 +241,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
 //                            }
 //                        });
 
-                        menu.show(componentT, me.getX(), me.getY());
+                        menu.show(dndTree, me.getX(), me.getY());
                     } else if (treePath.getLastPathComponent() == checkersRoot) {
                         JPopupMenu menu = new JPopupMenu();
                         menu.add(new AbstractAction("Run checker agents") {
@@ -250,7 +251,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                 runCheckerAgents();
                             }
                         });
-                        menu.show(componentT, me.getX(), me.getY());
+                        menu.show(dndTree, me.getX(), me.getY());
                     } else if (pathCount > 1
                             && objectPath[pathCount - 2] == checkersRoot
                             && ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject() instanceof CheckerAgent) {
@@ -264,7 +265,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                 checker.setEnabled(!agentEnabled);
                             }
                         });
-                        menu.show(componentT, me.getX(), me.getY());
+                        menu.show(dndTree, me.getX(), me.getY());
                     } else if (treePath.getLastPathComponent() == helpersRoot) {
                         JPopupMenu menu = new JPopupMenu();
                         menu.add(new AbstractAction("Run helper agents") {
@@ -274,7 +275,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                 runHelperAgents();
                             }
                         });
-                        menu.show(componentT, me.getX(), me.getY());
+                        menu.show(dndTree, me.getX(), me.getY());
                     } else if (pathCount > 1
                             && objectPath[pathCount - 2] == helpersRoot
                             && ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject() instanceof HelperAgent) {
@@ -288,7 +289,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                 helper.setEnabled(!agentEnabled);
                             }
                         });
-                        menu.show(componentT, me.getX(), me.getY());
+                        menu.show(dndTree, me.getX(), me.getY());
                     } else if (treePath.getLastPathComponent() == errorsRoot) {
                         JPopupMenu menu = new JPopupMenu();
                         menu.add(new AbstractAction("Run checker agents") {
@@ -298,7 +299,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                 runCheckerAgents();
                             }
                         });
-                        menu.show(componentT, me.getX(), me.getY());
+                        menu.show(dndTree, me.getX(), me.getY());
                     } else if (pathCount > 1
                             && objectPath[pathCount - 2] == errorsRoot
                             && ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject() instanceof CheckerAgent.AgentMessage) {
@@ -310,7 +311,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                 JOptionPane.showMessageDialog(null, message);
                             }
                         });
-                        menu.show(componentT, me.getX(), me.getY());
+                        menu.show(dndTree, me.getX(), me.getY());
                     } else {
                         LOGGER.info("Nothing for " + ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject().getClass());
                     }
@@ -398,19 +399,21 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         }
     }
 
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         jSplitPane1 = new javax.swing.JSplitPane();
         sideP = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        componentT = new javax.swing.JTree();
+        javax.swing.tree.DefaultMutableTreeNode rootNode = new javax.swing.tree.DefaultMutableTreeNode("root");
+        javax.swing.tree.DefaultMutableTreeNode childNode = new javax.swing.tree.DefaultMutableTreeNode("Plays");
+        rootNode.add(childNode);
+        childNode = new javax.swing.tree.DefaultMutableTreeNode("Checker agents");
+        rootNode.add(childNode);
+        childNode = new javax.swing.tree.DefaultMutableTreeNode("Helper agents");
+        rootNode.add(childNode);
+        childNode = new javax.swing.tree.DefaultMutableTreeNode("Detected errors");
+        rootNode.add(childNode);
+        dndTree = new DndTree(rootNode);
         mainP = new javax.swing.JPanel();
         jMenuBar1 = new javax.swing.JMenuBar();
         fileM = new javax.swing.JMenu();
@@ -439,19 +442,10 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
 
         sideP.setBackground(sami.gui.GuiConfig.BACKGROUND_COLOR);
 
-        javax.swing.tree.DefaultMutableTreeNode treeNode1 = new javax.swing.tree.DefaultMutableTreeNode("root");
-        javax.swing.tree.DefaultMutableTreeNode treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("Plays");
-        treeNode1.add(treeNode2);
-        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("Checker agents");
-        treeNode1.add(treeNode2);
-        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("Helper agents");
-        treeNode1.add(treeNode2);
-        treeNode2 = new javax.swing.tree.DefaultMutableTreeNode("Detected errors");
-        treeNode1.add(treeNode2);
-        componentT.setModel(new javax.swing.tree.DefaultTreeModel(treeNode1));
-        componentT.setBackground(sami.gui.GuiConfig.BACKGROUND_COLOR);
-        componentT.setRootVisible(false);
-        jScrollPane1.setViewportView(componentT);
+//        dndTree.setModel(new javax.swing.tree.DefaultTreeModel(rootNode));
+        dndTree.setBackground(sami.gui.GuiConfig.BACKGROUND_COLOR);
+        dndTree.setRootVisible(false);
+        jScrollPane1.setViewportView(dndTree);
 
         org.jdesktop.layout.GroupLayout sidePLayout = new org.jdesktop.layout.GroupLayout(sideP);
         sideP.setLayout(sidePLayout);
@@ -638,7 +632,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         );
 
         pack();
-    }// </editor-fold>//GEN-END:initComponents
+    }
 
     private void addNewRootMissionSpec() {
         // Creates and adds new root mission spec
@@ -805,6 +799,11 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         taskModelEditor.writeModel();
         runHelperAgents();
         runCheckerAgents();
+        
+//        for(MissionPlanSpecification mSpec : Mediator.getInstance().getProject().getAllMissionPlans()) {
+//            mSpec.fixGraph();
+//            mSpec.printGraph();
+//        }
     }//GEN-LAST:event_runAgentsMActionPerformed
 
     private void runHelperAgents() {
@@ -819,8 +818,8 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
             DefaultMutableTreeNode n = new DefaultMutableTreeNode(agentMessage);
             errorsRoot.add(n);
         }
-        componentT.scrollPathToVisible(new TreePath(errorsRoot.getPath()));
-        ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(errorsRoot);
+        dndTree.scrollPathToVisible(new TreePath(errorsRoot.getPath()));
+        ((DefaultTreeModel) dndTree.getModel()).nodeStructureChanged(errorsRoot);
     }
 
     public void refreshMission() {
@@ -891,8 +890,8 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
             taskModelEditor.writeModel();
             taskModelEditor.setMissionSpecification((MissionPlanSpecification) nodeInfo);
 //            taskModelEditor.setMode(FunctionMode.Nominal);
-            componentT.expandPath(getPath(node));
-            componentT.setSelectionPath(getPath(node));
+            dndTree.expandPath(getPath(node));
+            dndTree.setSelectionPath(getPath(node));
         }
         repaint();
     }
@@ -902,14 +901,14 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         if (node == null) {
             return;
         }
-        componentT.expandPath(getPath(node));
+        dndTree.expandPath(getPath(node));
         refreshMissionTree();
     }
 
     public void refreshMissionTree() {
         // Refreshes JTree structure
-        ((DefaultTreeModel) componentT.getModel()).nodeStructureChanged(missionsRoot);
-        componentT.repaint();
+        ((DefaultTreeModel) dndTree.getModel()).nodeStructureChanged(missionsRoot);
+        dndTree.repaint();
     }
 
     private class DREAMMTreeCellRenderer extends DefaultTreeCellRenderer {
@@ -968,10 +967,10 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
             }
         });
     }
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // Variables declaration - do not modify
     private javax.swing.JMenu agentM;
     private javax.swing.JMenuItem allMode;
-    private javax.swing.JTree componentT;
+    private DndTree dndTree;
     private javax.swing.JMenu editM;
     private javax.swing.JMenuItem editReqsM;
     private javax.swing.JMenu fileM;
@@ -996,5 +995,5 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
     private javax.swing.JMenuItem saveDrmM;
     private javax.swing.JPanel sideP;
     private javax.swing.JMenuItem specGUIM;
-    // End of variables declaration//GEN-END:variables
+    // End of variables declaration
 }
