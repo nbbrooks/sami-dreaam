@@ -8,28 +8,28 @@ import javax.swing.tree.*;
 import java.util.*;
 
 public class TransferableNode implements Transferable {
-     public static final DataFlavor NODE_FLAVOR = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, "Node");
-     private DefaultMutableTreeNode node;
-     private DataFlavor[] flavors = { NODE_FLAVOR };
 
-     public TransferableNode(DefaultMutableTreeNode nd) {
-          node = nd;
-     }  
+    public static final DataFlavor NODE_FLAVOR = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, "Node");
+    private DefaultMutableTreeNode node;
+    private DataFlavor[] flavors = {NODE_FLAVOR};
 
-     public synchronized Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException {
-          if (flavor == NODE_FLAVOR) {
-               return node;
-          }
-          else {
-               throw new UnsupportedFlavorException(flavor);     
-          }               
-     }
+    public TransferableNode(DefaultMutableTreeNode nd) {
+        node = nd;
+    }
 
-     public DataFlavor[] getTransferDataFlavors() {
-          return flavors;
-     }
+    public synchronized Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException {
+        if (flavor == NODE_FLAVOR) {
+            return node;
+        } else {
+            throw new UnsupportedFlavorException(flavor);
+        }
+    }
 
-     public boolean isDataFlavorSupported(DataFlavor flavor) {
-          return Arrays.asList(flavors).contains(flavor);
-     }
+    public DataFlavor[] getTransferDataFlavors() {
+        return flavors;
+    }
+
+    public boolean isDataFlavorSupported(DataFlavor flavor) {
+        return Arrays.asList(flavors).contains(flavor);
+    }
 }

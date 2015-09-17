@@ -63,7 +63,7 @@ public class SelectSubMissionD extends javax.swing.JDialog {
             this.mSpecToIsSharedInstance = new HashMap<MissionPlanSpecification, Boolean>();
         } else {
             this.mSpecToIsSharedInstance = (HashMap<MissionPlanSpecification, Boolean>) existingMSpecToIsSharedInstance.clone();
-        }      
+        }
         if (existingMSpecTaskMap == null) {
             this.mSpecTaskMap = new HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>>();
         } else {
