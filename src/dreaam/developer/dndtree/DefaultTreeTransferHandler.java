@@ -28,8 +28,9 @@ public class DefaultTreeTransferHandler extends AbstractTreeTransferHandler {
 //          else
         if (action == DnDConstants.ACTION_MOVE) {
             DefaultMutableTreeNode targetNode = (DefaultMutableTreeNode) pathTarget.getLastPathComponent();
-            if (draggedNode.getLevel() <= 1 || draggedNode.getParent() != targetNode.getParent()) {
+            if (draggedNode.getLevel() <= 1 || draggedNode == targetNode || draggedNode.getParent() != targetNode.getParent()) {
                 // draggedNode.getLevel() <= 1: Is root or Plays/Checkers/Helpers/etc folder which we don't want to rearrange
+                // draggedNode == targetNode: Is same node, don't need to do anything
                 // draggedNode.getParent() != targetNode.getParent(): Not sibling nodes
                 return (false);
             } else {
