@@ -1,5 +1,7 @@
 package dreaam.developer;
 
+import sami.DreaamHelper;
+import static sami.DreaamHelper.snapToGrid;
 import dreaam.developer.SelectTokenD.EdgeType;
 import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
 import edu.uci.ics.jung.algorithms.layout.GraphElementAccessor;
@@ -65,8 +67,6 @@ public class TaskModelEditor extends JPanel {
     private static final Logger LOGGER = Logger.getLogger(TaskModelEditor.class.getName());
     // This increases the "grab" radius for Place/Transition/Edge objects to make things easier to select
     public static final int CLICK_RADIUS = 5;
-    // Length of grid segment for "snapping" vertices
-    public static final int GRID_LENGTH = 50;
     Graph<Vertex, Edge> dsgGraph;
     AbstractLayout<Vertex, Edge> layout;
     MissionPlanSpecification mSpec = null;
@@ -909,7 +909,7 @@ public class TaskModelEditor extends JPanel {
                     newTransition = new Transition("", editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
                 dsgGraph.addVertex(newTransition);
-                Point freePoint = getVertexFreePoint(
+                Point freePoint = DreaamHelper.getVertexFreePoint(vv,
                         (int) ((layout.getX(startPlace) + layout.getX(endPlace)) / 2),
                         (int) ((layout.getY(startPlace) + layout.getY(endPlace)) / 2),
                         CLICK_RADIUS);
@@ -956,7 +956,7 @@ public class TaskModelEditor extends JPanel {
                     newPlace = new Place("", editorMode, Mediator.getInstance().getProject().getAndIncLastElementId());
                 }
                 dsgGraph.addVertex(newPlace);
-                Point freePoint = getVertexFreePoint(
+                Point freePoint = DreaamHelper.getVertexFreePoint(vv,
                         (int) ((layout.getX(startTransition) + layout.getX(endTransition)) / 2),
                         (int) ((layout.getY(startTransition) + layout.getY(endTransition)) / 2),
                         CLICK_RADIUS);
@@ -1009,7 +1009,7 @@ public class TaskModelEditor extends JPanel {
                 // Select a vertex (needs to be in mousePressed to begin dragging)
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
-                    final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
+                    final Vertex vertex = DreaamHelper.getNearestVertex(vv, framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
                     if (vertex != null) {
                         if (!amCreatingEdge && !amDraggingVertex && selectedVertex == null) {
                             // Select the vertex
@@ -1047,10 +1047,10 @@ public class TaskModelEditor extends JPanel {
 
             if (!amDraggingVertex && selectedVertex != null) {
                 amDraggingVertex = true;
-                layout.setLocation(selectedVertex, snapToGrid(graphPoint));
+                layout.setLocation(selectedVertex, DreaamHelper.snapToGrid(graphPoint));
                 vv.repaint();
             } else if (amDraggingVertex && selectedVertex != null) {
-                layout.setLocation(selectedVertex, snapToGrid(graphPoint));
+                layout.setLocation(selectedVertex, DreaamHelper.snapToGrid(graphPoint));
                 vv.repaint();
             } else if (amTranslating && prevMousePoint != null) {
                 // Translate frame
@@ -1080,7 +1080,7 @@ public class TaskModelEditor extends JPanel {
                 // Select graph element
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
-                    final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
+                    final Vertex vertex = DreaamHelper.getNearestVertex(vv, framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
                     if (vertex != null) {
                         if (!amCreatingEdge && edgeStartVertex == null) {
                             // Set start point for new edge
@@ -1106,8 +1106,8 @@ public class TaskModelEditor extends JPanel {
                 // Right click menu
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
-                    final Vertex vertex = getNearestVertex(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
-                    final Edge edge = getNearestEdge(framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
+                    final Vertex vertex = DreaamHelper.getNearestVertex(vv, framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
+                    final Edge edge = DreaamHelper.getNearestEdge(vv, framePoint.getX(), framePoint.getY(), CLICK_RADIUS);
                     if (vertex != null && (vertex instanceof MockupPlace || vertex instanceof MockupTransition)) {
                         // Right click place or transition -> show options
                         JPopupMenu popup = new JPopupMenu();
@@ -1536,110 +1536,6 @@ public class TaskModelEditor extends JPanel {
         public void mouseExited(MouseEvent me) {
             //System.out.println("Exited");
         }
-
-        public Point2D snapToGrid(Point2D point) {
-            Point2D.Double gridPoint = new Point2D.Double((int) (point.getX() / GRID_LENGTH + 0.5) * GRID_LENGTH, (int) (point.getY() / GRID_LENGTH + 0.5) * GRID_LENGTH);
-            return gridPoint;
-        }
-
-        public Point getVertexFreePoint(double x, double y, double searchRadius) {
-            Point freePoint = new Point((int) x, (int) y);
-            while (getNearestVertex(freePoint.getX(), freePoint.getY(), searchRadius) != null) {
-                freePoint.setLocation(freePoint.getX() - (2 * searchRadius + 1), freePoint.getY() - (2 * searchRadius + 1));
-            }
-            return freePoint;
-        }
-
-        public Vertex getNearestVertex(double x, double y, double radius) {
-            return getNearestVertex(x, y, radius, true);
-        }
-
-        public Vertex getNearestVertex(double x, double y, double radius, boolean vertexVisible) {
-            GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
-            Vertex vertex = pickSupport.getVertex(vv.getGraphLayout(), x, y);
-            for (int r = 1; r <= radius && vertex == null; r++) {
-                for (int dir = 0; dir < 8 && vertex == null; dir++) {
-                    switch (dir) {
-                        case (0): // N
-                            vertex = pickSupport.getVertex(vv.getGraphLayout(), x, y - r);
-                            break;
-                        case (1): // NE
-                            vertex = pickSupport.getVertex(vv.getGraphLayout(), x + r, y - r);
-                            break;
-                        case (2): // E
-                            vertex = pickSupport.getVertex(vv.getGraphLayout(), x + r, y);
-                            break;
-                        case (3): // SE
-                            vertex = pickSupport.getVertex(vv.getGraphLayout(), x + r, y + r);
-                            break;
-                        case (4): // S
-                            vertex = pickSupport.getVertex(vv.getGraphLayout(), x, y + r);
-                            break;
-                        case (5): // SW
-                            vertex = pickSupport.getVertex(vv.getGraphLayout(), x - r, y + r);
-                            break;
-                        case (6): // W
-                            vertex = pickSupport.getVertex(vv.getGraphLayout(), x - r, y);
-                            break;
-                        case (7): // NW
-                            vertex = pickSupport.getVertex(vv.getGraphLayout(), x - r, y - r);
-                            break;
-                    }
-                    if (vertexVisible && vertex != null && vertex.getVisibilityMode() == GuiConfig.VisibilityMode.None) {
-                        vertex = null;
-                    }
-                }
-            }
-            return vertex;
-        }
-
-        public Edge getNearestEdge(double x, double y, int radius) {
-            return getNearestEdge(x, y, radius, true);
-        }
-
-        public Edge getNearestEdge(double x, double y, int radius, boolean edgeVisible) {
-            GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
-            Edge edge = pickSupport.getEdge(vv.getGraphLayout(), x, y);
-            for (int r = 1; r <= radius && edge == null; r++) {
-                for (int dir = 0; dir < 8 && edge == null; dir++) {
-                    switch (dir) {
-                        case (0): // N
-                            edge = pickSupport.getEdge(vv.getGraphLayout(), x, y - r);
-                            break;
-                        case (1): // NE
-                            edge = pickSupport.getEdge(vv.getGraphLayout(), x + r, y - r);
-                            break;
-                        case (2): // E
-                            edge = pickSupport.getEdge(vv.getGraphLayout(), x + r, y);
-                            break;
-                        case (3): // SE
-                            edge = pickSupport.getEdge(vv.getGraphLayout(), x + r, y + r);
-                            break;
-                        case (4): // S
-                            edge = pickSupport.getEdge(vv.getGraphLayout(), x, y + r);
-                            break;
-                        case (5): // SW
-                            edge = pickSupport.getEdge(vv.getGraphLayout(), x - r, y + r);
-                            break;
-                        case (6): // W
-                            edge = pickSupport.getEdge(vv.getGraphLayout(), x - r, y);
-                            break;
-                        case (7): // NW
-                            edge = pickSupport.getEdge(vv.getGraphLayout(), x - r, y - r);
-                            break;
-                    }
-                    if (edgeVisible && edge != null && edge.getVisibilityMode() == GuiConfig.VisibilityMode.None) {
-                        edge = null;
-                    }
-                }
-            }
-            return edge;
-        }
-    }
-
-    public static Point snapToGrid(Point point) {
-        Point gridPoint = new Point((int) (point.x / GRID_LENGTH + 0.5) * GRID_LENGTH, (int) (point.y / GRID_LENGTH + 0.5) * GRID_LENGTH);
-        return gridPoint;
     }
 
     public void addTemplate(MissionPlanSpecification spec) {

@@ -1,6 +1,7 @@
 package dreaam.agent.helper;
 
-import dreaam.developer.TaskModelEditor;
+import sami.DreaamHelper;
+import static sami.DreaamHelper.GRID_LENGTH;
 import java.awt.Point;
 import java.awt.geom.Point2D;
 import java.util.Map;
@@ -59,11 +60,11 @@ public abstract class HelperAgent {
         }
         Point vertexPoint = null;
         if (forTransition) {
-            vertexPoint = new Point((int) (maxXTransition), (int) (Math.min(minYPlace, minYTransition) - TaskModelEditor.GRID_LENGTH));
+            vertexPoint = new Point((int) (maxXTransition), (int) (Math.min(minYPlace, minYTransition) - GRID_LENGTH));
         } else {
-            vertexPoint = new Point((int) (maxXPlace), (int) (Math.min(minYPlace, minYTransition) - TaskModelEditor.GRID_LENGTH));
+            vertexPoint = new Point((int) (maxXPlace), (int) (Math.min(minYPlace, minYTransition) - GRID_LENGTH));
         }
-        vertexPoint = TaskModelEditor.snapToGrid(vertexPoint);
+        vertexPoint = DreaamHelper.snapToGrid(vertexPoint);
         return vertexPoint;
     }
 
