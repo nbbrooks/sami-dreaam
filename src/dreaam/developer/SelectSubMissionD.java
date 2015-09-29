@@ -1,8 +1,11 @@
 package dreaam.developer;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -36,19 +39,13 @@ public class SelectSubMissionD extends javax.swing.JDialog {
     private boolean okExit = false;
 
     // Layout
-    private GroupLayout layout;
-    private GroupLayout.SequentialGroup rowSeqGroup;
-    private GroupLayout.ParallelGroup rowParGroup1;
-    private GroupLayout.SequentialGroup colSeqGroup;
-    private GroupLayout.ParallelGroup[] colParGroupArr;
-    private int row;
-    private int maxColWidth;
+    private int maxComponentWidth;
     private int cumulComponentHeight;
     private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
 
-    private JScrollPane mSpecSP;
-    private JPanel existingMSpecP;
+    private JScrollPane existingSubMissionsSP;
+    private JPanel existingSubMissionsP;
 
     public SelectSubMissionD(java.awt.Frame parent, boolean modal, MissionPlanSpecification parentMSpec, ProjectSpecification pSpec, ArrayList<MissionPlanSpecification> existingSubMSpecs, HashMap<MissionPlanSpecification, Boolean> existingMSpecToIsSharedInstance, HashMap<MissionPlanSpecification, HashMap<TaskSpecification, TaskSpecification>> existingMSpecTaskMap) {
         super(parent, modal);
@@ -78,40 +75,35 @@ public class SelectSubMissionD extends javax.swing.JDialog {
         setTitle("SelectSubMissionD");
     }
 
-    private void addComponent(JComponent component) {
-        rowParGroup1.addComponent(component);
-        colParGroupArr[row] = layout.createParallelGroup();
-        colParGroupArr[row].addComponent(component);
-        maxColWidth = Math.max(maxColWidth, (int) component.getPreferredSize().getWidth() + BUTTON_WIDTH);
-        cumulComponentHeight += Math.max((int) component.getPreferredSize().getHeight(), BUTTON_HEIGHT);
-        row++;
-    }
-
     private void initComponents() {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        layout = new GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        int numRows = 4;
-        rowSeqGroup = layout.createSequentialGroup();
-        rowParGroup1 = layout.createParallelGroup();
-        colSeqGroup = layout.createSequentialGroup();
-        colParGroupArr = new GroupLayout.ParallelGroup[numRows];
-        row = 0;
-        maxColWidth = BUTTON_WIDTH;
+
+        getContentPane().setLayout(new BorderLayout());
+
+        maxComponentWidth = BUTTON_WIDTH;
         cumulComponentHeight = 0;
 
-        existingMSpecP = new JPanel();
-        existingMSpecP.setLayout(new BoxLayout(existingMSpecP, BoxLayout.Y_AXIS));
+        existingSubMissionsP = new JPanel();
+        existingSubMissionsP.setLayout(new BoxLayout(existingSubMissionsP, BoxLayout.Y_AXIS));
         for (MissionPlanSpecification mSpec : subMSpecs) {
             SubMissionElementP mSpecP = new SubMissionElementP(mSpec);
-            existingMSpecP.add(mSpecP);
+            existingSubMissionsP.add(mSpecP);
         }
 
-        mSpecSP = new JScrollPane();
-        mSpecSP.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        mSpecSP.setViewportView(existingMSpecP);
-        addComponent(mSpecSP);
+        existingSubMissionsSP = new JScrollPane();
+        existingSubMissionsSP.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        existingSubMissionsSP.setViewportView(existingSubMissionsP);
+        cumulComponentHeight += Math.max(existingSubMissionsP.getPreferredSize().getHeight(), BUTTON_HEIGHT);
+        maxComponentWidth = Math.max(maxComponentWidth, existingSubMissionsP.getPreferredSize().width);
+        getContentPane().add(existingSubMissionsP, BorderLayout.NORTH);
 
+        JPanel buttonsP = new JPanel(new GridBagLayout());
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.gridy = 0;
+        constraints.gridx = 0;
+        constraints.weightx = 1.0;
+        
         newB = new javax.swing.JButton();
         newB.setText("Add New");
         newB.addActionListener(new java.awt.event.ActionListener() {
@@ -119,7 +111,11 @@ public class SelectSubMissionD extends javax.swing.JDialog {
                 newBActionPerformed(evt);
             }
         });
-        addComponent(newB);
+        newB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
+        cumulComponentHeight += Math.max(newB.getPreferredSize().getHeight(), BUTTON_HEIGHT);
+        maxComponentWidth = Math.max(maxComponentWidth, newB.getPreferredSize().width);
+        buttonsP.add(newB, constraints);
+        constraints.gridy = constraints.gridy + 1;
 
         okB = new javax.swing.JButton();
         okB.setText("OK");
@@ -128,7 +124,11 @@ public class SelectSubMissionD extends javax.swing.JDialog {
                 okBActionPerformed(evt);
             }
         });
-        addComponent(okB);
+        okB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
+        cumulComponentHeight += Math.max(okB.getPreferredSize().getHeight(), BUTTON_HEIGHT);
+        maxComponentWidth = Math.max(maxComponentWidth, okB.getPreferredSize().width);
+        buttonsP.add(okB, constraints);
+        constraints.gridy = constraints.gridy + 1;
 
         cancelB = new javax.swing.JButton();
         cancelB.setText("Cancel");
@@ -137,32 +137,24 @@ public class SelectSubMissionD extends javax.swing.JDialog {
                 cancelBActionPerformed(evt);
             }
         });
-        addComponent(cancelB);
+        cancelB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
+        cumulComponentHeight += Math.max(cancelB.getPreferredSize().getHeight(), BUTTON_HEIGHT);
+        maxComponentWidth = Math.max(maxComponentWidth, cancelB.getPreferredSize().width);
+        buttonsP.add(cancelB, constraints);
+        constraints.gridy = constraints.gridy + 1;
 
-        // Finish layout setup
-        layout.setHorizontalGroup(rowSeqGroup
-                //                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 1, Short.MAX_VALUE) // Spring to right-align
-                .addGroup(rowParGroup1));
-        for (int i = 0; i < colParGroupArr.length; i++) {
-            GroupLayout.ParallelGroup parGroup = colParGroupArr[i];
-            colSeqGroup.addGroup(parGroup);
-            if (i < colParGroupArr.length - 1) {
-                colSeqGroup.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE);
-                cumulComponentHeight += 6;
-            }
-        }
-        layout.setVerticalGroup(colSeqGroup);
+        getContentPane().add(buttonsP, BorderLayout.SOUTH);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         int screenWidth = gd.getDisplayMode().getWidth();
         int screenHeight = gd.getDisplayMode().getHeight();
-        maxColWidth = Math.min(maxColWidth, screenWidth);
+        maxComponentWidth = Math.min(maxComponentWidth, screenWidth);
         cumulComponentHeight = Math.min(cumulComponentHeight, screenHeight);
-        setSize(new Dimension(maxColWidth, cumulComponentHeight));
-        setPreferredSize(new Dimension(maxColWidth, cumulComponentHeight));
+        // Don't use cumulComponentHeight for now
+        setSize(new Dimension(maxComponentWidth, (int) (screenHeight * 0.9)));
+        setPreferredSize(new Dimension(maxComponentWidth, (int) (screenHeight * 0.9)));
 
-//        setPreferredSize(new Dimension(300, 300));
         validate();
     }
 
@@ -218,11 +210,10 @@ public class SelectSubMissionD extends javax.swing.JDialog {
     }
 
     private void refreshMSpecP() {
-        existingMSpecP.removeAll();
-//        existingMSpecP.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        existingSubMissionsP.removeAll();
         for (MissionPlanSpecification mSpec : subMSpecs) {
             SubMissionElementP mSpecP = new SubMissionElementP(mSpec);
-            existingMSpecP.add(mSpecP);
+            existingSubMissionsP.add(mSpecP);
         }
         validate();
         repaint();
@@ -239,34 +230,10 @@ public class SelectSubMissionD extends javax.swing.JDialog {
         }
 
         private void initComponents() {
+            setLayout(new BorderLayout());
+            
             setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
-//            modifyB = new JButton("Edit");
-//            modifyB.setPreferredSize(new Dimension(10, 10));
-//            modifyB.addActionListener(new ActionListener() {
-//
-//                @Override
-//                public void actionPerformed(ActionEvent ae) {
-//                    SubMissionD subMissionD = new SubMissionD(null, true, parentMSpec, subMMSpec, newMSpecTaskMap.get(subMMSpec));
-//                    subMissionD.setVisible(true);
-//
-//                    if (subMissionD.confirmedExit()) {
-//                        // Remove old entry
-//                        newSubMSpecs.remove(subMMSpec);
-//                        newMSpecTaskMap.remove(subMMSpec);
-//                        // Add new entry
-//                        if (subMissionD.getTaskMapMethod() == SubMissionD.TaskMapMethod.Event) {
-//                            MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) subMissionD.getSelectedMission()).getSubmissionInstance(subMissionD.getSelectedMission(), subMissionD.getNamePrefix(), subMissionD.getVariablePrefix());
-//                            newSubMSpecs.add(submissionSpec);
-//                        } else if (subMissionD.getTaskMapMethod() == SubMissionD.TaskMapMethod.Manual) {
-//                            MissionPlanSpecification submissionSpec = ((MissionPlanSpecification) subMissionD.getSelectedMission()).getSubmissionInstance(subMissionD.getSelectedMission(), subMissionD.getNamePrefix(), subMissionD.getVariablePrefix());
-//                            newSubMSpecs.add(submissionSpec);
-//                            newMSpecTaskMap.put(submissionSpec, subMissionD.getTaskMapping());
-//                        }
-//                        refreshMSpecP();
-//                    }
-//                }
-//            });
             deleteB = new JButton("Delete");
             deleteB.setPreferredSize(new Dimension(10, 10));
             deleteB.addActionListener(new ActionListener() {
@@ -280,9 +247,8 @@ public class SelectSubMissionD extends javax.swing.JDialog {
                 }
             });
 
-            add(new JLabel(subMMSpec.getName()));
-//            add(modifyB);
-            add(deleteB);
+            add(new JLabel(subMMSpec.getName()), BorderLayout.WEST);
+            add(deleteB, BorderLayout.EAST);
 
             pack();
         }

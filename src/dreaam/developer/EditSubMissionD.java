@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -17,14 +19,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
 import sami.mission.MissionPlanSpecification;
-import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.LayoutStyle;
 import sami.engine.Mediator;
 import sami.mission.TaskSpecification;
 
@@ -66,7 +65,7 @@ public class EditSubMissionD extends javax.swing.JDialog {
     private boolean okExit = false;
 
     // Scroll list for selecting plan to use as submission
-    private JLabel planLabel;
+    private JLabel planL;
     private JComboBox planCB;
     // Text field for specifying name prefix
     private JLabel namePrefixL;
@@ -89,14 +88,6 @@ public class EditSubMissionD extends javax.swing.JDialog {
     private JButton okB, cancelB;
 
     // Layout
-    private GroupLayout layout;
-    private GroupLayout.SequentialGroup rowSeqGroup;
-    private GroupLayout.ParallelGroup rowParGroup1;
-    private GroupLayout.SequentialGroup colSeqGroup;
-    private GroupLayout.ParallelGroup[] colParGroupArr;
-    private int row;
-    private int maxColWidth;
-    private int cumulComponentHeight;
     private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
 
@@ -104,7 +95,7 @@ public class EditSubMissionD extends javax.swing.JDialog {
         super(parent, modal);
         this.parentMSpec = parentMSpec;
         initComponents();
-        setTitle("SubMissionD");
+        setTitle("EditSubMissionD");
     }
 
     public EditSubMissionD(java.awt.Frame parent, boolean modal, MissionPlanSpecification parentMSpec, MissionPlanSpecification subMMSpec, boolean isSharedInstance, HashMap<TaskSpecification, TaskSpecification> taskMapping) {
@@ -126,31 +117,24 @@ public class EditSubMissionD extends javax.swing.JDialog {
         }
     }
 
-    private void addComponent(JComponent component) {
-        rowParGroup1.addComponent(component);
-        colParGroupArr[row] = layout.createParallelGroup();
-        colParGroupArr[row].addComponent(component);
-        component.setMaximumSize(new Dimension(Integer.MAX_VALUE, component.getPreferredSize().height));
-        maxColWidth = Math.max(maxColWidth, (int) component.getPreferredSize().getWidth() + BUTTON_WIDTH);
-        cumulComponentHeight += Math.max((int) component.getPreferredSize().getHeight(), BUTTON_HEIGHT);
-        row++;
-    }
-
     private void initComponents() {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        layout = new GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        int numRows = 13;
-        rowSeqGroup = layout.createSequentialGroup();
-        rowParGroup1 = layout.createParallelGroup();
-        colSeqGroup = layout.createSequentialGroup();
-        colParGroupArr = new GroupLayout.ParallelGroup[numRows];
-        row = 0;
-        maxColWidth = BUTTON_WIDTH;
-        cumulComponentHeight = 0;
+
+        getContentPane().setLayout(new BorderLayout());
+
+        JPanel definitionP = new JPanel(new GridBagLayout());
+        GridBagConstraints definitionConstraints = new GridBagConstraints();
+        definitionConstraints.gridx = 0;
+        definitionConstraints.gridy = 0;
+        definitionConstraints.fill = GridBagConstraints.BOTH;
+        definitionConstraints.weightx = 1.0;
+        definitionConstraints.weighty = 1.0;
 
         // Scroll list for selecting plan to use as submission
-        planLabel = new JLabel("Plan to use as sub mission");
+        planL = new JLabel("Plan to use as sub mission");
+        definitionP.add(planL, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
+
         planCB = new JComboBox(mediator.getProject().getRootMissionPlans().toArray());
         selectedMSpec = (MissionPlanSpecification) planCB.getSelectedItem();
         planCB.addActionListener(new ActionListener() {
@@ -165,29 +149,38 @@ public class EditSubMissionD extends javax.swing.JDialog {
                 updateTaskMapping();
             }
         });
-        addComponent(planLabel);
-        addComponent(planCB);
+        definitionP.add(planCB, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         // Text field for specifying name prefix
         namePrefixL = new JLabel("Text prefix for sub mission instance's name?");
+        definitionP.add(namePrefixL, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
+
         namePrefixTF = new JTextField("");
         namePrefixTF.addKeyListener(activityListener);
         namePrefixTF.addFocusListener(activityListener);
         namePrefixTF.addMouseListener(activityListener);
-        addComponent(namePrefixL);
-        addComponent(namePrefixTF);
+        definitionP.add(namePrefixTF, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         // Text field for specifying variable prefix
         variablePrefixL = new JLabel("Text prefix for sub mission instance's variables?");
+        definitionP.add(variablePrefixL, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
+
         variablePrefixTF = new JTextField("");
         variablePrefixTF.addKeyListener(activityListener);
         variablePrefixTF.addFocusListener(activityListener);
         variablePrefixTF.addMouseListener(activityListener);
-        addComponent(variablePrefixL);
-        addComponent(variablePrefixTF);
+        definitionP.add(variablePrefixTF, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         // Combo box for choosing task allocation method
         instantiationMethodL = new JLabel("Shared or individual sub-mission instances?");
+        definitionP.add(instantiationMethodL, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
+
         instantiationMethodCB = new JComboBox(InstantiationMethod.values());
         selectedInstantiationMethod = (InstantiationMethod) instantiationMethodCB.getSelectedItem();
         instantiationMethodCB.addActionListener(new ActionListener() {
@@ -200,11 +193,14 @@ public class EditSubMissionD extends javax.swing.JDialog {
                 selectedInstantiationMethod = (InstantiationMethod) instantiationMethodCB.getSelectedItem();
             }
         });
-        addComponent(instantiationMethodL);
-        addComponent(instantiationMethodCB);
+        definitionP.add(instantiationMethodCB, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         // Combo box for choosing task allocation method
         allocationMethodL = new JLabel("Task mapping method?");
+        definitionP.add(allocationMethodL, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
+
         taskMapMethodCB = new JComboBox(TaskMapMethod.values());
         selectedTaskMapMethod = (TaskMapMethod) taskMapMethodCB.getSelectedItem();
         taskMapMethodCB.addActionListener(new ActionListener() {
@@ -218,13 +214,22 @@ public class EditSubMissionD extends javax.swing.JDialog {
                 updateTaskMapping();
             }
         });
-        addComponent(allocationMethodL);
-        addComponent(taskMapMethodCB);
+        definitionP.add(taskMapMethodCB, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         // Combo boxes for mapping task tokens to sub mission (if appropriate)
         taskMappingL = new JLabel();
         taskMappingP = new JPanel(new BorderLayout());
-        addComponent(taskMappingP);
+        definitionP.add(taskMappingP, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
+
+        JPanel buttonsP = new JPanel(new GridBagLayout());
+        GridBagConstraints buttonConstraints = new GridBagConstraints();
+        buttonConstraints.gridx = 0;
+        buttonConstraints.gridy = 0;
+        buttonConstraints.fill = GridBagConstraints.BOTH;
+        buttonConstraints.weightx = 1.0;
+        buttonConstraints.weighty = 1.0;
 
         // Done
         okB = new javax.swing.JButton("OK");
@@ -234,8 +239,9 @@ public class EditSubMissionD extends javax.swing.JDialog {
                 okButtonActionPerformed(evt);
             }
         });
-
-        addComponent(okB);
+        okB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
+        buttonsP.add(okB, buttonConstraints);
+        buttonConstraints.gridy = buttonConstraints.gridy + 1;
 
         // Cancel
         cancelB = new javax.swing.JButton("Cancel");
@@ -244,32 +250,19 @@ public class EditSubMissionD extends javax.swing.JDialog {
                 cancelButtonActionPerformed(evt);
             }
         });
+        cancelB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
+        buttonsP.add(cancelB, buttonConstraints);
+        buttonConstraints.gridy = buttonConstraints.gridy + 1;
 
-        addComponent(cancelB);
-
-        // Finish layout setup
-        layout.setHorizontalGroup(rowSeqGroup
-                //                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 1, Short.MAX_VALUE) // Spring to right-align
-                .addGroup(rowParGroup1));
-        for (int i = 0; i < colParGroupArr.length; i++) {
-            GroupLayout.ParallelGroup parGroup = colParGroupArr[i];
-            colSeqGroup.addGroup(parGroup);
-            if (i < colParGroupArr.length - 1) {
-                colSeqGroup.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE);
-                cumulComponentHeight += 6;
-            }
-        }
-        layout.setVerticalGroup(colSeqGroup);
+        getContentPane().add(definitionP, BorderLayout.NORTH);
+        getContentPane().add(buttonsP, BorderLayout.SOUTH);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        int screenWidth = gd.getDisplayMode().getWidth();
         int screenHeight = gd.getDisplayMode().getHeight();
-        maxColWidth = Math.min(maxColWidth, screenWidth);
-        cumulComponentHeight = Math.min(cumulComponentHeight, screenHeight);
-        setSize(new Dimension(maxColWidth, cumulComponentHeight));
-        setPreferredSize(new Dimension(maxColWidth, cumulComponentHeight));
-        validate();
+        setPreferredSize(new Dimension(getPreferredSize().width, (int) (screenHeight * 0.9)));
+
+        pack();
     }
 
     private void checkValidity() {

@@ -29,8 +29,6 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
     private boolean okExit = false;
 
     // Layout
-    private int maxComponentWidth;
-    private int cumulComponentHeight;
     private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
 
@@ -55,11 +53,9 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
 
         getContentPane().setLayout(new BorderLayout());
 
-        maxComponentWidth = BUTTON_WIDTH;
-        cumulComponentHeight = 0;
-
         existingVariablesP = new JPanel();
         existingVariablesP.setLayout(new BoxLayout(existingVariablesP, BoxLayout.Y_AXIS));
+        
         for (String variable : variables.keySet()) {
             VariableP globalVariableP = new VariableP(variable);
             existingVariablesP.add(globalVariableP);
@@ -68,16 +64,15 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         existingVariablesSP = new JScrollPane();
         existingVariablesSP.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         existingVariablesSP.setViewportView(existingVariablesP);
-        cumulComponentHeight += Math.max(existingVariablesSP.getPreferredSize().getHeight(), BUTTON_HEIGHT);
-        maxComponentWidth = Math.max(maxComponentWidth, existingVariablesSP.getPreferredSize().width);
         getContentPane().add(existingVariablesSP, BorderLayout.NORTH);
 
         JPanel buttonsP = new JPanel(new GridBagLayout());
         GridBagConstraints constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.gridy = 0;
-        constraints.gridx = 0;
-        constraints.weightx = 1.0;
+            constraints.gridx = 0;
+            constraints.gridy = 0;
+            constraints.fill = GridBagConstraints.BOTH;
+            constraints.weightx = 1.0;
+            constraints.weighty = 1.0;
 
         newB = new javax.swing.JButton();
         newB.setText("Add New");
@@ -86,9 +81,7 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
                 newBActionPerformed(evt);
             }
         });
-        newB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
-        cumulComponentHeight += Math.max(newB.getPreferredSize().getHeight(), BUTTON_HEIGHT);
-        maxComponentWidth = Math.max(maxComponentWidth, newB.getPreferredSize().width);
+        newB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
         buttonsP.add(newB, constraints);
         constraints.gridy = constraints.gridy + 1;
 
@@ -99,9 +92,7 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
                 okBActionPerformed(evt);
             }
         });
-        okB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
-        cumulComponentHeight += Math.max(okB.getPreferredSize().getHeight(), BUTTON_HEIGHT);
-        maxComponentWidth = Math.max(maxComponentWidth, okB.getPreferredSize().width);
+        okB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
         buttonsP.add(okB, constraints);
         constraints.gridy = constraints.gridy + 1;
 
@@ -112,9 +103,7 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
                 cancelBActionPerformed(evt);
             }
         });
-        cancelB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
-        cumulComponentHeight += Math.max(cancelB.getPreferredSize().getHeight(), BUTTON_HEIGHT);
-        maxComponentWidth = Math.max(maxComponentWidth, cancelB.getPreferredSize().width);
+        cancelB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
         buttonsP.add(cancelB, constraints);
         constraints.gridy = constraints.gridy + 1;
 
@@ -122,15 +111,10 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        int screenWidth = gd.getDisplayMode().getWidth();
         int screenHeight = gd.getDisplayMode().getHeight();
-        maxComponentWidth = Math.min(maxComponentWidth, screenWidth);
-        cumulComponentHeight = Math.min(cumulComponentHeight, screenHeight);
-        // Don't use cumulComponentHeight for now
-        setSize(new Dimension(maxComponentWidth, (int) (screenHeight * 0.9)));
-        setPreferredSize(new Dimension(maxComponentWidth, (int) (screenHeight * 0.9)));
+        setPreferredSize(new Dimension(getPreferredSize().width, (int) (screenHeight * 0.9)));
 
-        validate();
+        pack();
     }
 
     private void newBActionPerformed(java.awt.event.ActionEvent evt) {

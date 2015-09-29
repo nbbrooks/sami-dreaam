@@ -5,6 +5,8 @@ import sami.event.ReflectedEventSpecification;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -20,7 +22,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -49,12 +50,11 @@ public class ReflectedEventD extends javax.swing.JDialog {
     };
 
     private final static Logger LOGGER = Logger.getLogger(ReflectedEventD.class.getName());
+    private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
-    private final static int BORDER = 5;
-    private int maxComponentWidth = 100;
     private JScrollPane scrollPane;
     private JPanel paramsPanel;
-    private JButton okButton;
+    private JButton okB;
     // Class held by event spec
     private Class eventClass = null;
     private EventType eventType;
@@ -114,10 +114,11 @@ public class ReflectedEventD extends javax.swing.JDialog {
             LOGGER.info("ReflectedEventD adding fields for " + eventSpec + ", fields: " + fieldNames.toString());
 
             GridBagConstraints paramsConstraints = new GridBagConstraints();
-            paramsConstraints.fill = GridBagConstraints.HORIZONTAL;
-            paramsConstraints.gridy = 0;
             paramsConstraints.gridx = 0;
+            paramsConstraints.gridy = 0;
+            paramsConstraints.fill = GridBagConstraints.BOTH;
             paramsConstraints.weightx = 1.0;
+            paramsConstraints.weighty = 1.0;
 
             for (String fieldName : fieldNames) {
                 final Field field = ReflectionHelper.getField(eventClass, fieldName);
@@ -130,10 +131,11 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 fieldPanel.setBorder(BorderFactory.createLineBorder(Color.black));
 
                 GridBagConstraints fieldConstraints = new GridBagConstraints();
-                fieldConstraints.fill = GridBagConstraints.HORIZONTAL;
-                fieldConstraints.gridy = 0;
                 fieldConstraints.gridx = 0;
+                fieldConstraints.gridy = 0;
+                fieldConstraints.fill = GridBagConstraints.BOTH;
                 fieldConstraints.weightx = 1.0;
+                fieldConstraints.weighty = 1.0;
 
                 // Add description for this field
                 JLabel description = new JLabel(fieldNameToDescription.get(fieldName), SwingConstants.LEFT);
@@ -143,7 +145,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
 
                 // Add combo box for selecting variable name
                 JLabel cbL = new JLabel("Read variable name");
-                maxComponentWidth = Math.max(maxComponentWidth, cbL.getPreferredSize().width);
                 fieldPanel.add(cbL, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 addVariableComboBox(field, fieldNameToReadVariable, fieldPanel, fieldConstraints);
@@ -151,7 +152,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
 
                 // Add component for defining value
                 JLabel definitionL = new JLabel("Definition");
-                maxComponentWidth = Math.max(maxComponentWidth, definitionL.getPreferredSize().width);
                 fieldPanel.add(definitionL, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 addValueComponent(field, fieldNameToValue, fieldPanel, fieldConstraints);
@@ -159,7 +159,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
 
                 // Add text field for saving defined value to variable
                 JLabel writeL = new JLabel("Write variable name");
-                maxComponentWidth = Math.max(maxComponentWidth, writeL.getPreferredSize().width);
                 fieldPanel.add(writeL, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 addVariableTextField(field, fieldNameToWriteVariable, fieldPanel, fieldConstraints);
@@ -167,14 +166,12 @@ public class ReflectedEventD extends javax.swing.JDialog {
 
                 // Add toggle button for setting ability to edit field at run-time
                 JLabel editableL = new JLabel("Definition editable at run-time?");
-                maxComponentWidth = Math.max(maxComponentWidth, editableL.getPreferredSize().width);
                 fieldPanel.add(editableL, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 addEditableButton(field, fieldNameToEditable, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 // Add fieldPanel to paramsPanel
-                maxComponentWidth = Math.max(maxComponentWidth, fieldPanel.getPreferredSize().width);
                 paramsPanel.add(fieldPanel, paramsConstraints);
                 paramsConstraints.gridy = paramsConstraints.gridy + 1;
 
@@ -198,15 +195,15 @@ public class ReflectedEventD extends javax.swing.JDialog {
                     variablePanel.setBorder(BorderFactory.createLineBorder(Color.black));
 
                     GridBagConstraints variableConstraints = new GridBagConstraints();
-                    variableConstraints.fill = GridBagConstraints.HORIZONTAL;
-                    variableConstraints.gridy = 0;
                     variableConstraints.gridx = 0;
+                    variableConstraints.gridy = 0;
+                    variableConstraints.fill = GridBagConstraints.BOTH;
                     variableConstraints.weightx = 1.0;
+                    variableConstraints.weighty = 1.0;
 
                     // Add description for this field
                     JLabel description = new JLabel(variableNameToDescription.get(variableFieldName), SwingConstants.LEFT);
                     description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
-                    maxComponentWidth = Math.max(maxComponentWidth, description.getPreferredSize().width);
                     variablePanel.add(description, variableConstraints);
                     variableConstraints.gridy = variableConstraints.gridy + 1;
 
@@ -215,7 +212,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
                     variableConstraints.gridy = variableConstraints.gridy + 1;
 
                     // Add variablePanel to paramsPanel
-                    maxComponentWidth = Math.max(maxComponentWidth, variablePanel.getPreferredSize().width);
                     paramsPanel.add(variablePanel, paramsConstraints);
                     paramsConstraints.gridy = paramsConstraints.gridy + 1;
 
@@ -241,7 +237,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
             textField.setText(fieldNameToWriteVariable.get(field.getName()));
         }
         fieldToVariableTF.put(field, textField);
-        maxComponentWidth = Math.max(maxComponentWidth, textField.getPreferredSize().width);
         panel.add(textField, constraints);
     }
 
@@ -259,7 +254,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
         }
         fieldToVariableCB.put(field, comboBox);
         variableCBToField.put(comboBox, field);
-        maxComponentWidth = Math.max(maxComponentWidth, comboBox.getPreferredSize().width);
         panel.add(comboBox, constraints);
         comboBox.addItemListener(variableSelectedListener);
     }
@@ -300,13 +294,13 @@ public class ReflectedEventD extends javax.swing.JDialog {
                         recursionPanel.setBorder(BorderFactory.createLineBorder(Color.black));
 
                         GridBagConstraints recursionConstraints = new GridBagConstraints();
-                        recursionConstraints.fill = GridBagConstraints.HORIZONTAL;
-                        recursionConstraints.gridy = 0;
                         recursionConstraints.gridx = 0;
+                        recursionConstraints.gridy = 0;
+                        recursionConstraints.fill = GridBagConstraints.BOTH;
                         recursionConstraints.weightx = 1.0;
+                        recursionConstraints.weighty = 1.0;
 
                         JLabel recursionL = new JLabel(field.getName() + " (" + field.getType().getSimpleName() + ")");
-                        maxComponentWidth = Math.max(maxComponentWidth, recursionL.getPreferredSize().width);
                         recursionPanel.add(recursionL, recursionConstraints);
                         recursionConstraints.gridy = recursionConstraints.gridy + 1;
 
@@ -321,7 +315,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 }
             }
         }
-        maxComponentWidth = Math.max(maxComponentWidth, visualization.getPreferredSize().width);
         panel.add(visualization, constraints);
         constraints.gridy = constraints.gridy + 1;
     }
@@ -383,7 +376,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
             }
         });
         fieldToEditableB.put(field, enableEditB);
-        maxComponentWidth = Math.max(maxComponentWidth, enableEditB.getPreferredSize().width);
         panel.add(enableEditB, constraints);
     }
 
@@ -416,25 +408,24 @@ public class ReflectedEventD extends javax.swing.JDialog {
         scrollPane = new JScrollPane(paramsPanel);
         scrollPane.setPreferredSize(paramsPanel.getPreferredSize());
 
-        okButton = new javax.swing.JButton();
-        okButton.setText("OK");
-        okButton.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
-        okButton.addActionListener(new java.awt.event.ActionListener() {
+        okB = new javax.swing.JButton();
+        okB.setText("OK");
+        okB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
+        okB.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 okButtonActionPerformed(evt);
             }
         });
-        BorderLayout okLayout = new BorderLayout(BORDER, BORDER);
-        JPanel okPanel = new JPanel(okLayout);
-        okPanel.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
-        okPanel.setMaximumSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
-        okPanel.add(okButton);
 
-        BoxLayout paneLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
-        getContentPane().setLayout(paneLayout);
-        getContentPane().setPreferredSize(new Dimension(maxComponentWidth + 8 * BORDER, 600));
-        getContentPane().add(scrollPane);
-        getContentPane().add(okPanel);
+        getContentPane().setLayout(new BorderLayout());
+        getContentPane().add(scrollPane, BorderLayout.NORTH);
+        getContentPane().add(okB, BorderLayout.SOUTH);
+
+        // Adjust dialog size
+        GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        int screenHeight = gd.getDisplayMode().getHeight();
+        setPreferredSize(new Dimension(getPreferredSize().width, (int) (screenHeight * 0.9)));
+
         pack();
     }
 
@@ -444,9 +435,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
      */
     private void okButtonActionPerformed(java.awt.event.ActionEvent evt) {
         HashMap<String, Object> fieldNameToValue = getValuesFromComponents();
-        
-        System.out.println("fieldNameToValue: " + fieldNameToValue.toString());
-        
+
         eventSpec.setFieldValues(fieldNameToValue);
         HashMap<String, String> fieldNameToReadVariable = getReadVariablesFromComponents();
         eventSpec.setReadVariables(fieldNameToReadVariable);
@@ -464,8 +453,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
      * @return HashMap of field names to defined, non-null values
      */
     private HashMap<String, Object> getValuesFromComponents() {
-        System.out.println("getValuesFromComponents:  " + fieldToValueComponent.toString());
-
         HashMap<String, Object> fieldNameToObject = new HashMap<String, Object>();
         for (Field field : fieldToValueComponent.keySet()) {
             JComboBox variableComboBox = fieldToVariableCB.get(field);
@@ -477,8 +464,6 @@ public class ReflectedEventD extends javax.swing.JDialog {
                     Object value = UiComponentGenerator.getInstance().getComponentValue(markupComponent, field.getType());
                     if (value != null) {
                         fieldNameToObject.put(field.getName(), value);
-                        
-                        System.out.println("\t field " + field.getName() + "\t" + value);
                     }
                 }
             }

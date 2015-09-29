@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -46,7 +45,6 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
     private final static Logger LOGGER = Logger.getLogger(EditGlobalVariableD.class.getName());
     private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
-    private int maxComponentWidth;
     private JScrollPane scrollPane;
     private JPanel paramsP;
 
@@ -124,18 +122,17 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         //  1- Single component which supports creation of the root class
         //  2- Multiple components which support creation of all the fields and sub-fields (if necessary) within the recursion limit
         foundComponents = true;
-        maxComponentWidth = BUTTON_WIDTH;
 
         GridBagConstraints paramsConstraints = new GridBagConstraints();
-        paramsConstraints.fill = GridBagConstraints.HORIZONTAL;
-        paramsConstraints.gridy = 0;
         paramsConstraints.gridx = 0;
+        paramsConstraints.gridy = 0;
+        paramsConstraints.fill = GridBagConstraints.BOTH;
         paramsConstraints.weightx = 1.0;
+        paramsConstraints.weighty = 1.0;
 
         rootComponent = getRootValueComponent(selectedClass, value, newInstance);
         if (rootComponent != null && rootComponent.getComponent() != null) {
             // Option 1- Single component which supports creation of the root class
-            maxComponentWidth = Math.max(maxComponentWidth, rootComponent.getComponent().getPreferredSize().width);
             paramsP.add(rootComponent.getComponent(), paramsConstraints);
             paramsConstraints.gridy = paramsConstraints.gridy + 1;
         } else {
@@ -147,13 +144,13 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
             recursionPanel.setBorder(BorderFactory.createLineBorder(Color.black));
 
             GridBagConstraints recursionConstraints = new GridBagConstraints();
-            recursionConstraints.fill = GridBagConstraints.HORIZONTAL;
-            recursionConstraints.gridy = 0;
             recursionConstraints.gridx = 0;
+            recursionConstraints.gridy = 0;
+            recursionConstraints.fill = GridBagConstraints.BOTH;
             recursionConstraints.weightx = 1.0;
+            recursionConstraints.weighty = 1.0;
 
             JLabel recursionL = new JLabel(selectedClass.getSimpleName());
-            maxComponentWidth = Math.max(maxComponentWidth, recursionL.getPreferredSize().width);
             recursionPanel.add(recursionL, recursionConstraints);
             recursionConstraints.gridy = recursionConstraints.gridy + 1;
 
@@ -167,7 +164,6 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
             }
             if (foundComponents) {
                 // Was able to find components for all subfields without hitting recursion limit
-                maxComponentWidth = Math.max(maxComponentWidth, recursionPanel.getPreferredSize().width);
                 paramsP.add(recursionPanel, paramsConstraints);
                 paramsConstraints.gridy = paramsConstraints.gridy + 1;
             }
@@ -205,13 +201,13 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
                         recursionPanel.setBorder(BorderFactory.createLineBorder(Color.black));
 
                         GridBagConstraints recursionConstraints = new GridBagConstraints();
-                        recursionConstraints.fill = GridBagConstraints.HORIZONTAL;
-                        recursionConstraints.gridy = 0;
                         recursionConstraints.gridx = 0;
+                        recursionConstraints.gridy = 0;
+                        recursionConstraints.fill = GridBagConstraints.BOTH;
                         recursionConstraints.weightx = 1.0;
+                        recursionConstraints.weighty = 1.0;
 
                         JLabel recursionL = new JLabel(field.getName() + " (" + field.getType().getSimpleName() + ")");
-                        maxComponentWidth = Math.max(maxComponentWidth, recursionL.getPreferredSize().width);
                         recursionPanel.add(recursionL, recursionConstraints);
                         recursionConstraints.gridy = recursionConstraints.gridy + 1;
 
@@ -233,7 +229,6 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         }
         panel.add(new JLabel(field.getName()), constraints);
         constraints.gridy = constraints.gridy + 1;
-        maxComponentWidth = Math.max(maxComponentWidth, visualization.getPreferredSize().width);
         panel.add(visualization, constraints);
         constraints.gridy = constraints.gridy + 1;
     }
@@ -290,38 +285,29 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
 
         getContentPane().setLayout(new BorderLayout());
 
-        JPanel definitionP = new JPanel();
-        definitionP.setLayout(new BoxLayout(definitionP, BoxLayout.Y_AXIS));
+        JPanel definitionP = new JPanel(new GridBagLayout());
         GridBagConstraints definitionConstraints = new GridBagConstraints();
-        definitionConstraints.fill = GridBagConstraints.HORIZONTAL;
-        definitionConstraints.gridy = 0;
         definitionConstraints.gridx = 0;
+        definitionConstraints.gridy = 0;
+        definitionConstraints.fill = GridBagConstraints.BOTH;
         definitionConstraints.weightx = 1.0;
+        definitionConstraints.weighty = 1.0;
 
         // Text field for specifying variable name
         nameL = new JLabel("Variable name?");
-        maxComponentWidth = Math.max(maxComponentWidth, nameL.getPreferredSize().width);
-        // Doing this because it is doing odd centering otherwise
-        JPanel nameP = new JPanel(new BorderLayout());
-        nameP.add(nameL, BorderLayout.WEST);
-        definitionP.add(nameP);
+        definitionP.add(nameL, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         nameTF = new JTextField("");
         nameTF.addKeyListener(activityListener);
         nameTF.addFocusListener(activityListener);
         nameTF.addMouseListener(activityListener);
-        maxComponentWidth = Math.max(maxComponentWidth, nameTF.getPreferredSize().width);
-        definitionP.add(nameTF);
+        definitionP.add(nameTF, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         // Combo box for choosing variable class
         classL = new JLabel("Variable class?");
-        maxComponentWidth = Math.max(maxComponentWidth, classL.getPreferredSize().width);
-        // Doing this because it is doing odd centering otherwise
-        JPanel classP = new JPanel(new BorderLayout());
-        classP.add(classL, BorderLayout.WEST);
-        definitionP.add(classP);
+        definitionP.add(classL, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         ArrayList<Class> creationClasses = UiComponentGenerator.getInstance().getCreationClasses();
@@ -342,8 +328,7 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
                 lookForCreationComponents();
             }
         });
-        maxComponentWidth = Math.max(maxComponentWidth, classCB.getPreferredSize().width);
-        definitionP.add(classCB);
+        definitionP.add(classCB, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         // Component(s) for defining the variable
@@ -351,41 +336,37 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         paramsP.setLayout(new GridBagLayout());
         addParamComponents();
         scrollPane = new JScrollPane(paramsP);
-        maxComponentWidth = Math.max(maxComponentWidth, scrollPane.getPreferredSize().width);
-        definitionP.add(scrollPane);
+        definitionP.add(scrollPane, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         JPanel buttonsP = new JPanel(new GridBagLayout());
         GridBagConstraints buttonConstraints = new GridBagConstraints();
-        buttonConstraints.fill = GridBagConstraints.HORIZONTAL;
-        buttonConstraints.gridy = 0;
         buttonConstraints.gridx = 0;
+        buttonConstraints.gridy = 0;
+        buttonConstraints.fill = GridBagConstraints.BOTH;
         buttonConstraints.weightx = 1.0;
+        buttonConstraints.weighty = 1.0;
 
-        okB = new javax.swing.JButton();
+        okB = new javax.swing.JButton("OK");
         okB.addKeyListener(activityListener);
         okB.addFocusListener(activityListener);
         okB.addMouseListener(activityListener);
-        okB.setText("OK");
-        okB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
+        okB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
         okB.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 okButtonActionPerformed(evt);
             }
         });
-        maxComponentWidth = Math.max(maxComponentWidth, okB.getPreferredSize().width);
         buttonsP.add(okB, buttonConstraints);
         buttonConstraints.gridy = buttonConstraints.gridy + 1;
 
-        cancelB = new javax.swing.JButton();
-        cancelB.setText("Cancel");
-        cancelB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
+        cancelB = new javax.swing.JButton("Cancel");
+        cancelB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
         cancelB.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cancelButtonActionPerformed(evt);
             }
         });
-        maxComponentWidth = Math.max(maxComponentWidth, cancelB.getPreferredSize().width);
         buttonsP.add(cancelB, buttonConstraints);
         buttonConstraints.gridy = buttonConstraints.gridy + 1;
 
@@ -394,11 +375,8 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        int screenWidth = gd.getDisplayMode().getWidth();
         int screenHeight = gd.getDisplayMode().getHeight();
-        maxComponentWidth = Math.min(maxComponentWidth, screenWidth);
-        // Don't use cumulComponentHeight for now
-        setPreferredSize(new Dimension(maxComponentWidth, (int) (screenHeight * 0.9)));
+        setPreferredSize(new Dimension(getPreferredSize().width, (int) (screenHeight * 0.9)));
 
         pack();
     }

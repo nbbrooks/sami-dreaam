@@ -3,6 +3,8 @@ package dreaam.developer;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -14,7 +16,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -39,12 +40,11 @@ import sami.uilanguage.MarkupComponent;
 public class ReflectedMarkupD extends javax.swing.JDialog {
 
     private final static Logger LOGGER = Logger.getLogger(ReflectedMarkupD.class.getName());
+    final static int BUTTON_WIDTH = 250;
     final static int BUTTON_HEIGHT = 50;
-    final static int BORDER = 5;
-    int maxComponentWidth = 100;
     private JScrollPane scrollPane;
     private JPanel paramsPanel;
-    private JButton okButton;
+    private JButton okB;
     private HashMap<String, JPanel> enumFieldNameToPanel;
     private HashMap<String, JComboBox> enumFieldNameToCombo;
     private HashMap<String, HashMap<String, JPanel>> enumToConstantToPanel;
@@ -100,10 +100,11 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
             HashMap<String, String> enumNameToDescription = (HashMap<String, String>) (markupClass.getField("enumNameToDescription").get(null));
 
             GridBagConstraints constraints = new GridBagConstraints();
-            constraints.fill = GridBagConstraints.HORIZONTAL;
-            constraints.gridy = 0;
             constraints.gridx = 0;
+            constraints.gridy = 0;
+            constraints.fill = GridBagConstraints.BOTH;
             constraints.weightx = 1.0;
+            constraints.weighty = 1.0;
 
             // Add components for each Markup enums
             for (String enumFieldName : enumFieldNames) {
@@ -132,13 +133,11 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
                         // Add description for this enum to panel
                         JLabel description = new JLabel(enumNameToDescription.get(enumField.getName()), SwingConstants.LEFT);
                         description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
-                        maxComponentWidth = Math.max(maxComponentWidth, description.getPreferredSize().width);
                         paramsPanel.add(description, constraints);
                         constraints.gridy = constraints.gridy + 1;
 
                         // Add combo box of the enum's possible values
                         JComboBox comboBox = new JComboBox(enumField.getType().getEnumConstants());
-                        maxComponentWidth = Math.max(maxComponentWidth, comboBox.getPreferredSize().width);
                         paramsPanel.add(comboBox, constraints);
                         constraints.gridy = constraints.gridy + 1;
                         enumFieldNameToCombo.put(enumFieldName, comboBox);
@@ -146,7 +145,6 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
                         // Add panel for each enum constant to handle the associated MarkupOption (if there is one)
                         for (Object constant : enumField.getType().getEnumConstants()) {
                             JPanel constantPanel = constructConstantPanel(enumField, constant);
-                            maxComponentWidth = Math.max(maxComponentWidth, constantPanel.getPreferredSize().width);
                             paramsPanel.add(constantPanel, constraints);
                             constraints.gridy = constraints.gridy + 1;
                         }
@@ -295,10 +293,11 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
             HashMap<String, String> optionFieldNameToDescription = (HashMap<String, String>) (optionClass.getField("fieldNameToDescription").get(null));
 
             GridBagConstraints constraints = new GridBagConstraints();
-            constraints.fill = GridBagConstraints.HORIZONTAL;
-            constraints.gridy = 0;
             constraints.gridx = 0;
+            constraints.gridy = 0;
+            constraints.fill = GridBagConstraints.BOTH;
             constraints.weightx = 1.0;
+            constraints.weighty = 1.0;
 
             // Get stored reflected option spec for the MarkupOption field associated with this value of the enum
             String fieldNameForConstant = enumValueToFieldName.get((Enum) constant);
@@ -370,7 +369,6 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
                 }
             }
         }
-        maxComponentWidth = Math.max(maxComponentWidth, comboBox.getPreferredSize().width);
         constantPanel.add(comboBox, constraints);
         enumToConstantToFieldToCombo.get(enumName).get(enumValueName).put(optionField, comboBox);
     }
@@ -420,7 +418,6 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
             enumToConstantToFieldToComp.get(enumName).get(constantName).put(optionField, markupComponent);
             visualization = markupComponent.getComponent();
         }
-        maxComponentWidth = Math.max(maxComponentWidth, visualization.getPreferredSize().width);
         constantPanel.add(visualization, constraints);
     }
 
@@ -431,35 +428,31 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
         if (fieldNameToDefinition == null) {
             fieldNameToDefinition = new HashMap<String, Object>();
         }
-        paramsPanel = new javax.swing.JPanel();
-        BoxLayout paramsLayout = new BoxLayout(paramsPanel, BoxLayout.Y_AXIS);
-        paramsPanel.setLayout(paramsLayout);
-        paramsPanel.setLayout(new GridBagLayout());
+        paramsPanel = new javax.swing.JPanel(new GridBagLayout());
         addComponents();
         paramsPanel.revalidate();
 
         scrollPane = new JScrollPane(paramsPanel);
         scrollPane.setPreferredSize(paramsPanel.getPreferredSize());
 
-        okButton = new javax.swing.JButton();
-        okButton.setText("OK");
-        okButton.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
-        okButton.addActionListener(new java.awt.event.ActionListener() {
+        okB = new javax.swing.JButton();
+        okB.setText("OK");
+        okB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
+        okB.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 okButtonActionPerformed(evt);
             }
         });
-        BorderLayout okLayout = new BorderLayout(BORDER, BORDER);
-        JPanel okPanel = new JPanel(okLayout);
-        okPanel.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
-        okPanel.setMaximumSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
-        okPanel.add(okButton);
 
-        BoxLayout paneLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
-        getContentPane().setLayout(paneLayout);
-        getContentPane().setPreferredSize(new Dimension(maxComponentWidth + 8 * BORDER, 600));
-        getContentPane().add(scrollPane);
-        getContentPane().add(okPanel);
+        getContentPane().setLayout(new GridBagLayout());
+        getContentPane().add(scrollPane, BorderLayout.NORTH);
+        getContentPane().add(okB, BorderLayout.SOUTH);
+
+        // Adjust dialog size
+        GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        int screenHeight = gd.getDisplayMode().getHeight();
+        setPreferredSize(new Dimension(getPreferredSize().width, (int) (screenHeight * 0.9)));
+
         pack();
     }
 
