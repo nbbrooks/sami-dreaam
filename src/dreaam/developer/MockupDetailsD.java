@@ -40,7 +40,7 @@ import sami.mission.MockupTransition.MockupIeStatus;
 public class MockupDetailsD extends javax.swing.JDialog {
 
     private static final Logger LOGGER = Logger.getLogger(MockupDetailsD.class.getName());
-    final static int BUTTON_WIDTH = 100;
+    final static int BUTTON_WIDTH = 250;
     final static int BUTTON_HEIGHT = 50;
     private JScrollPane scrollPane;
     JPanel panel;

@@ -265,10 +265,12 @@ public class ReflectedEventD extends javax.swing.JDialog {
     }
 
     protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToValue, JPanel panel, GridBagConstraints constraints) {
+        System.out.println("addValueComponent " + field.getName());
         addValueComponent(field, fieldNameToValue, panel, constraints, 0);
     }
 
     protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToValue, JPanel panel, GridBagConstraints constraints, int recursionDepth) {
+        System.out.println("addValueComponent " + field.getName() + " " + recursionDepth);
         JComponent visualization = null;
         if (recursionDepth > 3) {
             visualization = new JLabel(field.getName() + " (" + field.getType().getSimpleName() + "): No component - max recursion", SwingConstants.LEFT);
@@ -441,8 +443,10 @@ public class ReflectedEventD extends javax.swing.JDialog {
      * @param evt
      */
     private void okButtonActionPerformed(java.awt.event.ActionEvent evt) {
-        setVisible(false);
         HashMap<String, Object> fieldNameToValue = getValuesFromComponents();
+        
+        System.out.println("fieldNameToValue: " + fieldNameToValue.toString());
+        
         eventSpec.setFieldValues(fieldNameToValue);
         HashMap<String, String> fieldNameToReadVariable = getReadVariablesFromComponents();
         eventSpec.setReadVariables(fieldNameToReadVariable);
@@ -450,6 +454,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
         eventSpec.setWriteVariables(fieldNameToWriteVariable);
         HashMap<String, Boolean> fieldNameToEditable = getEditableFromComponents(fieldNameToValue, fieldNameToReadVariable);
         eventSpec.setEditableFields(fieldNameToEditable);
+        setVisible(false);
     }
 
     /**
@@ -459,6 +464,8 @@ public class ReflectedEventD extends javax.swing.JDialog {
      * @return HashMap of field names to defined, non-null values
      */
     private HashMap<String, Object> getValuesFromComponents() {
+        System.out.println("getValuesFromComponents:  " + fieldToValueComponent.toString());
+
         HashMap<String, Object> fieldNameToObject = new HashMap<String, Object>();
         for (Field field : fieldToValueComponent.keySet()) {
             JComboBox variableComboBox = fieldToVariableCB.get(field);
@@ -470,6 +477,8 @@ public class ReflectedEventD extends javax.swing.JDialog {
                     Object value = UiComponentGenerator.getInstance().getComponentValue(markupComponent, field.getType());
                     if (value != null) {
                         fieldNameToObject.put(field.getName(), value);
+                        
+                        System.out.println("\t field " + field.getName() + "\t" + value);
                     }
                 }
             }

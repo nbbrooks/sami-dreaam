@@ -1,8 +1,11 @@
 package dreaam.developer;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -12,7 +15,7 @@ import javax.swing.*;
 
 /**
  * Dialogue for adding, removing, and modifying global variables
-
+ *
  * @author nbb
  */
 public class SelectGlobalVariableD extends javax.swing.JDialog {
@@ -26,19 +29,13 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
     private boolean okExit = false;
 
     // Layout
-    private GroupLayout layout;
-    private GroupLayout.SequentialGroup rowSeqGroup;
-    private GroupLayout.ParallelGroup rowParGroup1;
-    private GroupLayout.SequentialGroup colSeqGroup;
-    private GroupLayout.ParallelGroup[] colParGroupArr;
-    private int row;
-    private int maxColWidth;
+    private int maxComponentWidth;
     private int cumulComponentHeight;
-    private final static int BUTTON_WIDTH = 100;
+    private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
 
-    private JScrollPane mSpecSP;
-    private JPanel existingVariableP;
+    private JScrollPane existingVariablesSP;
+    private JPanel existingVariablesP;
 
     public SelectGlobalVariableD(java.awt.Frame parent, boolean modal, HashMap<String, Object> existingVariables) {
         super(parent, modal);
@@ -53,39 +50,34 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         setTitle("SelectGlobalVariableD");
     }
 
-    private void addComponent(JComponent component) {
-        rowParGroup1.addComponent(component);
-        colParGroupArr[row] = layout.createParallelGroup();
-        colParGroupArr[row].addComponent(component);
-        maxColWidth = Math.max(maxColWidth, (int) component.getPreferredSize().getWidth() + BUTTON_WIDTH);
-        cumulComponentHeight += Math.max((int) component.getPreferredSize().getHeight(), BUTTON_HEIGHT);
-        row++;
-    }
-
     private void initComponents() {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        layout = new GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        int numRows = 4;
-        rowSeqGroup = layout.createSequentialGroup();
-        rowParGroup1 = layout.createParallelGroup();
-        colSeqGroup = layout.createSequentialGroup();
-        colParGroupArr = new GroupLayout.ParallelGroup[numRows];
-        row = 0;
-        maxColWidth = BUTTON_WIDTH;
+
+        getContentPane().setLayout(new BorderLayout());
+
+        maxComponentWidth = BUTTON_WIDTH;
         cumulComponentHeight = 0;
 
-        existingVariableP = new JPanel();
-        existingVariableP.setLayout(new BoxLayout(existingVariableP, BoxLayout.Y_AXIS));
+        existingVariablesP = new JPanel();
+        existingVariablesP.setLayout(new BoxLayout(existingVariablesP, BoxLayout.Y_AXIS));
         for (String variable : variables.keySet()) {
-            VariableP mSpecP = new VariableP(variable);
-            existingVariableP.add(mSpecP);
+            VariableP globalVariableP = new VariableP(variable);
+            existingVariablesP.add(globalVariableP);
         }
 
-        mSpecSP = new JScrollPane();
-        mSpecSP.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        mSpecSP.setViewportView(existingVariableP);
-        addComponent(mSpecSP);
+        existingVariablesSP = new JScrollPane();
+        existingVariablesSP.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        existingVariablesSP.setViewportView(existingVariablesP);
+        cumulComponentHeight += Math.max(existingVariablesSP.getPreferredSize().getHeight(), BUTTON_HEIGHT);
+        maxComponentWidth = Math.max(maxComponentWidth, existingVariablesSP.getPreferredSize().width);
+        getContentPane().add(existingVariablesSP, BorderLayout.NORTH);
+
+        JPanel buttonsP = new JPanel(new GridBagLayout());
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.gridy = 0;
+        constraints.gridx = 0;
+        constraints.weightx = 1.0;
 
         newB = new javax.swing.JButton();
         newB.setText("Add New");
@@ -94,7 +86,11 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
                 newBActionPerformed(evt);
             }
         });
-        addComponent(newB);
+        newB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
+        cumulComponentHeight += Math.max(newB.getPreferredSize().getHeight(), BUTTON_HEIGHT);
+        maxComponentWidth = Math.max(maxComponentWidth, newB.getPreferredSize().width);
+        buttonsP.add(newB, constraints);
+        constraints.gridy = constraints.gridy + 1;
 
         okB = new javax.swing.JButton();
         okB.setText("OK");
@@ -103,7 +99,11 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
                 okBActionPerformed(evt);
             }
         });
-        addComponent(okB);
+        okB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
+        cumulComponentHeight += Math.max(okB.getPreferredSize().getHeight(), BUTTON_HEIGHT);
+        maxComponentWidth = Math.max(maxComponentWidth, okB.getPreferredSize().width);
+        buttonsP.add(okB, constraints);
+        constraints.gridy = constraints.gridy + 1;
 
         cancelB = new javax.swing.JButton();
         cancelB.setText("Cancel");
@@ -112,32 +112,24 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
                 cancelBActionPerformed(evt);
             }
         });
-        addComponent(cancelB);
+        cancelB.setPreferredSize(new Dimension(maxComponentWidth, BUTTON_HEIGHT));
+        cumulComponentHeight += Math.max(cancelB.getPreferredSize().getHeight(), BUTTON_HEIGHT);
+        maxComponentWidth = Math.max(maxComponentWidth, cancelB.getPreferredSize().width);
+        buttonsP.add(cancelB, constraints);
+        constraints.gridy = constraints.gridy + 1;
 
-        // Finish layout setup
-        layout.setHorizontalGroup(rowSeqGroup
-                //                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 1, Short.MAX_VALUE) // Spring to right-align
-                .addGroup(rowParGroup1));
-        for (int i = 0; i < colParGroupArr.length; i++) {
-            GroupLayout.ParallelGroup parGroup = colParGroupArr[i];
-            colSeqGroup.addGroup(parGroup);
-            if (i < colParGroupArr.length - 1) {
-                colSeqGroup.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE);
-                cumulComponentHeight += 6;
-            }
-        }
-        layout.setVerticalGroup(colSeqGroup);
+        getContentPane().add(buttonsP, BorderLayout.SOUTH);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         int screenWidth = gd.getDisplayMode().getWidth();
         int screenHeight = gd.getDisplayMode().getHeight();
-        maxColWidth = Math.min(maxColWidth, screenWidth);
+        maxComponentWidth = Math.min(maxComponentWidth, screenWidth);
         cumulComponentHeight = Math.min(cumulComponentHeight, screenHeight);
-        setSize(new Dimension(maxColWidth, cumulComponentHeight));
-        setPreferredSize(new Dimension(maxColWidth, cumulComponentHeight));
+        // Don't use cumulComponentHeight for now
+        setSize(new Dimension(maxComponentWidth, (int) (screenHeight * 0.9)));
+        setPreferredSize(new Dimension(maxComponentWidth, (int) (screenHeight * 0.9)));
 
-//        setPreferredSize(new Dimension(300, 300));
         validate();
     }
 
@@ -146,12 +138,12 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         variableD.setVisible(true);
 
         if (variableD.confirmedExit()) {
-            String variable = variableD.getName();
+            String variable = variableD.getVariableName();
             if (variable.length() > 0 && !variable.startsWith("@")) {
                 variable = "@" + variable;
             }
             if (variable.length() > 1 && variable.startsWith("@")) {
-                variables.put(variable, variableD.getValue());
+                variables.put(variable, variableD.getVariableValue());
             }
             refreshVariableP();
         }
@@ -195,11 +187,10 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
     }
 
     private void refreshVariableP() {
-        existingVariableP.removeAll();
-//        existingMSpecP.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        existingVariablesP.removeAll();
         for (String variable : variables.keySet()) {
             VariableP variableP = new VariableP(variable);
-            existingVariableP.add(variableP);
+            existingVariablesP.add(variableP);
         }
         validate();
         repaint();
@@ -207,69 +198,52 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
 
     class VariableP extends JPanel {
 
-        String variable;
+        String variableName;
         JButton modifyB, deleteB;
 
         public VariableP(String variable) {
-            this.variable = variable;
+            this.variableName = variable;
             initComponents();
         }
 
         private void initComponents() {
-            setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+            setLayout(new BorderLayout());
 
+            JPanel buttonsP = new JPanel(new BorderLayout());
             modifyB = new JButton("Edit");
-            modifyB.setPreferredSize(new Dimension(10, 10));
             modifyB.addActionListener(new ActionListener() {
 
                 @Override
                 public void actionPerformed(ActionEvent ae) {
-                    String variableOld = variable;
-                    EditGlobalVariableD variableD = new EditGlobalVariableD(null, true, variable, variables.get(variable));
+                    String variableOld = variableName;
+                    EditGlobalVariableD variableD = new EditGlobalVariableD(null, true, variableName, variables.get(variableName));
                     variableD.setVisible(true);
 
                     if (variableD.confirmedExit()) {
                         // Remove old entry
                         variables.remove(variableOld);
-                        variables.put(variableD.getName(), variableD.getValue());
+                        variables.put(variableD.getVariableName(), variableD.getVariableValue());
                         refreshVariableP();
                     }
                 }
             });
 
             deleteB = new JButton("Delete");
-            deleteB.setPreferredSize(new Dimension(10, 10));
             deleteB.addActionListener(new ActionListener() {
 
                 @Override
                 public void actionPerformed(ActionEvent ae) {
-                    variables.remove(variable);
+                    variables.remove(variableName);
                     refreshVariableP();
                 }
             });
 
-            add(new JLabel(variable));
-            add(modifyB);
-            add(deleteB);
+            add(new JLabel(variableName), BorderLayout.WEST);
+            buttonsP.add(modifyB, BorderLayout.WEST);
+            buttonsP.add(deleteB, BorderLayout.EAST);
+            add(buttonsP, BorderLayout.EAST);
 
             pack();
         }
     }
-
-//    /**
-//     * @param args the command line arguments
-//     */
-//    public static void main(String args[]) {
-//        java.awt.EventQueue.invokeLater(new Runnable() {
-//            public void run() {
-//                SelectGlobalVariableD dialog = new SelectGlobalVariableD(new javax.swing.JFrame(), true, null, new ArrayList<String>(), true, true);
-//                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
-//                    public void windowClosing(java.awt.event.WindowEvent e) {
-//                        System.exit(0);
-//                    }
-//                });
-//                dialog.setVisible(true);
-//            }
-//        });
-//    }
 }

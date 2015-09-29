@@ -97,7 +97,7 @@ public class EditSubMissionD extends javax.swing.JDialog {
     private int row;
     private int maxColWidth;
     private int cumulComponentHeight;
-    private final static int BUTTON_WIDTH = 100;
+    private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
 
     public EditSubMissionD(java.awt.Frame parent, boolean modal, MissionPlanSpecification parentMSpec) {
