@@ -38,9 +38,13 @@ import sami.mission.MissionPlanSpecification;
 import sami.uilanguage.MarkupComponent;
 
 /**
- * Used to receive parameters from operator needed by an Output event
+ * Dialog for specifying the parameters for an input (fields and variables) or output (fields) event.
  *
- * @author pscerri
+ * For classes with no MarkupComponent supporting its creation, we allow
+ * recursion into the class's fields to get components supporting those fields
+ * (up to a certain depth)
+ *
+ * @author nbb
  */
 public class ReflectedEventD extends javax.swing.JDialog {
 

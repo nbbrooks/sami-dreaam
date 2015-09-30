@@ -36,9 +36,13 @@ import sami.markup.Markup;
 import sami.uilanguage.MarkupComponent;
 
 /**
- * Used to receive parameters from operator needed by an Output event
+ * Dialogue for specifying a global variable: (variable name, class, and value).
  *
- * @author pscerri
+ * For classes with no MarkupComponent supporting its creation, we allow
+ * recursion into the class's fields to get components supporting those fields
+ * (up to a certain depth)
+ *
+ * @author nbb
  */
 public class EditGlobalVariableD extends javax.swing.JDialog {
 

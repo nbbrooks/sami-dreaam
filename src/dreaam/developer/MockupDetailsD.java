@@ -819,7 +819,7 @@ public class MockupDetailsD extends javax.swing.JDialog {
         place.setMockupTokens(mockupTokens);
 
         MockupDetailsD d = new MockupDetailsD(null, true, place);
-        d.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        d.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         d.setVisible(true);
     }
 }

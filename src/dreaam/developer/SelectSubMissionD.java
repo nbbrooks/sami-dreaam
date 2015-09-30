@@ -17,10 +17,10 @@ import sami.mission.ProjectSpecification;
 import sami.mission.TaskSpecification;
 
 /**
- * Dialog window that lets you select InputEvents and OutputEvents for SAMI
- * transitions
+ * Dialog window used to select InputEvents and OutputEvents for a transition or
+ * place
  *
- * @author pscerri
+ * @author nbb
  */
 public class SelectSubMissionD extends javax.swing.JDialog {
 

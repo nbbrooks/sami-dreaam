@@ -33,9 +33,9 @@ import sami.mission.MissionPlanSpecification;
 import sami.uilanguage.MarkupComponent;
 
 /**
- * Used to receive parameters from operator needed by an Output event
+ * Dialog for specifying the parameters for a markup.
  *
- * @author pscerri
+ * @author nbb
  */
 public class ReflectedMarkupD extends javax.swing.JDialog {
 
@@ -444,7 +444,7 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
             }
         });
 
-        getContentPane().setLayout(new GridBagLayout());
+        getContentPane().setLayout(new BorderLayout());
         getContentPane().add(scrollPane, BorderLayout.NORTH);
         getContentPane().add(okB, BorderLayout.SOUTH);
 

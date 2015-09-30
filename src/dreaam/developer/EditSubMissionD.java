@@ -28,8 +28,11 @@ import sami.engine.Mediator;
 import sami.mission.TaskSpecification;
 
 /**
+ * Dialog for specifying a sub-mission: (plan to use, clone's name prefix
+ * [cosmetic], clone's prefix for variables, shared or individual, and task
+ * mapping method).
  *
- * @author pscerri
+ * @author nbb
  */
 public class EditSubMissionD extends javax.swing.JDialog {
 
