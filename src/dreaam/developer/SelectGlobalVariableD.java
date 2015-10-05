@@ -51,11 +51,9 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
     private void initComponents() {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        getContentPane().setLayout(new BorderLayout());
-
         existingVariablesP = new JPanel();
         existingVariablesP.setLayout(new BoxLayout(existingVariablesP, BoxLayout.Y_AXIS));
-        
+
         for (String variable : variables.keySet()) {
             VariableP globalVariableP = new VariableP(variable);
             existingVariablesP.add(globalVariableP);
@@ -64,15 +62,14 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         existingVariablesSP = new JScrollPane();
         existingVariablesSP.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         existingVariablesSP.setViewportView(existingVariablesP);
-        getContentPane().add(existingVariablesSP, BorderLayout.NORTH);
 
         JPanel buttonsP = new JPanel(new GridBagLayout());
         GridBagConstraints constraints = new GridBagConstraints();
-            constraints.gridx = 0;
-            constraints.gridy = 0;
-            constraints.fill = GridBagConstraints.BOTH;
-            constraints.weightx = 1.0;
-            constraints.weighty = 1.0;
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.weightx = 1.0;
+        constraints.weighty = 1.0;
 
         newB = new javax.swing.JButton();
         newB.setText("Add New");
@@ -107,7 +104,9 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         buttonsP.add(cancelB, constraints);
         constraints.gridy = constraints.gridy + 1;
 
+        getContentPane().setLayout(new BorderLayout());
         getContentPane().add(buttonsP, BorderLayout.SOUTH);
+        getContentPane().add(existingVariablesSP, BorderLayout.NORTH);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();

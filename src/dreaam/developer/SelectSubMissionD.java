@@ -78,8 +78,6 @@ public class SelectSubMissionD extends javax.swing.JDialog {
     private void initComponents() {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        getContentPane().setLayout(new BorderLayout());
-
         maxComponentWidth = BUTTON_WIDTH;
         cumulComponentHeight = 0;
 
@@ -95,7 +93,6 @@ public class SelectSubMissionD extends javax.swing.JDialog {
         existingSubMissionsSP.setViewportView(existingSubMissionsP);
         cumulComponentHeight += Math.max(existingSubMissionsP.getPreferredSize().getHeight(), BUTTON_HEIGHT);
         maxComponentWidth = Math.max(maxComponentWidth, existingSubMissionsP.getPreferredSize().width);
-        getContentPane().add(existingSubMissionsP, BorderLayout.NORTH);
 
         JPanel buttonsP = new JPanel(new GridBagLayout());
         GridBagConstraints constraints = new GridBagConstraints();
@@ -143,7 +140,9 @@ public class SelectSubMissionD extends javax.swing.JDialog {
         buttonsP.add(cancelB, constraints);
         constraints.gridy = constraints.gridy + 1;
 
+        getContentPane().setLayout(new BorderLayout());
         getContentPane().add(buttonsP, BorderLayout.SOUTH);
+        getContentPane().add(existingSubMissionsP, BorderLayout.NORTH);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();

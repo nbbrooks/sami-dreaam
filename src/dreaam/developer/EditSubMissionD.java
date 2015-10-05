@@ -123,8 +123,6 @@ public class EditSubMissionD extends javax.swing.JDialog {
     private void initComponents() {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        getContentPane().setLayout(new BorderLayout());
-
         JPanel definitionP = new JPanel(new GridBagLayout());
         GridBagConstraints definitionConstraints = new GridBagConstraints();
         definitionConstraints.gridx = 0;
@@ -257,8 +255,9 @@ public class EditSubMissionD extends javax.swing.JDialog {
         buttonsP.add(cancelB, buttonConstraints);
         buttonConstraints.gridy = buttonConstraints.gridy + 1;
 
-        getContentPane().add(definitionP, BorderLayout.NORTH);
+        getContentPane().setLayout(new BorderLayout());
         getContentPane().add(buttonsP, BorderLayout.SOUTH);
+        getContentPane().add(definitionP, BorderLayout.NORTH);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();

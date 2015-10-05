@@ -1464,6 +1464,15 @@ public class TaskModelEditor extends JPanel {
                                 vv.repaint();
                             }
                         });
+                        popup.add(new AbstractAction("Use Event Wizard") {
+                            @Override
+                            public void actionPerformed(ActionEvent ae) {
+                                EventWizardD wizardD = new EventWizardD(null, true, mSpec, graphPoint, dsgGraph, layout);
+                                wizardD.setVisible(true);
+                                
+                                vv.repaint();
+                            }
+                        });
                         popup.add(new AbstractAction("Edit Global Variables") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {

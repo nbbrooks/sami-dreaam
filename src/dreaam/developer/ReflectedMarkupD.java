@@ -445,8 +445,8 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
         });
 
         getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(scrollPane, BorderLayout.NORTH);
         getContentPane().add(okB, BorderLayout.SOUTH);
+        getContentPane().add(scrollPane, BorderLayout.NORTH);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
