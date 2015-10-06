@@ -100,7 +100,7 @@ public class SelectSubMissionD extends javax.swing.JDialog {
         constraints.gridy = 0;
         constraints.gridx = 0;
         constraints.weightx = 1.0;
-        
+
         newB = new javax.swing.JButton();
         newB.setText("Add New");
         newB.addActionListener(new java.awt.event.ActionListener() {
@@ -140,9 +140,10 @@ public class SelectSubMissionD extends javax.swing.JDialog {
         buttonsP.add(cancelB, constraints);
         constraints.gridy = constraints.gridy + 1;
 
-        getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(buttonsP, BorderLayout.SOUTH);
-        getContentPane().add(existingSubMissionsP, BorderLayout.NORTH);
+        BoxLayout boxLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
+        getContentPane().setLayout(boxLayout);
+        getContentPane().add(existingSubMissionsSP);
+        getContentPane().add(buttonsP);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
@@ -230,7 +231,7 @@ public class SelectSubMissionD extends javax.swing.JDialog {
 
         private void initComponents() {
             setLayout(new BorderLayout());
-            
+
             setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
             deleteB = new JButton("Delete");

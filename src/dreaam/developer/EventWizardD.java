@@ -1,8 +1,8 @@
 package dreaam.developer;
 
+import dreaam.wizard.EventWizardGenerator;
 import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
 import edu.uci.ics.jung.graph.Graph;
-import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
@@ -38,7 +38,7 @@ public class EventWizardD extends JDialog {
     protected Point2D graphPoint;
     protected Graph<Vertex, Edge> dsgGraph;
     protected AbstractLayout<Vertex, Edge> layout;
-    
+
     // Layout
     private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
@@ -86,26 +86,19 @@ public class EventWizardD extends JDialog {
         buttonsP.add(cancelB, constraints);
         constraints.gridy = constraints.gridy + 1;
 
-        buttonsP.revalidate();
-        System.out.println("buttonsP " + buttonsP.getPreferredSize());
-        buttonsP.setMinimumSize(buttonsP.getPreferredSize());
-        
-        getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(buttonsP, BorderLayout.SOUTH);
-        getContentPane().add(eventsSP, BorderLayout.NORTH);
-        
+        BoxLayout boxLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
+        getContentPane().setLayout(boxLayout);
+        getContentPane().add(eventsSP);
+        getContentPane().add(buttonsP);
+
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         int screenHeight = gd.getDisplayMode().getHeight();
         setPreferredSize(new Dimension(getPreferredSize().width, (int) (screenHeight * 0.9)));
 
         pack();
-        
-        setPreferredSize(new Dimension(getPreferredSize().width, (int) (screenHeight * 0.9)));
     }
 
-    int c = 0;
-    
     public void addEvents(JPanel panel) {
         DefaultMutableTreeNode eventTree = (DefaultMutableTreeNode) DomainConfigManager.getInstance().getDomainConfiguration().eventTree;
         for (int i = 0; i < eventTree.getChildCount(); i++) {
@@ -122,16 +115,14 @@ public class EventWizardD extends JDialog {
 
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    System.out.println("" + leafNode.className);
+                    boolean success = EventWizardGenerator.getInstance().runWizard(leafNode.className, mSpec, graphPoint, dsgGraph, layout);
                 }
             });
-            if(c<10) {
-            panel.add(eventB);}
-            c++;
+            panel.add(eventB);
         } else if (aliasNode instanceof DefaultMutableTreeNode) {
             // At a category, add label and recurse
             DefaultMutableTreeNode categoryNode = new DefaultMutableTreeNode(aliasNode.toString());
-//            panel.add(new JLabel(categoryNode.toString()));
+            panel.add(new JLabel(categoryNode.toString()));
             for (int i = 0; i < aliasNode.getChildCount(); i++) {
                 addNode(aliasNode.getChildAt(i), panel);
             }

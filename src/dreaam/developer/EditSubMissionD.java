@@ -18,6 +18,7 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
+import javax.swing.BoxLayout;
 import sami.mission.MissionPlanSpecification;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -255,9 +256,10 @@ public class EditSubMissionD extends javax.swing.JDialog {
         buttonsP.add(cancelB, buttonConstraints);
         buttonConstraints.gridy = buttonConstraints.gridy + 1;
 
-        getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(buttonsP, BorderLayout.SOUTH);
-        getContentPane().add(definitionP, BorderLayout.NORTH);
+        BoxLayout boxLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
+        getContentPane().setLayout(boxLayout);
+        getContentPane().add(definitionP);
+        getContentPane().add(buttonsP);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();

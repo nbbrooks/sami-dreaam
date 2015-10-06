@@ -911,8 +911,7 @@ public class TaskModelEditor extends JPanel {
                 dsgGraph.addVertex(newTransition);
                 Point freePoint = DreaamHelper.getVertexFreePoint(vv,
                         (int) ((layout.getX(startPlace) + layout.getX(endPlace)) / 2),
-                        (int) ((layout.getY(startPlace) + layout.getY(endPlace)) / 2),
-                        CLICK_RADIUS);
+                        (int) ((layout.getY(startPlace) + layout.getY(endPlace)) / 2));
                 layout.setLocation(newTransition, snapToGrid(freePoint));
 
                 InEdge newEdge1;
@@ -958,8 +957,7 @@ public class TaskModelEditor extends JPanel {
                 dsgGraph.addVertex(newPlace);
                 Point freePoint = DreaamHelper.getVertexFreePoint(vv,
                         (int) ((layout.getX(startTransition) + layout.getX(endTransition)) / 2),
-                        (int) ((layout.getY(startTransition) + layout.getY(endTransition)) / 2),
-                        CLICK_RADIUS);
+                        (int) ((layout.getY(startTransition) + layout.getY(endTransition)) / 2));
                 layout.setLocation(newPlace, snapToGrid(freePoint));
 
                 OutEdge newEdge1;
@@ -1104,6 +1102,10 @@ public class TaskModelEditor extends JPanel {
                     && !amTranslating) {
                 // (Mouse 3 OR CTRL + Mouse1) AND not dragging vertex AND not translating view
                 // Right click menu
+                
+                
+                System.out.println("location " + framePoint.getX() +"," + framePoint.getY());
+
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
                     final Vertex vertex = DreaamHelper.getNearestVertex(vv, framePoint.getX(), framePoint.getY(), CLICK_RADIUS);

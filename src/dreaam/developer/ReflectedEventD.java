@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -38,7 +39,8 @@ import sami.mission.MissionPlanSpecification;
 import sami.uilanguage.MarkupComponent;
 
 /**
- * Dialog for specifying the parameters for an input (fields and variables) or output (fields) event.
+ * Dialog for specifying the parameters for an input (fields and variables) or
+ * output (fields) event.
  *
  * For classes with no MarkupComponent supporting its creation, we allow
  * recursion into the class's fields to get components supporting those fields
@@ -421,9 +423,10 @@ public class ReflectedEventD extends javax.swing.JDialog {
             }
         });
 
-        getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(okB, BorderLayout.SOUTH);
-        getContentPane().add(scrollPane, BorderLayout.NORTH);
+        BoxLayout boxLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
+        getContentPane().setLayout(boxLayout);
+        getContentPane().add(scrollPane);
+        getContentPane().add(okB);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();

@@ -104,9 +104,10 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         buttonsP.add(cancelB, constraints);
         constraints.gridy = constraints.gridy + 1;
 
-        getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(buttonsP, BorderLayout.SOUTH);
-        getContentPane().add(existingVariablesSP, BorderLayout.NORTH);
+        BoxLayout boxLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
+        getContentPane().setLayout(boxLayout);
+        getContentPane().add(existingVariablesSP);
+        getContentPane().add(buttonsP);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();

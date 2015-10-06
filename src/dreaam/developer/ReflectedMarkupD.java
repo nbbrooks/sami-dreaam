@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -444,9 +445,10 @@ public class ReflectedMarkupD extends javax.swing.JDialog {
             }
         });
 
-        getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(okB, BorderLayout.SOUTH);
-        getContentPane().add(scrollPane, BorderLayout.NORTH);
+        BoxLayout boxLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
+        getContentPane().setLayout(boxLayout);
+        getContentPane().add(scrollPane);
+        getContentPane().add(okB);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
