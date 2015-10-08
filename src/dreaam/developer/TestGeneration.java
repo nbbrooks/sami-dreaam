@@ -28,7 +28,7 @@ public class TestGeneration {
         System.out.println("Starting test case generation");
 
         for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
-            Graph<Vertex, Edge> graph = missionPlanSpecification.getGraph();
+            Graph<Vertex, Edge> graph = missionPlanSpecification.getTransientGraph();
             // Grab the start place
             Place start = null;
             for (Vertex v : graph.getVertices()) {

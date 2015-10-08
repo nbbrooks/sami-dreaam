@@ -1,6 +1,6 @@
 package dreaam.developer;
 
-import dreaam.wizard.EventWizardGenerator;
+import dreaam.wizard.EventWizardSingleton;
 import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.visualization.VisualizationViewer;
@@ -9,9 +9,9 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.geom.Point2D;
 import java.util.logging.Logger;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -36,7 +36,7 @@ public class EventWizardD extends JDialog {
 
     private static final Logger LOGGER = Logger.getLogger(SelectGlobalVariableD.class.getName());
     protected MissionPlanSpecification mSpec;
-    protected Point2D graphPoint;
+    protected Point graphPoint;
     protected Graph<Vertex, Edge> dsgGraph;
     protected AbstractLayout<Vertex, Edge> layout;
     protected VisualizationViewer<Vertex, Edge> vv;
@@ -49,7 +49,7 @@ public class EventWizardD extends JDialog {
     protected JPanel eventsP;
     protected javax.swing.JButton cancelB;
 
-    public EventWizardD(java.awt.Frame parent, boolean modal, MissionPlanSpecification mSpec, Point2D graphPoint, Graph<Vertex, Edge> dsgGraph, AbstractLayout<Vertex, Edge> layout, VisualizationViewer<Vertex, Edge> vv) {
+    public EventWizardD(java.awt.Frame parent, boolean modal, MissionPlanSpecification mSpec, Point graphPoint, Graph<Vertex, Edge> dsgGraph, AbstractLayout<Vertex, Edge> layout, VisualizationViewer<Vertex, Edge> vv) {
         super(parent, modal);
         this.mSpec = mSpec;
         this.graphPoint = graphPoint;
@@ -120,7 +120,8 @@ public class EventWizardD extends JDialog {
 
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    boolean success = EventWizardGenerator.getInstance().runWizard(leafNode.className, mSpec, graphPoint, dsgGraph, layout, vv);
+                    boolean success = EventWizardSingleton.getInstance().runWizard(leafNode.className, mSpec, graphPoint, dsgGraph, layout, vv);
+                    setVisible(false);
                 }
             });
             panel.add(eventB);

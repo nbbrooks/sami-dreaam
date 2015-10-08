@@ -1,9 +1,14 @@
 package dreaam.agent.helper;
 
+import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
+import edu.uci.ics.jung.algorithms.layout.StaticLayout;
+import edu.uci.ics.jung.visualization.VisualizationViewer;
+import java.awt.Dimension;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.logging.Logger;
+import sami.DreaamHelper;
 import sami.engine.Mediator;
 import sami.event.AbortMission;
 import sami.event.AbortMissionReceived;
@@ -42,11 +47,15 @@ public class AbortMissionHelper extends HelperAgent {
         boolean createdTransition = false, createdPlace = false;
 
         for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
+            // Create VisualizationViewer for intelligently placing vertices
+            AbstractLayout layout = new StaticLayout<Vertex, Edge>(missionPlanSpecification.getTransientGraph(), new Dimension(600, 600));
+            VisualizationViewer vv = new VisualizationViewer<Vertex, Edge>(layout);
+
             // Fetch transition that handles AbortMissionReceived events
             Transition endTransition = missionToTransition.get(missionPlanSpecification);
             if (endTransition == null) {
                 // First time running helper since creating and/or loading this mission, try to find helper's end place
-                for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
+                for (Vertex vertex : missionPlanSpecification.getTransientGraph().getVertices()) {
                     if (vertex instanceof Transition
                             && vertex.getFunctionMode() == FunctionMode.Recovery
                             && vertex.getName().equals(VERTEX_NAME)) {
@@ -59,13 +68,14 @@ public class AbortMissionHelper extends HelperAgent {
             if (endTransition == null) {
                 // First time running helper since creating this mission, construct helper's end transition
                 endTransition = new Transition(VERTEX_NAME, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
-                missionPlanSpecification.getGraph().addVertex(endTransition);
                 Point freePoint = getVertexPoint(missionPlanSpecification.getLocations(), true);
-                missionPlanSpecification.getLocations().put(endTransition, freePoint);
+                freePoint = DreaamHelper.getVertexFreePoint(vv, freePoint.x, freePoint.y);
+                missionPlanSpecification.addTransition(endTransition, freePoint);
+                layout.setLocation(endTransition, freePoint);
                 // Add AbortMissionReceived to transition
-                ReflectedEventSpecification eventSpec = new ReflectedEventSpecification(AbortMissionReceived.class.getName());
-                missionPlanSpecification.updateEventSpecList(endTransition, eventSpec);
-                endTransition.addEventSpec(eventSpec);
+                ReflectedEventSpecification amReceivedSpec = new ReflectedEventSpecification(AbortMissionReceived.class.getName());
+                missionPlanSpecification.updateEventSpecList(endTransition, amReceivedSpec);
+                endTransition.addEventSpec(amReceivedSpec);
                 missionToTransition.put(missionPlanSpecification, endTransition);
                 createdTransition = true;
             }
@@ -74,7 +84,7 @@ public class AbortMissionHelper extends HelperAgent {
             Place endPlace = missionToPlace.get(missionPlanSpecification);
             if (endPlace == null) {
                 // First time running helper since creating and/or loading this mission, try to find helper's end place
-                for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
+                for (Vertex vertex : missionPlanSpecification.getTransientGraph().getVertices()) {
                     if (vertex instanceof Place
                             && vertex.getFunctionMode() == FunctionMode.Recovery
                             && vertex.getName().equals(VERTEX_NAME)
@@ -90,28 +100,24 @@ public class AbortMissionHelper extends HelperAgent {
                 endPlace = new Place(VERTEX_NAME, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
                 endPlace.setIsEnd(true);
                 endPlace.setIsSharedSmEnd(true);
-                missionPlanSpecification.getGraph().addVertex(endPlace);
-                Point freePoint2 = getVertexPoint(missionPlanSpecification.getLocations(), false);
-
-                System.out.println("missionPlanSpecification: " + missionPlanSpecification.getName());
-
-                missionPlanSpecification.getLocations().put(endPlace, freePoint2);
-                // Add ProxyAbortMission event to place
-                ReflectedEventSpecification eventSpec2 = new ReflectedEventSpecification(AbortMission.class.getName());
-                missionPlanSpecification.updateEventSpecList(endPlace, eventSpec2);
-                endPlace.addEventSpec(eventSpec2);
+                Point freePoint = getVertexPoint(missionPlanSpecification.getLocations(), false);
+                freePoint = DreaamHelper.getVertexFreePoint(vv, freePoint.x, freePoint.y);
+                missionPlanSpecification.addPlace(endPlace, freePoint);
+                layout.setLocation(endPlace, freePoint);
+                // Add AbortMission event to place
+                ReflectedEventSpecification smSpec = new ReflectedEventSpecification(AbortMission.class.getName());
+                missionPlanSpecification.updateEventSpecList(endPlace, smSpec);
+                endPlace.addEventSpec(smSpec);
                 createdPlace = true;
             }
 
             // Fetch edge
-            Edge endEdge = missionPlanSpecification.getGraph().findEdge(endTransition, endPlace);
+            Edge endEdge = missionPlanSpecification.getTransientGraph().findEdge(endTransition, endPlace);
             if (endEdge == null) {
                 // Add edge
                 OutEdge edge = new OutEdge(endTransition, endPlace, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
                 edge.addTokenRequirement(takeAllTokenReq);
-                endTransition.addOutEdge(edge);
-                endPlace.addInEdge(edge);
-                missionPlanSpecification.getGraph().addEdge(edge, endTransition, endPlace);
+                missionPlanSpecification.addEdge(edge, endTransition, endPlace);
             }
 
             // Make any additional connections needed
@@ -123,7 +129,7 @@ public class AbortMissionHelper extends HelperAgent {
             // Fetch list of places that are connected to the transition
             ArrayList<Place> connectedPlaces = endTransition.getInPlaces();
             // Connect any places that should be connected to the transition but are not
-            for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
+            for (Vertex vertex : missionPlanSpecification.getTransientGraph().getVertices()) {
                 if (vertex instanceof Place
                         && !connectedPlaces.contains((Place) vertex)
                         && !((Place) vertex).isEnd()
@@ -132,11 +138,7 @@ public class AbortMissionHelper extends HelperAgent {
                     Place place = (Place) vertex;
                     InEdge newEdge = new InEdge(place, endTransition, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
                     newEdge.addTokenRequirement(noReqTokenReq);
-                    place.addOutEdge(newEdge);
-                    endTransition.addInEdge(newEdge);
-                    missionPlanSpecification.getGraph().addEdge(newEdge, place, endTransition);
-                    place.addOutTransition(endTransition);
-                    endTransition.addInPlace(place);
+                    missionPlanSpecification.addEdge(newEdge, place, endTransition);
                 }
             }
             // Disconnect any places that should not be connected any longer
@@ -147,7 +149,7 @@ public class AbortMissionHelper extends HelperAgent {
                 }
             }
             for (Place place : placesToDisconnect) {
-                Edge edge = missionPlanSpecification.getGraph().findEdge(place, endTransition);
+                Edge edge = missionPlanSpecification.getTransientGraph().findEdge(place, endTransition);
                 missionPlanSpecification.removeEdge(edge);
             }
         }

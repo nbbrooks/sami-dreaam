@@ -21,7 +21,7 @@ public class GuiComponentChecker extends CheckerAgent {
 
         boolean hasInformationMessage = false;
         for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
-            for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
+            for (Vertex vertex : missionPlanSpecification.getTransientGraph().getVertices()) {
                 if (vertex instanceof Place) {
                     for (OutputEvent outputEvent : ((Place) vertex).getOutputEvents()) {
 //                        if (outputEvent instanceof ) {

@@ -21,7 +21,7 @@ public class StartPlaceChecker extends CheckerAgent {
         for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
             msg = null;
             Place start = null;
-            for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
+            for (Vertex vertex : missionPlanSpecification.getTransientGraph().getVertices()) {
                 if (vertex instanceof Place && ((Place) vertex).isStart()) {
                     if (start != null) {
                         msg = "The graph has multiple start locations, this is illegal.";

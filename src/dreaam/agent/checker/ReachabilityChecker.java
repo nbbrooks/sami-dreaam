@@ -27,14 +27,14 @@ public class ReachabilityChecker extends CheckerAgent {
         ArrayList<AgentMessage> msgs = new ArrayList<AgentMessage>();
         for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
             Place start = null;
-            for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
+            for (Vertex vertex : missionPlanSpecification.getTransientGraph().getVertices()) {
                 if (vertex instanceof Place && ((Place) vertex).isStart()) {
                     start = (Place) vertex;
                 }
             }
 
             if (start != null) {
-                Graph g = missionPlanSpecification.getGraph();
+                Graph g = missionPlanSpecification.getTransientGraph();
 
                 ArrayList graphVertices = new ArrayList(g.getVertices());
                 ArrayList<Vertex> connectedVertices = new ArrayList<Vertex>();
@@ -76,7 +76,7 @@ public class ReachabilityChecker extends CheckerAgent {
 
     public void removeIllegalConnections() {
         for (MissionPlanSpecification missionPlanSpecification : mediator.getProject().getAllMissionPlans()) {
-            for (Vertex vertex : missionPlanSpecification.getGraph().getVertices()) {
+            for (Vertex vertex : missionPlanSpecification.getTransientGraph().getVertices()) {
                 // Check for in/out transition/place with no matching edge
                 ArrayList<Vertex> verticesToRemove = new ArrayList<Vertex>();
                 if (vertex instanceof Place) {
@@ -104,7 +104,7 @@ public class ReachabilityChecker extends CheckerAgent {
 
                     // Check for connected vertices with no corresponding edge
                     for (Transition t : thisPlace.getInTransitions()) {
-                        Edge edge = missionPlanSpecification.getGraph().findEdge(t, vertex);
+                        Edge edge = missionPlanSpecification.getTransientGraph().findEdge(t, vertex);
                         if (edge == null) {
                             LOGGER.info("Missing edge in vertex: " + vertex.getTag()
                                     + "\n\t " + t.getTag()
@@ -118,7 +118,7 @@ public class ReachabilityChecker extends CheckerAgent {
 
                     verticesToRemove = new ArrayList<Vertex>();
                     for (Transition t : thisPlace.getOutTransitions()) {
-                        Edge edge = missionPlanSpecification.getGraph().findEdge(vertex, t);
+                        Edge edge = missionPlanSpecification.getTransientGraph().findEdge(vertex, t);
                         if (edge == null) {
                             LOGGER.info("Missing edge in vertex: " + vertex.getTag()
                                     + "\n\t " + vertex.getTag()
@@ -154,7 +154,7 @@ public class ReachabilityChecker extends CheckerAgent {
                     thisTransition.setOutPlaces(list);
 
                     for (Place p : thisTransition.getInPlaces()) {
-                        Edge edge = missionPlanSpecification.getGraph().findEdge(p, vertex);
+                        Edge edge = missionPlanSpecification.getTransientGraph().findEdge(p, vertex);
                         if (edge == null) {
                             LOGGER.info("Missing edge in vertex: " + vertex.getTag()
                                     + "\n\t " + p.getTag()
@@ -168,7 +168,7 @@ public class ReachabilityChecker extends CheckerAgent {
 
                     verticesToRemove = new ArrayList<Vertex>();
                     for (Place p : thisTransition.getOutPlaces()) {
-                        Edge edge = missionPlanSpecification.getGraph().findEdge(vertex, p);
+                        Edge edge = missionPlanSpecification.getTransientGraph().findEdge(vertex, p);
                         if (edge == null) {
                             LOGGER.info("Missing edge in vertex: " + vertex.getTag()
                                     + "\n\t " + vertex.getTag()

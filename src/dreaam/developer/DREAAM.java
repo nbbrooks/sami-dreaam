@@ -80,6 +80,8 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         dndTree.setCellRenderer(new DREAMMTreeCellRenderer());
 
         // Main panel
+        // Create new Anonymous plan that will get used if the project has no mSpecs in it
+        //  Otherwise, it is discarded when the first mSpec in the project is loaded automatically
         MissionPlanSpecification mSpec = mediator.getProject().getNewMissionPlanSpecification("Anonymous");
         taskModelEditor = new TaskModelEditor(this, mSpec);
         mainP.setLayout(new BorderLayout());
@@ -156,9 +158,6 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                     MissionPlanSpecification mps = (MissionPlanSpecification) ((DefaultMutableTreeNode) treePath.getLastPathComponent()).getUserObject();
                                     LOGGER.info("Duplicating " + mps.getName() + " and naming " + result);
 
-                                    // Save current mission
-                                    taskModelEditor.writeModel();
-
                                     // Clone and add to mission list
                                     MissionPlanSpecification duplicate = mps.deepClone();
                                     duplicate.setName(result);
@@ -182,9 +181,6 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                 }
                                 result = CoreHelper.getUniqueName(result, playNames);
                                 LOGGER.info("Converting " + mps.getName() + " to mockup " + result);
-
-                                // Save current mission
-                                taskModelEditor.writeModel();
 
                                 // Clone and add to mission list
                                 MissionPlanSpecification mockupConversion = mps.deepClone();
@@ -210,7 +206,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                                             reallyDelete = reallyDelete && response != JOptionPane.CANCEL_OPTION;
                                         }
                                     }
-                                    for (Vertex vertex : mps.getGraph().getVertices()) {
+                                    for (Vertex vertex : mps.getTransientGraph().getVertices()) {
                                         for (RequirementSpecification requirementSpecification : mediator.getProject().getReqs()) {
                                             if (requirementSpecification.getFilledBy() == vertex) {
                                                 int response = JOptionPane.showConfirmDialog(null, "Are you sure, requirement " + requirementSpecification + " is filled by place " + vertex + " in this mission model");
@@ -247,7 +243,6 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                         menu.add(new AbstractAction("Run checker agents") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
-                                taskModelEditor.writeModel();
                                 runCheckerAgents();
                             }
                         });
@@ -271,7 +266,6 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                         menu.add(new AbstractAction("Run helper agents") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
-                                taskModelEditor.writeModel();
                                 runHelperAgents();
                             }
                         });
@@ -295,7 +289,6 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
                         menu.add(new AbstractAction("Run checker agents") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
-                                taskModelEditor.writeModel();
                                 runCheckerAgents();
                             }
                         });
@@ -640,9 +633,6 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         // Expands and selects created mission spec
         Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Requesting a new MissionPlanSpecification", this);
 
-        // Save current mission
-        taskModelEditor.writeModel();
-
         // Don't want multiple missions named Anonymous if the developer doesn't rename them manually
         ArrayList<String> playNames = new ArrayList<String>();
         ArrayList<MissionPlanSpecification> missions = mediator.getProject().getAllMissionPlans();
@@ -662,9 +652,6 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         // Adds sub-mission spec
         // Updates JTree structure
         Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Adding a MissionPlanSpecification", this);
-
-        // Save current mission
-        taskModelEditor.writeModel();
 
         // Create and add sub mission
         mediator.getProject().addSubMissionPlan(childMSpec, parentMSpec);
@@ -744,13 +731,11 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
     }
 
     private void saveDrmMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmMActionPerformed
-        taskModelEditor.writeModel();
         mediator.saveProject();
         updateTitle();
     }//GEN-LAST:event_saveDrmMActionPerformed
 
     private void saveDrmAsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDrmAsMActionPerformed
-        taskModelEditor.writeModel();
         mediator.saveProjectAs();
         updateTitle();
     }//GEN-LAST:event_saveDrmAsMActionPerformed
@@ -796,7 +781,6 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
     }//GEN-LAST:event_specGUIMActionPerformed
 
     private void runAgentsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_runAgentsMActionPerformed
-        taskModelEditor.writeModel();
         runHelperAgents();
         runCheckerAgents();
         
@@ -887,7 +871,6 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         }
         Object nodeInfo = node.getUserObject();
         if (nodeInfo instanceof MissionPlanSpecification) {
-            taskModelEditor.writeModel();
             taskModelEditor.setMissionSpecification((MissionPlanSpecification) nodeInfo);
 //            taskModelEditor.setMode(FunctionMode.Nominal);
             dndTree.expandPath(getPath(node));
