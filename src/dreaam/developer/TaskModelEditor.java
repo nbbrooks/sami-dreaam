@@ -1469,7 +1469,7 @@ public class TaskModelEditor extends JPanel {
                         popup.add(new AbstractAction("Use Event Wizard") {
                             @Override
                             public void actionPerformed(ActionEvent ae) {
-                                EventWizardD wizardD = new EventWizardD(null, true, mSpec, graphPoint, dsgGraph, layout);
+                                EventWizardD wizardD = new EventWizardD(null, true, mSpec, graphPoint, dsgGraph, layout, vv);
                                 wizardD.setVisible(true);
                                 
                                 vv.repaint();

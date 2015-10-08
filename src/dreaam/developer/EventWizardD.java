@@ -3,6 +3,7 @@ package dreaam.developer;
 import dreaam.wizard.EventWizardGenerator;
 import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
 import edu.uci.ics.jung.graph.Graph;
+import edu.uci.ics.jung.visualization.VisualizationViewer;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
@@ -38,7 +39,8 @@ public class EventWizardD extends JDialog {
     protected Point2D graphPoint;
     protected Graph<Vertex, Edge> dsgGraph;
     protected AbstractLayout<Vertex, Edge> layout;
-
+    protected VisualizationViewer<Vertex, Edge> vv;
+    
     // Layout
     private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
@@ -47,10 +49,13 @@ public class EventWizardD extends JDialog {
     protected JPanel eventsP;
     protected javax.swing.JButton cancelB;
 
-    public EventWizardD(java.awt.Frame parent, boolean modal, MissionPlanSpecification mSpec, Point2D graphPoint, Graph<Vertex, Edge> dsgGraph, AbstractLayout<Vertex, Edge> layout) {
+    public EventWizardD(java.awt.Frame parent, boolean modal, MissionPlanSpecification mSpec, Point2D graphPoint, Graph<Vertex, Edge> dsgGraph, AbstractLayout<Vertex, Edge> layout, VisualizationViewer<Vertex, Edge> vv) {
         super(parent, modal);
         this.mSpec = mSpec;
         this.graphPoint = graphPoint;
+        this.dsgGraph = dsgGraph;
+        this.layout = layout;
+        this.vv = vv;
         initComponents();
         setTitle("EventWizardD");
     }
@@ -115,7 +120,7 @@ public class EventWizardD extends JDialog {
 
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    boolean success = EventWizardGenerator.getInstance().runWizard(leafNode.className, mSpec, graphPoint, dsgGraph, layout);
+                    boolean success = EventWizardGenerator.getInstance().runWizard(leafNode.className, mSpec, graphPoint, dsgGraph, layout, vv);
                 }
             });
             panel.add(eventB);
