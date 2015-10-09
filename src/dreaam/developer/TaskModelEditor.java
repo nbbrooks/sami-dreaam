@@ -1511,7 +1511,7 @@ public class TaskModelEditor extends JPanel {
         // Update vizualization's layout
         vv.getModel().setGraphLayout(spec.getLayout());
         layout.setGraph(transientGraph);
-        spec.updateAllTags();
+        spec.updateTags();
         refreshGraphVisibility();
 
         MultiLayerTransformer mlt = vv.getRenderContext().getMultiLayerTransformer();

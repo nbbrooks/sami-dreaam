@@ -784,10 +784,11 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         runHelperAgents();
         runCheckerAgents();
         
-//        for(MissionPlanSpecification mSpec : Mediator.getInstance().getProject().getAllMissionPlans()) {
-//            mSpec.fixGraph();
-//            mSpec.printGraph();
-//        }
+        for(MissionPlanSpecification mSpec : Mediator.getInstance().getProject().getAllMissionPlans()) {
+            mSpec.fixGraph();
+            mSpec.updateTags();
+            //mSpec.printGraph();
+        }
     }//GEN-LAST:event_runAgentsMActionPerformed
 
     private void runHelperAgents() {
