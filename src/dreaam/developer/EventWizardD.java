@@ -25,6 +25,7 @@ import sami.config.DomainConfig;
 import sami.config.DomainConfigManager;
 import sami.mission.Edge;
 import sami.mission.MissionPlanSpecification;
+import sami.mission.Place;
 import sami.mission.Vertex;
 
 /**
@@ -36,11 +37,12 @@ public class EventWizardD extends JDialog {
 
     private static final Logger LOGGER = Logger.getLogger(SelectGlobalVariableD.class.getName());
     protected MissionPlanSpecification mSpec;
+    protected Place p1;
     protected Point graphPoint;
     protected Graph<Vertex, Edge> dsgGraph;
     protected AbstractLayout<Vertex, Edge> layout;
     protected VisualizationViewer<Vertex, Edge> vv;
-    
+
     // Layout
     private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
@@ -48,6 +50,17 @@ public class EventWizardD extends JDialog {
     protected JScrollPane eventsSP;
     protected JPanel eventsP;
     protected javax.swing.JButton cancelB;
+
+    public EventWizardD(java.awt.Frame parent, boolean modal, MissionPlanSpecification mSpec, Place p1, Graph<Vertex, Edge> dsgGraph, AbstractLayout<Vertex, Edge> layout, VisualizationViewer<Vertex, Edge> vv) {
+        super(parent, modal);
+        this.mSpec = mSpec;
+        this.p1 = p1;
+        this.dsgGraph = dsgGraph;
+        this.layout = layout;
+        this.vv = vv;
+        initComponents();
+        setTitle("EventWizardD");
+    }
 
     public EventWizardD(java.awt.Frame parent, boolean modal, MissionPlanSpecification mSpec, Point graphPoint, Graph<Vertex, Edge> dsgGraph, AbstractLayout<Vertex, Edge> layout, VisualizationViewer<Vertex, Edge> vv) {
         super(parent, modal);
@@ -120,7 +133,12 @@ public class EventWizardD extends JDialog {
 
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    boolean success = EventWizardSingleton.getInstance().runWizard(leafNode.className, mSpec, graphPoint, dsgGraph, layout, vv);
+                    boolean success;
+                    if (p1 != null) {
+                        success = EventWizardSingleton.getInstance().runWizard(leafNode.className, mSpec, p1, dsgGraph, layout, vv);
+                    } else {
+                        success = EventWizardSingleton.getInstance().runWizard(leafNode.className, mSpec, graphPoint, dsgGraph, layout, vv);
+                    }
                     setVisible(false);
                 }
             });

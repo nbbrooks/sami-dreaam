@@ -2,6 +2,7 @@ package dreaam.developer;
 
 import sami.DreaamHelper;
 import dreaam.developer.SelectTokenD.EdgeType;
+import dreaam.wizard.EventWizardSingleton;
 import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
 import edu.uci.ics.jung.algorithms.layout.GraphElementAccessor;
 import edu.uci.ics.jung.algorithms.layout.StaticLayout;
@@ -422,6 +423,7 @@ public class TaskModelEditor extends JPanel {
         JButton help = new JButton("Help");
         help.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                EventWizardSingleton.getInstance().computeRequirements(mSpec);
             }
         });
 
@@ -1228,6 +1230,15 @@ public class TaskModelEditor extends JPanel {
                         });
                         if (vertex instanceof Place) {
                             final Place place = (Place) vertex;
+                            popup.add(new AbstractAction("Use Event Wizard") {
+                                @Override
+                                public void actionPerformed(ActionEvent ae) {
+                                    EventWizardD wizardD = new EventWizardD(null, true, mSpec, place, transientGraph, layout, vv);
+                                    wizardD.setVisible(true);
+
+                                    vv.repaint();
+                                }
+                            });
                             popup.add(new AbstractAction("Edit Sub-missions") {
                                 public void actionPerformed(ActionEvent e) {
 

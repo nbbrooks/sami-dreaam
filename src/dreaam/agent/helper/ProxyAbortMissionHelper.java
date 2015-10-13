@@ -90,7 +90,7 @@ public class ProxyAbortMissionHelper extends HelperAgent {
                     // Add AbortMission event to place
                     ReflectedEventSpecification sendAbortSpec = new ReflectedEventSpecification(SendAbortMission.class.getName());
                     missionPlanSpecification.updateEventSpecList(endPlace, sendAbortSpec);
-                    endPlace.addEventSpec(sendAbortSpec);
+                    endPlace.addEventSpec(sendAbortSpec, true);
                     missionToEndPlace.put(missionPlanSpecification, endPlace);
                 }
 
@@ -135,17 +135,17 @@ public class ProxyAbortMissionHelper extends HelperAgent {
                     // Add ProxyAbortMissionReceived to transition
                     ReflectedEventSpecification proxyAbortReceivedSpec = new ReflectedEventSpecification(ProxyAbortMissionReceived.class.getName());
                     missionPlanSpecification.updateEventSpecList(newTransition, proxyAbortReceivedSpec);
-                    newTransition.addEventSpec(proxyAbortReceivedSpec);
+                    newTransition.addEventSpec(proxyAbortReceivedSpec, true);
                     transitionLookup.put(place, newTransition);
 
                     // Add edge from nominal place to created transition with Proxy token spec
                     InEdge inEdge = new InEdge(place, newTransition, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
-                    inEdge.addTokenRequirement(relProxyTokenReq);
+                    inEdge.addTokenRequirement(relProxyTokenReq, true);
                     missionPlanSpecification.addEdge(inEdge, place, newTransition);
 
                     // Add edge from created transition to end place
                     OutEdge outEdge = new OutEdge(newTransition, endPlace, FunctionMode.Recovery, Mediator.getInstance().getProject().getAndIncLastElementId());
-                    outEdge.addTokenRequirement(takeNoneTokenReq);
+                    outEdge.addTokenRequirement(takeNoneTokenReq, true);
                     missionPlanSpecification.addEdge(outEdge, newTransition, endPlace);
                 }
 
