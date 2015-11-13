@@ -30,6 +30,7 @@ public class EventWizardSingleton {
     private final static Logger LOGGER = Logger.getLogger(EventWizardSingleton.class.getName());
     private static EventWizardSingleton instance = null;
     protected ArrayList<EventWizardInt> wizards = new ArrayList<EventWizardInt>();
+    protected UnhandledEventWizard unhandledWizard = new UnhandledEventWizard();
 
     private static class EventWizardGeneratorHolder {
 
@@ -63,6 +64,10 @@ public class EventWizardSingleton {
         for (EventWizardInt wizard : wizards) {
             handled = wizard.runWizard(eventClassname, mSpec, p1, dsgGraph, layout, vv) ? true : handled;
         }
+        if(!handled) {
+            // Just put the OE on a place, then link it serially to an empty transition and an empty place
+            handled = unhandledWizard.runWizard(eventClassname, mSpec, p1, dsgGraph, layout, vv);
+        }
         if (handled) {
             computeRequirements(mSpec);
         }
@@ -73,6 +78,10 @@ public class EventWizardSingleton {
         boolean handled = false;
         for (EventWizardInt wizard : wizards) {
             handled = wizard.runWizard(eventClassname, mSpec, graphPoint, dsgGraph, layout, vv) ? true : handled;
+        }
+        if(!handled) {
+            // Just put the OE on a place, then link it serially to an empty transition and an empty place
+            handled = unhandledWizard.runWizard(eventClassname, mSpec, graphPoint, dsgGraph, layout, vv);
         }
         if (handled) {
             computeRequirements(mSpec);

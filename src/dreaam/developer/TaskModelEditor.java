@@ -11,10 +11,13 @@ import edu.uci.ics.jung.visualization.GraphZoomScrollPane;
 import edu.uci.ics.jung.visualization.Layer;
 import edu.uci.ics.jung.visualization.MultiLayerTransformer;
 import edu.uci.ics.jung.visualization.VisualizationViewer;
+import edu.uci.ics.jung.visualization.control.AbstractModalGraphMouse;
 import edu.uci.ics.jung.visualization.control.CrossoverScalingControl;
-import edu.uci.ics.jung.visualization.control.EditingModalGraphMouse;
+import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse;
+import edu.uci.ics.jung.visualization.control.ModalGraphMouse.Mode;
 import edu.uci.ics.jung.visualization.control.ScalingControl;
-import edu.uci.ics.jung.visualization.transform.MutableTransformer;
+import edu.uci.ics.jung.visualization.control.ScalingGraphMousePlugin;
+import edu.uci.ics.jung.visualization.control.TranslatingGraphMousePlugin;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
@@ -68,13 +71,12 @@ public class TaskModelEditor extends JPanel {
     //  However, DirectedSparseGraph can not be serialized because one of its fields does not have a no-arg constructor
     //  So we call updateSerializableModel() when we want to write all changes to the mSpec's serializable SparseMultigraph graph
     Graph<Vertex, Edge> transientGraph;
-    Graph<Vertex, Edge> serializableGraph;
     AbstractLayout<Vertex, Edge> layout;
     MissionPlanSpecification mSpec = null;
     Mediator mediator = Mediator.getInstance();
     VisualizationViewer<Vertex, Edge> vv;   // The visual component and renderer for the graph
     String instructions = "Guess";
-    EditingModalGraphMouse<Vertex, Edge> graphMouse = null;
+    AbstractModalGraphMouse graphMouse;
     private FunctionMode editorMode = FunctionMode.Nominal;
     private Vertex expandedNomVertex = null;
     private DREAAM dreaam;
@@ -336,12 +338,10 @@ public class TaskModelEditor extends JPanel {
                             } else {
                                 return GuiConfig.NOMINAL_STROKE_SEL;
                             }
+                        } else if (vertex.getFunctionMode() == FunctionMode.Recovery) {
+                            return GuiConfig.RECOVERY_STROKE;
                         } else {
-                            if (vertex.getFunctionMode() == FunctionMode.Recovery) {
-                                return GuiConfig.RECOVERY_STROKE;
-                            } else {
-                                return GuiConfig.NOMINAL_STROKE;
-                            }
+                            return GuiConfig.NOMINAL_STROKE;
                         }
                     case Background:
                         if (vertex.getBeingModified()) {
@@ -350,12 +350,10 @@ public class TaskModelEditor extends JPanel {
                             } else {
                                 return GuiConfig.NOMINAL_STROKE_SEL;
                             }
+                        } else if (vertex.getFunctionMode() == FunctionMode.Recovery) {
+                            return GuiConfig.RECOVERY_STROKE;
                         } else {
-                            if (vertex.getFunctionMode() == FunctionMode.Recovery) {
-                                return GuiConfig.RECOVERY_STROKE;
-                            } else {
-                                return GuiConfig.NOMINAL_STROKE;
-                            }
+                            return GuiConfig.NOMINAL_STROKE;
                         }
                     case None:
                     default:
@@ -366,35 +364,32 @@ public class TaskModelEditor extends JPanel {
 
         vv.setVertexToolTipTransformer(
                 new Transformer<Vertex, String>() {
-                    @Override
-                    public String transform(Vertex vertex) {
-                        switch (vertex.getVisibilityMode()) {
-                            case Full:
-                                return vertex.getTag();
-                            case Background:
-                            case None:
-                            default:
-                                return null;
-                        }
-                    }
-                });
+            @Override
+            public String transform(Vertex vertex) {
+                switch (vertex.getVisibilityMode()) {
+                    case Full:
+                        return vertex.getTag();
+                    case Background:
+                    case None:
+                    default:
+                        return null;
+                }
+            }
+        });
     }
 
     public TaskModelEditor(MissionPlanSpecification newSpec) {
         // Create mission view panel
-        serializableGraph = newSpec.getSerializableGraph();
         transientGraph = newSpec.getTransientGraph();
-        layout = new StaticLayout<Vertex, Edge>(transientGraph, new Dimension(600, 600));
+        layout = new StaticLayout<Vertex, Edge>(transientGraph);
         vv = new VisualizationViewer<Vertex, Edge>(layout);
         vv.setBackground(GuiConfig.BACKGROUND_COLOR);
-
         scaler = new CrossoverScalingControl();
 
         // Comment this line in and the next four out to switch to my mouse handler
         mml = new TaskModelEditor.MyMouseListener();
         vv.addMouseListener(mml);
         vv.addMouseMotionListener(mml);
-        vv.addMouseWheelListener(mml);
 
         addVisualizationTransformers();
         setMissionSpecification(newSpec);
@@ -407,16 +402,14 @@ public class TaskModelEditor extends JPanel {
 
         plus.addActionListener(
                 new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                        scaler.scale(vv, 1.1f, vv.getCenter());
-                        mml.zoom *= 1.1;
-                    }
-                });
+            public void actionPerformed(ActionEvent e) {
+                scaler.scale(vv, 1.1f, vv.getCenter());
+            }
+        });
         JButton minus = new JButton("-");
         minus.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 scaler.scale(vv, 1 / 1.1f, vv.getCenter());
-                mml.zoom /= 1.1;
             }
         });
 
@@ -434,6 +427,19 @@ public class TaskModelEditor extends JPanel {
                 vv.repaint();
             }
         });
+
+        graphMouse = new DefaultModalGraphMouse() {
+            protected void loadPlugins() {
+                translatingPlugin = new TranslatingGraphMousePlugin(InputEvent.SHIFT_MASK | InputEvent.BUTTON1_MASK);
+                scalingPlugin = new ScalingGraphMousePlugin(scaler, 0);
+
+                add(translatingPlugin);
+                add(scalingPlugin);
+                setMode(Mode.TRANSFORMING);
+            }
+        };
+        vv.setGraphMouse(graphMouse);
+        vv.addKeyListener(graphMouse.getModeKeyListener());
 
         controls = new JPanel();
         controls.add(plus);
@@ -798,11 +804,10 @@ public class TaskModelEditor extends JPanel {
         }
     }
 
-    private class MyMouseListener implements MouseListener, MouseMotionListener, MouseWheelListener {
+    private class MyMouseListener implements MouseListener, MouseMotionListener {
 
-        final CrossoverScalingControl scaler = new CrossoverScalingControl();
         Vertex selectedVertex = null, edgeStartVertex = null;
-        boolean amDraggingVertex = false, amCreatingEdge = false, amTranslating = false;
+        boolean amDraggingVertex = false, amCreatingEdge = false;
         Point2D prevMousePoint = null;
         double translationX = 0, translationY = 0, zoom = 1;
         TaskModelEditor editor;
@@ -989,22 +994,13 @@ public class TaskModelEditor extends JPanel {
                             selectVertex(vertex);
                             vv.repaint();
                         }
-                    } else {
-                        if (!amDraggingVertex) {
-                            // De-select vertex (if one was selected)
-                            // !amDraggingVertex - am just dragging really fast (outside click radius)
-                            selectVertex(null);
-                            vv.repaint();
-                        }
+                    } else if (!amDraggingVertex) {
+                        // De-select vertex (if one was selected)
+                        // !amDraggingVertex - am just dragging really fast (outside click radius)
+                        selectVertex(null);
+                        vv.repaint();
                     }
                 }
-            } else if (((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == MouseEvent.BUTTON2_DOWN_MASK)
-                    || ((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK))
-                    || ((me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK))) {
-                // Mouse 2 OR Mouse1+Shift OR Mouse1+Mouse3
-                // Begin translating
-                amTranslating = true;
-                prevMousePoint = (Point2D) framePoint.clone();
             }
         }
 
@@ -1022,17 +1018,6 @@ public class TaskModelEditor extends JPanel {
             } else if (amDraggingVertex && selectedVertex != null) {
                 mSpec.updateVertexLocation(selectedVertex, DreaamHelper.snapToGrid(graphPoint));
                 vv.repaint();
-            } else if (amTranslating && prevMousePoint != null) {
-                // Translate frame
-                // The Render transform doesn't update very quickly, so do it ourselves so translation looks smooth
-                MutableTransformer layout = vv.getRenderContext().getMultiLayerTransformer().getTransformer(Layer.VIEW);
-                double scale = vv.getRenderContext().getMultiLayerTransformer().getTransformer(Layer.VIEW).getScale();
-                double deltaX = (framePoint.getX() - prevMousePoint.getX()) * 1 / scale;
-                double deltaY = (framePoint.getY() - prevMousePoint.getY()) * 1 / scale;
-                layout.translate(deltaX, deltaY);
-                translationX += deltaX;
-                translationY += deltaY;
-                prevMousePoint = framePoint;
             }
         }
 
@@ -1044,9 +1029,8 @@ public class TaskModelEditor extends JPanel {
             final Point2D graphPoint = vv.getRenderContext().getMultiLayerTransformer().inverseTransform(framePoint);
             if (me.getButton() == MouseEvent.BUTTON1
                     && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == 0
-                    && !amDraggingVertex
-                    && !amTranslating) {
-                // Mouse1 only AND not dragging vertex AND not translating view
+                    && !amDraggingVertex) {
+                // Mouse1 only AND not dragging vertex
                 // Select graph element
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
                 if (pickSupport != null) {
@@ -1070,9 +1054,8 @@ public class TaskModelEditor extends JPanel {
                 }
             } else if (((me.getButton() == MouseEvent.BUTTON3 && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == 0)
                     || (me.getButton() == MouseEvent.BUTTON1 && (me.getModifiersEx() & (MouseEvent.BUTTON1_DOWN_MASK | MouseEvent.BUTTON2_DOWN_MASK | MouseEvent.BUTTON3_DOWN_MASK | MouseEvent.SHIFT_DOWN_MASK | MouseEvent.CTRL_DOWN_MASK)) == MouseEvent.CTRL_DOWN_MASK))
-                    && !amDraggingVertex
-                    && !amTranslating) {
-                // (Mouse 3 OR CTRL + Mouse1) AND not dragging vertex AND not translating view
+                    && !amDraggingVertex) {
+                // (Mouse 3 OR CTRL + Mouse1) AND not dragging vertex
                 // Right click menu
 
                 GraphElementAccessor<Vertex, Edge> pickSupport = vv.getPickSupport();
@@ -1480,21 +1463,7 @@ public class TaskModelEditor extends JPanel {
             edgeStartVertex = null;
             amDraggingVertex = false;
             amCreatingEdge = false;
-            amTranslating = false;
             prevMousePoint = null;
-        }
-
-        @Override
-        public void mouseWheelMoved(MouseWheelEvent e) {
-            if (e.getWheelRotation() < 0) {
-                // Zoom in
-                scaler.scale(vv, 1.1f, e.getPoint());
-                zoom *= 1.1;
-            } else if (e.getWheelRotation() > 0) {
-                // Zoom out
-                scaler.scale(vv, 1 / 1.1f, e.getPoint());
-                zoom /= 1.1;
-            }
         }
 
         @Override
@@ -1517,7 +1486,6 @@ public class TaskModelEditor extends JPanel {
         mml.resetSelection();
         this.mSpec = spec;
         transientGraph = spec.getTransientGraph();
-        serializableGraph = spec.getSerializableGraph();
         layout = spec.getLayout();
         // Update vizualization's layout
         vv.getModel().setGraphLayout(spec.getLayout());
