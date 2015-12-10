@@ -9,7 +9,10 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.logging.Logger;
 import javax.swing.*;
 
@@ -21,7 +24,8 @@ import javax.swing.*;
 public class SelectGlobalVariableD extends javax.swing.JDialog {
 
     private static final Logger LOGGER = Logger.getLogger(SelectGlobalVariableD.class.getName());
-    private HashMap<String, Object> variables, existingVariables;
+    private HashMap<String, Object> existingVariables;
+    private LinkedHashMap<String, Object> variables;
 
     private javax.swing.JButton newB, okB, cancelB;
 
@@ -39,10 +43,20 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         super(parent, modal);
         this.existingVariables = existingVariables;
         if (existingVariables == null) {
-            existingVariables = new HashMap<String, Object>();
-            this.variables = new HashMap<String, Object>();
+            this.existingVariables = new HashMap<String, Object>();
+            this.variables = new LinkedHashMap<String, Object>();
         } else {
-            this.variables = (HashMap<String, Object>) existingVariables.clone();
+            this.variables = new LinkedHashMap<String, Object>();
+            ArrayList<String> variablesNames = new ArrayList<String>(existingVariables.keySet());
+            Collections.sort(variablesNames,
+                    new Comparator<String>() {
+                        public int compare(String f1, String s2) {
+                            return f1.compareTo(s2);
+                        }
+                    });
+            for (String variableName : variablesNames) {
+                variables.put(variableName, existingVariables.get(variableName));
+            }
         }
         initComponents();
         setTitle("SelectGlobalVariableD");
@@ -64,12 +78,12 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         existingVariablesSP.setViewportView(existingVariablesP);
 
         JPanel buttonsP = new JPanel(new GridBagLayout());
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-        constraints.fill = GridBagConstraints.BOTH;
-        constraints.weightx = 1.0;
-        constraints.weighty = 1.0;
+        GridBagConstraints buttonsConstraints = new GridBagConstraints();
+        buttonsConstraints.gridx = 0;
+        buttonsConstraints.gridy = 0;
+        buttonsConstraints.fill = GridBagConstraints.BOTH;
+        buttonsConstraints.weightx = 1.0;
+        buttonsConstraints.weighty = 1.0;
 
         newB = new javax.swing.JButton();
         newB.setText("Add New");
@@ -79,8 +93,8 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
             }
         });
         newB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
-        buttonsP.add(newB, constraints);
-        constraints.gridy = constraints.gridy + 1;
+        buttonsP.add(newB, buttonsConstraints);
+        buttonsConstraints.gridy = buttonsConstraints.gridy + 1;
 
         okB = new javax.swing.JButton();
         okB.setText("OK");
@@ -90,8 +104,8 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
             }
         });
         okB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
-        buttonsP.add(okB, constraints);
-        constraints.gridy = constraints.gridy + 1;
+        buttonsP.add(okB, buttonsConstraints);
+        buttonsConstraints.gridy = buttonsConstraints.gridy + 1;
 
         cancelB = new javax.swing.JButton();
         cancelB.setText("Cancel");
@@ -101,13 +115,22 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
             }
         });
         cancelB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
-        buttonsP.add(cancelB, constraints);
-        constraints.gridy = constraints.gridy + 1;
+        buttonsP.add(cancelB, buttonsConstraints);
+        buttonsConstraints.gridy = buttonsConstraints.gridy + 1;
 
-        BoxLayout boxLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
-        getContentPane().setLayout(boxLayout);
-        getContentPane().add(existingVariablesSP);
-        getContentPane().add(buttonsP);
+        getContentPane().setLayout(new GridBagLayout());
+
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.weightx = 1.0;
+        constraints.weighty = 1.0;
+
+        getContentPane().add(existingVariablesSP, constraints);
+        constraints.gridy = constraints.gridy + 1;
+        getContentPane().add(buttonsP, constraints);
+        constraints.gridy = constraints.gridy + 1;
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
