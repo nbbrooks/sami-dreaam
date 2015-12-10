@@ -2,7 +2,6 @@ package dreaam.developer;
 
 import sami.event.InputEvent;
 import sami.event.ReflectedEventSpecification;
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
@@ -16,16 +15,12 @@ import java.awt.event.ItemListener;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -34,9 +29,7 @@ import javax.swing.SwingConstants;
 import sami.engine.Mediator;
 import sami.event.Event;
 import sami.event.ReflectionHelper;
-import sami.markup.Markup;
 import sami.mission.MissionPlanSpecification;
-import sami.uilanguage.MarkupComponent;
 
 /**
  * Dialog for specifying the parameters for an input (fields and variables) or
@@ -60,7 +53,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     private final static int BUTTON_HEIGHT = 50;
     private JScrollPane scrollPane;
     private JPanel paramsPanel;
-    private JButton okB;
+    private JButton saveB;
     // Class held by event spec
     private Class eventClass = null;
     private EventType eventType;
@@ -70,7 +63,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
     private HashMap<String, String> fieldNameToWriteVariable;
     private HashMap<String, Boolean> fieldNameToEditable;
 
-    private final HashMap<Field, MarkupComponent> fieldToValueComponent;
+    private final HashMap<Field, ComplexMarkupCreationComponentP> fieldToComplexValueComponent;
     // Combo box for selecting a variable to read at run-time to get the field's object definition
     private final HashMap<Field, JComboBox> fieldToVariableCB;
     // Reverse lookup for disabling/enabling editable button based on variable selection
@@ -103,14 +96,13 @@ public class ReflectedEventD extends javax.swing.JDialog {
         } catch (ClassNotFoundException cnfe) {
             cnfe.printStackTrace();
         }
-        fieldToValueComponent = new HashMap<Field, MarkupComponent>();
+        fieldToComplexValueComponent = new HashMap<Field, ComplexMarkupCreationComponentP>();
         fieldToVariableCB = new HashMap<Field, JComboBox>();
         variableCBToField = new HashMap<JComboBox, Field>();
         fieldToVariableTF = new HashMap<Field, JTextField>();
         fieldToEditableB = new HashMap<Field, JButton>();
 
         initComponents();
-        setTitle("ReflectedEventD");
     }
 
     protected void addParamComponents() {
@@ -144,34 +136,49 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 fieldConstraints.weighty = 1.0;
 
                 // Add description for this field
-                JLabel description = new JLabel(fieldNameToDescription.get(fieldName), SwingConstants.LEFT);
+                JLabel description = new JLabel(" " + fieldNameToDescription.get(fieldName), SwingConstants.LEFT);
                 description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
                 fieldPanel.add(description, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 // Add combo box for selecting variable name
-                JLabel cbL = new JLabel("Read variable name");
+                JLabel cbL = new JLabel(" Read variable name");
+                cbL.setToolTipText("Read in this field's value at run-time from a variable");
                 fieldPanel.add(cbL, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 addVariableComboBox(field, fieldNameToReadVariable, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 // Add component for defining value
-                JLabel definitionL = new JLabel("Definition");
+                JLabel definitionL = new JLabel(" Value");
+                definitionL.setToolTipText("Manually define the value for this field");
                 fieldPanel.add(definitionL, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
-                addValueComponent(field, fieldNameToValue, fieldPanel, fieldConstraints);
-//                fieldConstraints.gridy = fieldConstraints.gridy + 1;
+
+                ComplexMarkupCreationComponentP creationComponent = new ComplexMarkupCreationComponentP(field, fieldNameToValue.get(field.getName()));
+//                ClassQuantity quantity = null;
+//                Class fieldClass = field.getType();
+//                if (fieldClass == ArrayList.class) {
+//                    quantity = ClassQuantity.ARRAY_LIST;
+//                } else {
+//                    quantity = ClassQuantity.SINGLE;
+//                }
+//                ComplexMarkupCreationComponentP creationComponent = new ComplexMarkupCreationComponentP(quantity, fieldClass, fieldNameToValue.get(field.getName()));
+                fieldToComplexValueComponent.put(field, creationComponent);
+                fieldPanel.add(creationComponent, fieldConstraints);
+                fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 // Add text field for saving defined value to variable
-                JLabel writeL = new JLabel("Write variable name");
+                JLabel writeL = new JLabel(" Write variable name (optional)");
+                writeL.setToolTipText("Optionally store this field's value in a variable for other events to reference");
                 fieldPanel.add(writeL, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 addVariableTextField(field, fieldNameToWriteVariable, fieldPanel, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
 
                 // Add toggle button for setting ability to edit field at run-time
-                JLabel editableL = new JLabel("Definition editable at run-time?");
+                JLabel editableL = new JLabel(" Definition editable at run-time?");
+                editableL.setToolTipText("If a value is manually specified here, should it be editable at run-time?");
                 fieldPanel.add(editableL, fieldConstraints);
                 fieldConstraints.gridy = fieldConstraints.gridy + 1;
                 addEditableButton(field, fieldNameToEditable, fieldPanel, fieldConstraints);
@@ -208,7 +215,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
                     variableConstraints.weighty = 1.0;
 
                     // Add description for this field
-                    JLabel description = new JLabel(variableNameToDescription.get(variableFieldName), SwingConstants.LEFT);
+                    JLabel description = new JLabel(" " + variableNameToDescription.get(variableFieldName), SwingConstants.LEFT);
                     description.setMaximumSize(new Dimension(Integer.MAX_VALUE, description.getPreferredSize().height));
                     variablePanel.add(description, variableConstraints);
                     variableConstraints.gridy = variableConstraints.gridy + 1;
@@ -258,91 +265,14 @@ public class ReflectedEventD extends javax.swing.JDialog {
                 LOGGER.severe("Read variable \"" + fieldNameToReadVariable.get(field.getName()) + "\" for field " + fieldNameToReadVariable.get(field.getName()) + " is not an existing variable");
             }
         }
+
+        comboBox.setLightWeightPopupEnabled(false);
+
         fieldToVariableCB.put(field, comboBox);
         variableCBToField.put(comboBox, field);
         panel.add(comboBox, constraints);
         comboBox.addItemListener(variableSelectedListener);
-    }
 
-    protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToValue, JPanel panel, GridBagConstraints constraints) {
-        System.out.println("addValueComponent " + field.getName());
-        addValueComponent(field, fieldNameToValue, panel, constraints, 0);
-    }
-
-    protected void addValueComponent(Field field, HashMap<String, Object> fieldNameToValue, JPanel panel, GridBagConstraints constraints, int recursionDepth) {
-        System.out.println("addValueComponent " + field.getName() + " " + recursionDepth);
-        JComponent visualization = null;
-        if (recursionDepth > 3) {
-            visualization = new JLabel(field.getName() + " (" + field.getType().getSimpleName() + "): No component - max recursion", SwingConstants.LEFT);
-        } else {
-            MarkupComponent markupComponent = getValueComponent(field, fieldNameToValue);
-
-            if (markupComponent != null && markupComponent.getComponent() != null) {
-                visualization = markupComponent.getComponent();
-                fieldToValueComponent.put(field, markupComponent);
-            } else {
-                // There is no component that can directly be used to define a value for this field
-                //  Recursively add components for its fields, if possible
-
-                Class c;
-                try {
-                    c = Class.forName(field.getType().getTypeName());
-                    if (Map.class.isAssignableFrom(c)
-                            || List.class.isAssignableFrom(c)
-                            || Class.class.isAssignableFrom(c)
-                            || Hashtable.class.isAssignableFrom(c)) {
-                        // Can't do these yet
-                        visualization = new JLabel(field.getName() + " (" + field.getType().getSimpleName() + "): No component - unsupported", SwingConstants.LEFT);
-                    } else {
-                        // Create JPanel to house sub-field's components
-                        JPanel recursionPanel = new JPanel();
-                        recursionPanel.setLayout(new GridBagLayout());
-                        recursionPanel.setBorder(BorderFactory.createLineBorder(Color.black));
-
-                        GridBagConstraints recursionConstraints = new GridBagConstraints();
-                        recursionConstraints.gridx = 0;
-                        recursionConstraints.gridy = 0;
-                        recursionConstraints.fill = GridBagConstraints.BOTH;
-                        recursionConstraints.weightx = 1.0;
-                        recursionConstraints.weighty = 1.0;
-
-                        JLabel recursionL = new JLabel(field.getName() + " (" + field.getType().getSimpleName() + ")");
-                        recursionPanel.add(recursionL, recursionConstraints);
-                        recursionConstraints.gridy = recursionConstraints.gridy + 1;
-
-                        Field[] classFields = c.getDeclaredFields();
-                        for (Field classField : classFields) {
-                            addValueComponent(classField, fieldNameToValue, recursionPanel, recursionConstraints);
-                        }
-                        visualization = recursionPanel;
-                    }
-                } catch (ClassNotFoundException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-        panel.add(visualization, constraints);
-        constraints.gridy = constraints.gridy + 1;
-    }
-
-    protected MarkupComponent getValueComponent(Field field, HashMap<String, Object> fieldNameToValue) {
-        MarkupComponent markupComponent = UiComponentGenerator.getInstance().getCreationComponent((java.lang.reflect.Type) field.getType(), field, new ArrayList<Markup>(), mSpec, null);
-        if (markupComponent != null && markupComponent.getComponent() != null) {
-            Object definition = fieldNameToValue.get(field.getName());
-            if (definition != null) {
-                // This field already has been defined with a value
-                // Earlier we had to replace primitive fields with their wrapper object, take that into account here
-                if (definition.getClass().equals(field.getType())
-                        || (definition.getClass().equals(Double.class) && field.getType().equals(double.class))
-                        || (definition.getClass().equals(Float.class) && field.getType().equals(float.class))
-                        || (definition.getClass().equals(Integer.class) && field.getType().equals(int.class))
-                        || (definition.getClass().equals(Long.class) && field.getType().equals(long.class))
-                        || (definition.getClass().equals(Boolean.class) && field.getType().equals(boolean.class))) {
-                    UiComponentGenerator.getInstance().setComponentValue(markupComponent, definition);
-                }
-            }
-        }
-        return markupComponent;
     }
 
     protected void addEditableButton(Field field, HashMap<String, Boolean> fieldNameToEditable, JPanel panel, GridBagConstraints constraints) {
@@ -360,12 +290,10 @@ public class ReflectedEventD extends javax.swing.JDialog {
         JComboBox variableCombo = fieldToVariableCB.get(field);
         if (variableCombo == null) {
             LOGGER.severe("Could not find variable combo for field: " + field + ", fieldToVariableComboBox: " + fieldToVariableCB.toString());
-        } else {
-            if (variableCombo.getSelectedIndex() != 0) {
-                enableEditB.setText("Locked");
-                enableEditB.setSelected(false);
-                enableEditB.setEnabled(false);
-            }
+        } else if (variableCombo.getSelectedIndex() != 0) {
+            enableEditB.setText("Locked");
+            enableEditB.setSelected(false);
+            enableEditB.setEnabled(false);
         }
         enableEditB.addActionListener(new ActionListener() {
 
@@ -414,10 +342,10 @@ public class ReflectedEventD extends javax.swing.JDialog {
         scrollPane = new JScrollPane(paramsPanel);
         scrollPane.setPreferredSize(paramsPanel.getPreferredSize());
 
-        okB = new javax.swing.JButton();
-        okB.setText("OK");
-        okB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
-        okB.addActionListener(new java.awt.event.ActionListener() {
+        saveB = new javax.swing.JButton();
+        saveB.setText("Save");
+        saveB.setPreferredSize(new Dimension(saveB.getPreferredSize().width, BUTTON_HEIGHT));
+        saveB.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 okButtonActionPerformed(evt);
             }
@@ -426,7 +354,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
         BoxLayout boxLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
         getContentPane().setLayout(boxLayout);
         getContentPane().add(scrollPane);
-        getContentPane().add(okB);
+        getContentPane().add(saveB);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
@@ -441,6 +369,8 @@ public class ReflectedEventD extends javax.swing.JDialog {
      * @param evt
      */
     private void okButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        //@todo check if all fields have either a read variable or manual value
+
         HashMap<String, Object> fieldNameToValue = getValuesFromComponents();
 
         eventSpec.setFieldValues(fieldNameToValue);
@@ -461,14 +391,13 @@ public class ReflectedEventD extends javax.swing.JDialog {
      */
     private HashMap<String, Object> getValuesFromComponents() {
         HashMap<String, Object> fieldNameToObject = new HashMap<String, Object>();
-        for (Field field : fieldToValueComponent.keySet()) {
+        for (Field field : fieldToComplexValueComponent.keySet()) {
             JComboBox variableComboBox = fieldToVariableCB.get(field);
             if (variableComboBox == null || variableComboBox.getSelectedItem().toString().equalsIgnoreCase(Event.NONE)) {
                 // User selected NONE for variable, now see if they created a value definition
-                MarkupComponent markupComponent = fieldToValueComponent.get(field);
-                if (markupComponent != null) {
-                    // Store the value from the component
-                    Object value = UiComponentGenerator.getInstance().getComponentValue(markupComponent, field.getType());
+                ComplexMarkupCreationComponentP componentP = fieldToComplexValueComponent.get(field);
+                if (componentP != null) {
+                    Object value = componentP.getValue();
                     if (value != null) {
                         fieldNameToObject.put(field.getName(), value);
                     }

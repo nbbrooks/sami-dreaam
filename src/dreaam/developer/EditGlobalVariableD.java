@@ -31,9 +31,12 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED;
+import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED;
 import javax.swing.SwingConstants;
 import sami.markup.Markup;
 import sami.uilanguage.MarkupComponent;
+import sami.variable.Variable.ClassQuantity;
 
 /**
  * Dialogue for specifying a global variable: (variable name, class, and value).
@@ -49,14 +52,17 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
     private final static Logger LOGGER = Logger.getLogger(EditGlobalVariableD.class.getName());
     private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
-    private JScrollPane scrollPane;
-    private JPanel paramsP;
 
-    private HashMap<Field, MarkupComponent> fieldToComponent;
+    private JScrollPane scrollPane;
+    private JPanel paramsP, listP;
 
     private Object value = null;
 
-    MarkupComponent rootComponent;
+    MarkupComponent rootComponentSingle;
+    ArrayList<MarkupComponent> rootComponentList = new ArrayList<MarkupComponent>();
+
+    HashMap<Field, MarkupComponent> fieldToComponentSingle = new HashMap<Field, MarkupComponent>();
+    ArrayList<HashMap<Field, MarkupComponent>> fieldToComponentList = new ArrayList<HashMap<Field, MarkupComponent>>();
 
     boolean foundComponents, confirmedExit = false;
 
@@ -68,64 +74,66 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
     JLabel classL;
     JComboBox classCB;
     Class selectedClass;
+    // Combo box for selecting if the definition is a single instance of the class or a list of the class
+    JLabel singleOrListL;
+    JComboBox classQuantityCB;
+    ClassQuantity selectedClassQuantity;
     // Done/cancel
     private JButton okB, cancelB;
 
     private ActivityListener activityListener = new ActivityListener();
 
-    /**
-     * Creates new form ReflectedEventD
-     */
+    ComplexMarkupCreationComponentP componentP;
+
     public EditGlobalVariableD(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
-        rootComponent = null;
-        fieldToComponent = new HashMap<Field, MarkupComponent>();
 
-        initComponents();
+        initChoiceComponent();
+        selectedClassQuantity = (ClassQuantity) classQuantityCB.getSelectedItem();
+        selectedClass = (Class) classCB.getSelectedItem();
+        initDefinitionComponent();
         setTitle("EditGlobalVariableD");
     }
 
     public EditGlobalVariableD(java.awt.Frame parent, boolean modal, String variableName, Object variableValue) {
-//        this(parent, modal);
-
         super(parent, modal);
         this.name = variableName;
         this.value = variableValue;
-        rootComponent = null;
-        fieldToComponent = new HashMap<Field, MarkupComponent>();
 
-        initComponents();
         setTitle("EditGlobalVariableD");
+        initChoiceComponent();
 
         if (variableName != null && variableValue != null) {
-            selectedClass = variableValue.getClass();
+
             nameTF.setText(variableName);
-            classCB.setSelectedItem(variableValue.getClass());
+
+            if (variableValue instanceof ArrayList) {
+                if (((ArrayList) variableValue).isEmpty()) {
+                    LOGGER.severe("Global variable of type ArrayList is empty, cannot determine inner class type");
+                    selectedClass = null;
+                } else {
+                    selectedClass = ((ArrayList) variableValue).get(0).getClass();
+                }
+                selectedClassQuantity = ClassQuantity.ARRAY_LIST;
+            } else {
+                selectedClass = variableValue.getClass();
+                selectedClassQuantity = ClassQuantity.SINGLE;
+            }
+            classCB.setSelectedItem(selectedClass);
+            classQuantityCB.setSelectedItem(selectedClassQuantity);
+        } else {
+            selectedClassQuantity = (ClassQuantity) classQuantityCB.getSelectedItem();
+            selectedClass = (Class) classCB.getSelectedItem();
         }
+
+        initDefinitionComponent();
     }
 
-    protected void addParamComponents() {
-        if (selectedClass == null) {
+    protected void addComplexMarkupComponent() {
+        if (selectedClass == null || selectedClassQuantity == null) {
             return;
         }
-
-        // Make sure we have an instance of the class
-        boolean newInstance = value == null;
-        if (value == null) {
-            try {
-                value = selectedClass.newInstance();
-            } catch (InstantiationException ex) {
-                // Class has no default constructor, usually indicative of it being a primitive
-            } catch (IllegalAccessException ex) {
-                LOGGER.log(Level.SEVERE, null, ex);
-                return;
-            }
-        }
-
-        // Get either
-        //  1- Single component which supports creation of the root class
-        //  2- Multiple components which support creation of all the fields and sub-fields (if necessary) within the recursion limit
-        foundComponents = true;
+        componentP = new ComplexMarkupCreationComponentP(selectedClassQuantity, selectedClass, value);
 
         GridBagConstraints paramsConstraints = new GridBagConstraints();
         paramsConstraints.gridx = 0;
@@ -134,44 +142,9 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         paramsConstraints.weightx = 1.0;
         paramsConstraints.weighty = 1.0;
 
-        rootComponent = getRootValueComponent(selectedClass, value, newInstance);
-        if (rootComponent != null && rootComponent.getComponent() != null) {
-            // Option 1- Single component which supports creation of the root class
-            paramsP.add(rootComponent.getComponent(), paramsConstraints);
-            paramsConstraints.gridy = paramsConstraints.gridy + 1;
-        } else {
-            // Try option 2- Multiple components which support creation of all the fields and sub-fields (if necessary) within the recursion limit
+        paramsP.add(componentP, paramsConstraints);
+        paramsConstraints.gridy = paramsConstraints.gridy + 1;
 
-            // Create JPanel to house sub-field's components
-            JPanel recursionPanel = new JPanel();
-            recursionPanel.setLayout(new GridBagLayout());
-            recursionPanel.setBorder(BorderFactory.createLineBorder(Color.black));
-
-            GridBagConstraints recursionConstraints = new GridBagConstraints();
-            recursionConstraints.gridx = 0;
-            recursionConstraints.gridy = 0;
-            recursionConstraints.fill = GridBagConstraints.BOTH;
-            recursionConstraints.weightx = 1.0;
-            recursionConstraints.weighty = 1.0;
-
-            JLabel recursionL = new JLabel(selectedClass.getSimpleName());
-            recursionPanel.add(recursionL, recursionConstraints);
-            recursionConstraints.gridy = recursionConstraints.gridy + 1;
-
-            Field[] classFields = selectedClass.getDeclaredFields();
-            for (Field classField : classFields) {
-                try {
-                    addValueComponent(classField, fieldToComponent, recursionPanel, recursionConstraints, 0);
-                } catch (IllegalArgumentException ex) {
-                    LOGGER.log(Level.SEVERE, null, ex);
-                }
-            }
-            if (foundComponents) {
-                // Was able to find components for all subfields without hitting recursion limit
-                paramsP.add(recursionPanel, paramsConstraints);
-                paramsConstraints.gridy = paramsConstraints.gridy + 1;
-            }
-        }
     }
 
     protected void addValueComponent(Field field, HashMap<Field, MarkupComponent> fieldToComponent, JPanel panel, GridBagConstraints constraints, int recursionDepth) {
@@ -284,7 +257,11 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         return markupComponent;
     }
 
-    private void initComponents() {
+    /**
+     * Create all the labels, text fields, and combo boxes used to provide
+     * information about a variable, but not its definition.
+     */
+    private void initChoiceComponent() {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         JPanel definitionP = new JPanel(new GridBagLayout());
@@ -307,6 +284,17 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         definitionP.add(nameTF, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
+        // Combo box for selecting if we want a single definition of the class or a list of the class
+        // Don't add yet
+        singleOrListL = new JLabel("Single definition or list?");
+
+        classQuantityCB = new JComboBox(ClassQuantity.values());
+        classQuantityCB.setMaximumSize(new Dimension(Integer.MAX_VALUE, classQuantityCB.getPreferredSize().height));
+
+        // Panel for containing components for each item in the list, which is added to paramsP
+        listP = new javax.swing.JPanel();
+        listP.setLayout(new GridBagLayout());
+
         // Combo box for choosing variable class
         classL = new JLabel("Variable class?");
         definitionP.add(classL, definitionConstraints);
@@ -314,30 +302,22 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
 
         ArrayList<Class> creationClasses = UiComponentGenerator.getInstance().getCreationClasses();
         classCB = new JComboBox(creationClasses.toArray());
-        selectedClass = (Class) classCB.getSelectedItem();
         classCB.setMaximumSize(new Dimension(Integer.MAX_VALUE, classCB.getPreferredSize().height));
-        classCB.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                if (selectedClass == (Class) classCB.getSelectedItem()) {
-                    return;
-                }
-                selectedClass = (Class) classCB.getSelectedItem();
-                value = null;
-                rootComponent = null;
-                fieldToComponent.clear();
-                lookForCreationComponents();
-            }
-        });
         definitionP.add(classCB, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
+
+        // Now add singleOrListL and singleOrListCB to paramsP
+        definitionP.add(singleOrListL, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
+        definitionP.add(classQuantityCB, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         // Component(s) for defining the variable
         paramsP = new javax.swing.JPanel();
         paramsP.setLayout(new GridBagLayout());
-        addParamComponents();
         scrollPane = new JScrollPane(paramsP);
+        scrollPane.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_AS_NEEDED);
         definitionP.add(scrollPane, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
@@ -379,14 +359,60 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         int screenHeight = gd.getDisplayMode().getHeight();
-        setPreferredSize(new Dimension(getPreferredSize().width, (int) (screenHeight * 0.9)));
+        // Pad width a bit so horizontal scrollbar isn't needed
+        setPreferredSize(new Dimension(getPreferredSize().width + 50, (int) (screenHeight * 0.9)));
 
         pack();
     }
 
+    /**
+     * Now that any pre-existing knowledge about the variable has been loaded
+     * into the choice components, add listeners and create the
+     * ComplexMarkupComponentP.
+     */
+    private void initDefinitionComponent() {
+        classQuantityCB.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                if (selectedClassQuantity == (ClassQuantity) classQuantityCB.getSelectedItem()) {
+                    return;
+                }
+                selectedClassQuantity = (ClassQuantity) classQuantityCB.getSelectedItem();
+                value = null;
+                rootComponentSingle = null;
+                rootComponentList.clear();
+                fieldToComponentSingle.clear();
+                fieldToComponentList.clear();
+                lookForCreationComponents();
+            }
+        });
+
+        classCB.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                if (selectedClass == (Class) classCB.getSelectedItem()) {
+                    return;
+                }
+                selectedClass = (Class) classCB.getSelectedItem();
+                value = null;
+                rootComponentSingle = null;
+                rootComponentList.clear();
+                fieldToComponentSingle.clear();
+                fieldToComponentList.clear();
+                lookForCreationComponents();
+            }
+        });
+
+        addComplexMarkupComponent();
+
+        revalidate();
+    }
+
     private void lookForCreationComponents() {
         paramsP.removeAll();
-        addParamComponents();
+        addComplexMarkupComponent();
         paramsP.revalidate();
         scrollPane.revalidate();
         validate();
@@ -411,55 +437,65 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         return name;
     }
 
+    public Class getVariableClass() {
+        return selectedClass;
+    }
+
     public Object getVariableValue() {
-        if (!foundComponents) {
-            return null;
-        }
-        if (rootComponent != null) {
-            // We could directly create a single component for the selected class
-            return UiComponentGenerator.getInstance().getComponentValue(rootComponent, selectedClass);
-        } else {
-            try {
-                // We had to recurse into the fields of the selected class and create multiple components
-                Object setValue = selectedClass.newInstance();
-                for (Field field : selectedClass.getDeclaredFields()) {
-                    // We have a component for this specific field
-                    if (fieldToComponent.containsKey(field)) {
-                        MarkupComponent markupComponent = fieldToComponent.get(field);
-                        if (markupComponent != null) {
-                            // Store the value from the component
-                            Object subValue = UiComponentGenerator.getInstance().getComponentValue(markupComponent, field.getType());
-                            if (subValue == null) {
-                                return null;
-                            }
-                            field.set(setValue, subValue);
-                        } else {
-                            return null;
-                        }
-                    } else {
-                        // We had to recurse into this field to get components - so now we recurse to get the values
-                        Object subObject = field.getType().newInstance();
-                        field.set(setValue, subObject);
-                        getSubFieldValues(field, subObject);
-                    }
-                }
-                // All field components had definitions
-                return setValue;
-            } catch (InstantiationException ex) {
-                LOGGER.log(Level.SEVERE, null, ex);
-            } catch (IllegalAccessException ex) {
-                LOGGER.log(Level.SEVERE, null, ex);
-            }
+        if (componentP != null) {
+            return componentP.getValue();
         }
         return null;
+    }
+
+    public boolean isListComponentDefined(int listIndex) {
+        if (!foundComponents || selectedClass == null || selectedClassQuantity != ClassQuantity.ARRAY_LIST) {
+            return false;
+        }
+        try {
+            // We had to recurse into the fields of the selected class and create multiple components
+            Object setValue = selectedClass.newInstance();
+            for (Field field : selectedClass.getDeclaredFields()) {
+                // We have a component for this specific field
+                if (fieldToComponentSingle.containsKey(field)) {
+                    MarkupComponent markupComponent = fieldToComponentSingle.get(field);
+                    if (markupComponent != null) {
+                        // Store the value from the component
+                        Object subValue = UiComponentGenerator.getInstance().getComponentValue(markupComponent, field.getType());
+                        if (subValue == null) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                } else {
+                    // We had to recurse into this field to get components - so now we recurse to get the values
+                    LOGGER.info("$$$ field " + field);
+                    LOGGER.info("$$$ field.getType() " + field.getType());
+                    Object subObject = field.getType().newInstance();
+                    field.set(setValue, subObject);
+                    boolean success = getSubFieldValues(field, subObject);
+                    if (!success) {
+                        return false;
+                    }
+                }
+            }
+            // All field components had definitions
+            return true;
+        } catch (InstantiationException ex) {
+            LOGGER.log(Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            LOGGER.log(Level.SEVERE, null, ex);
+        }
+        return false;
     }
 
     public boolean getSubFieldValues(Field field, Object value) {
         for (Field subField : value.getClass().getDeclaredFields()) {
             try {
                 // We have a component for this specific field
-                if (fieldToComponent.containsKey(subField)) {
-                    MarkupComponent markupComponent = fieldToComponent.get(subField);
+                if (fieldToComponentSingle.containsKey(subField)) {
+                    MarkupComponent markupComponent = fieldToComponentSingle.get(subField);
                     if (markupComponent != null) {
                         // Store the value from the component
                         Object subValue = UiComponentGenerator.getInstance().getComponentValue(markupComponent, subField.getType());
@@ -494,15 +530,15 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
     }
 
     public boolean valueDefined() {
-        if (rootComponent != null) {
+        if (rootComponentSingle != null) {
             // We could directly create a single component for the selected class
-            if (UiComponentGenerator.getInstance().getComponentValue(rootComponent, selectedClass) != null) {
+            if (UiComponentGenerator.getInstance().getComponentValue(rootComponentSingle, selectedClass) != null) {
                 return true;
             }
         } else {
             // We had to recurse into the fields of the selected class and create multiple components
-            for (Field field : fieldToComponent.keySet()) {
-                MarkupComponent markupComponent = fieldToComponent.get(field);
+            for (Field field : fieldToComponentSingle.keySet()) {
+                MarkupComponent markupComponent = fieldToComponentSingle.get(field);
                 if (markupComponent != null) {
                     // Store the value from the component
                     Object value = UiComponentGenerator.getInstance().getComponentValue(markupComponent, field.getType());
@@ -567,7 +603,7 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         }
     }
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws InstantiationException, IllegalAccessException {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 EditGlobalVariableD dialog = new EditGlobalVariableD(new javax.swing.JFrame(), true);
