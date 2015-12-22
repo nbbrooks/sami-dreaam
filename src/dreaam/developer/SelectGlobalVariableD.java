@@ -76,6 +76,7 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         existingVariablesSP = new JScrollPane();
         existingVariablesSP.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         existingVariablesSP.setViewportView(existingVariablesP);
+        existingVariablesSP.setPreferredSize(new Dimension(existingVariablesP.getPreferredSize().width + 50, existingVariablesP.getPreferredSize().height));
 
         JPanel buttonsP = new JPanel(new GridBagLayout());
         GridBagConstraints buttonsConstraints = new GridBagConstraints();
@@ -129,6 +130,7 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
 
         getContentPane().add(existingVariablesSP, constraints);
         constraints.gridy = constraints.gridy + 1;
+        constraints.weighty = 0.1;
         getContentPane().add(buttonsP, constraints);
         constraints.gridy = constraints.gridy + 1;
 

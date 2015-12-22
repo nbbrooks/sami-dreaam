@@ -469,6 +469,9 @@ public class ComplexMarkupCreationComponentP extends JPanel {
         ArrayList<Object> values;
         Object setValue = null;
         HashMap<Field, MarkupComponent> fieldToComponent;
+        if(componentType == null) {
+            return null;
+        }
         switch (componentType) {
             case DIRECT_SINGLE:
                 // We could directly create a single component for the selected class and defined a single value

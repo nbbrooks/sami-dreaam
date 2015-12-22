@@ -340,7 +340,7 @@ public class ReflectedEventD extends javax.swing.JDialog {
         paramsPanel.revalidate();
 
         scrollPane = new JScrollPane(paramsPanel);
-        scrollPane.setPreferredSize(paramsPanel.getPreferredSize());
+        scrollPane.setPreferredSize(new Dimension(paramsPanel.getPreferredSize().width + 50, paramsPanel.getPreferredSize().height));
 
         saveB = new javax.swing.JButton();
         saveB.setText("Save");
@@ -351,17 +351,27 @@ public class ReflectedEventD extends javax.swing.JDialog {
             }
         });
 
-        BoxLayout boxLayout = new BoxLayout(getContentPane(), BoxLayout.Y_AXIS);
-        getContentPane().setLayout(boxLayout);
-        getContentPane().add(scrollPane);
-        getContentPane().add(saveB);
+        getContentPane().setLayout(new GridBagLayout());
 
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.weightx = 1.0;
+        constraints.weighty = 1.0;
+
+        getContentPane().add(scrollPane, constraints);
+        constraints.gridy = constraints.gridy + 1;
+        constraints.weighty = 0.1;
+        getContentPane().add(saveB, constraints);
+        constraints.gridy = constraints.gridy + 1;
+
+        pack();
+        
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         int screenHeight = gd.getDisplayMode().getHeight();
         setPreferredSize(new Dimension(getPreferredSize().width, (int) (screenHeight * 0.9)));
-
-        pack();
     }
 
     /**
