@@ -489,6 +489,7 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         fileM.add(openDrmM);
 
         saveDrmM.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.META_MASK));
+        saveDrmM.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         saveDrmM.setText("Save DRM");
         saveDrmM.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
