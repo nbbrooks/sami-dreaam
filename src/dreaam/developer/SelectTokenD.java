@@ -77,6 +77,9 @@ public class SelectTokenD extends javax.swing.JDialog {
         // Add box for each previously selected Proxy
         if (selectedTokenReqs != null) {
             for (TokenRequirement selTokenReq : selectedTokenReqs) {
+
+                System.out.println("### selTokenReq " + selTokenReq.getClass().getSimpleName() + " \t" + selTokenReq.toString());
+
                 // Don't add in item listener yet or we'll get a bunch of extra empty boxes 
                 ReqSelPanel reqPanel = addReqPanel(selTokenReq);
 //                matchCriteriaListener.refreshCBOptions(reqPanel);
@@ -122,20 +125,25 @@ public class SelectTokenD extends javax.swing.JDialog {
             int quantity = -1;
             String specificTaskName = null;
 
-            if (reqPanel.criteriaCB.getSelectedItem() != "") {
+            if (reqPanel.criteriaCB.getSelectedItem() != null 
+                    && reqPanel.criteriaCB.getSelectedItem() != "") {
                 matchCriteria = (MatchCriteria) reqPanel.criteriaCB.getSelectedItem();
                 if (matchCriteria == MatchCriteria.SpecificTask) {
-                    if (reqPanel.specificTaskCB.getSelectedItem() != null) {
+                    if (reqPanel.specificTaskCB.getSelectedItem() != null && reqPanel.specificTaskCB.getSelectedItem() != "") {
                         specificTaskName = reqPanel.specificTaskCB.getSelectedItem().toString();
                     } else {
                         LOGGER.warning("No task name specified for MatchCriteria SpecificTask");
                         continue;
                     }
                 }
+            } else {
+                LOGGER.warning("No criteria specified for MatchCriteria");
+                continue;
             }
             if ((edgeType == EdgeType.OutgoingNominal || edgeType == EdgeType.OutgoingRecovery)
                     && matchCriteria != MatchCriteria.None
-                    && reqPanel.actionCB.getSelectedItem() != null) {
+                    && reqPanel.actionCB.getSelectedItem() != null
+                    && reqPanel.actionCB.getSelectedItem() != "") {
                 matchAction = (MatchAction) reqPanel.actionCB.getSelectedItem();
             } else if ((edgeType == EdgeType.OutgoingNominal || edgeType == EdgeType.OutgoingRecovery)
                     && matchCriteria != MatchCriteria.None) {
@@ -161,7 +169,7 @@ public class SelectTokenD extends javax.swing.JDialog {
                 }
             }
 
-            // Blank out values as necessary (may have been entered when they were valid, but then a value was changed making them obsolete
+                // Blank out values as necessary (may have been entered when they were valid, but then a value was changed making them obsolete
             //  This is just to make the toString() like nice
             if (matchQuantity != MatchQuantity.Number
                     && matchQuantity != MatchQuantity.GreaterThanEqualTo
