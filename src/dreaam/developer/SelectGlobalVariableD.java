@@ -48,6 +48,7 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
         } else {
             this.variables = new LinkedHashMap<String, Object>();
             ArrayList<String> variablesNames = new ArrayList<String>(existingVariables.keySet());
+            // Alphabetize by variable name
             Collections.sort(variablesNames,
                     new Comparator<String>() {
                         public int compare(String f1, String s2) {
@@ -153,8 +154,8 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
             }
             if (variable.length() > 1 && variable.startsWith("@")) {
                 variables.put(variable, variableD.getVariableValue());
+                refreshVariableP();
             }
-            refreshVariableP();
         }
     }
 
@@ -212,6 +213,9 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
 
         public VariableP(String variable) {
             this.variableName = variable;
+            if (variableName.length() > 0 && !variableName.startsWith("@")) {
+                variableName = "@" + variableName;
+            }
             initComponents();
         }
 
@@ -231,7 +235,13 @@ public class SelectGlobalVariableD extends javax.swing.JDialog {
                     if (variableD.confirmedExit()) {
                         // Remove old entry
                         variables.remove(variableOld);
-                        variables.put(variableD.getVariableName(), variableD.getVariableValue());
+                        String newVariable = variableD.getVariableName();
+                        if (newVariable.length() > 0 && !newVariable.startsWith("@")) {
+                            newVariable = "@" + newVariable;
+                        }
+                        if (newVariable.length() > 1 && newVariable.startsWith("@")) {
+                            variables.put(newVariable, variableD.getVariableValue());
+                        }
                         refreshVariableP();
                     }
                 }

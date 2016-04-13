@@ -1,5 +1,7 @@
 package dreaam.developer;
 
+import gov.nasa.worldwind.geom.Angle;
+import gov.nasa.worldwind.geom.LatLon;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -34,9 +36,12 @@ import javax.swing.JTextField;
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED;
 import javax.swing.SwingConstants;
+import sami.Conversion;
 import sami.markup.Markup;
+import sami.path.Location;
 import sami.uilanguage.MarkupComponent;
 import sami.variable.Variable.ClassQuantity;
+import sami.variable.importer.ValueImport;
 
 /**
  * Dialogue for specifying a global variable: (variable name, class, and value).
@@ -53,9 +58,14 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
     private final static int BUTTON_WIDTH = 250;
     private final static int BUTTON_HEIGHT = 50;
 
-    private JScrollPane scrollPane;
-    private JPanel paramsP, listP;
+    // Specification panel for choosing name, class, and quantity of the variable to be defined
+    private JPanel specificationP;
+    // Scroll pane containing the components used to define the specified variable
+    private JScrollPane definitionSP;
+    // Panel containing buttons for finishing/canceling changes
+    private JPanel buttonsP;
 
+    // Value defined for the variable
     private Object value = null;
 
     MarkupComponent rootComponentSingle;
@@ -78,6 +88,9 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
     JLabel singleOrListL;
     JComboBox classQuantityCB;
     ClassQuantity selectedClassQuantity;
+    // Option to import a value from a text file
+    JLabel importValueL;
+    JButton importValueB;
     // Done/cancel
     private JButton okB, cancelB;
 
@@ -134,17 +147,10 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
             return;
         }
         componentP = new ComplexMarkupCreationComponentP(selectedClassQuantity, selectedClass, value);
+        componentP.revalidate();
 
-        GridBagConstraints paramsConstraints = new GridBagConstraints();
-        paramsConstraints.gridx = 0;
-        paramsConstraints.gridy = 0;
-        paramsConstraints.fill = GridBagConstraints.BOTH;
-        paramsConstraints.weightx = 1.0;
-        paramsConstraints.weighty = 1.0;
-
-        paramsP.add(componentP, paramsConstraints);
-        paramsConstraints.gridy = paramsConstraints.gridy + 1;
-
+        definitionSP.setViewportView(componentP);
+        definitionSP.revalidate();
     }
 
     protected void addValueComponent(Field field, HashMap<Field, MarkupComponent> fieldToComponent, JPanel panel, GridBagConstraints constraints, int recursionDepth) {
@@ -264,7 +270,10 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
     private void initChoiceComponent() {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        JPanel definitionP = new JPanel(new GridBagLayout());
+        //
+        // Specification panel for choosing name, class, and quantity of the variable to be defined
+        //
+        specificationP = new JPanel(new GridBagLayout());
         GridBagConstraints definitionConstraints = new GridBagConstraints();
         definitionConstraints.gridx = 0;
         definitionConstraints.gridy = 0;
@@ -274,14 +283,14 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
 
         // Text field for specifying variable name
         nameL = new JLabel("Variable name?");
-        definitionP.add(nameL, definitionConstraints);
+        specificationP.add(nameL, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         nameTF = new JTextField("");
         nameTF.addKeyListener(activityListener);
         nameTF.addFocusListener(activityListener);
         nameTF.addMouseListener(activityListener);
-        definitionP.add(nameTF, definitionConstraints);
+        specificationP.add(nameTF, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         // Combo box for selecting if we want a single definition of the class or a list of the class
@@ -291,37 +300,48 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         classQuantityCB = new JComboBox(ClassQuantity.values());
         classQuantityCB.setMaximumSize(new Dimension(Integer.MAX_VALUE, classQuantityCB.getPreferredSize().height));
 
-        // Panel for containing components for each item in the list, which is added to paramsP
-        listP = new javax.swing.JPanel();
-        listP.setLayout(new GridBagLayout());
+        // Option to import a value from a text file
+        importValueL = new JLabel("Import the value from a text file?");
+        importValueB = new JButton("Import value");
+        importValueB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
+        importValueB.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                importValueButtonActionPerformed(evt);
+            }
+        });
 
         // Combo box for choosing variable class
         classL = new JLabel("Variable class?");
-        definitionP.add(classL, definitionConstraints);
+        specificationP.add(classL, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         ArrayList<Class> creationClasses = UiComponentGenerator.getInstance().getCreationClasses();
         classCB = new JComboBox(creationClasses.toArray());
         classCB.setMaximumSize(new Dimension(Integer.MAX_VALUE, classCB.getPreferredSize().height));
-        definitionP.add(classCB, definitionConstraints);
+        specificationP.add(classCB, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
         // Now add singleOrListL and singleOrListCB to paramsP
-        definitionP.add(singleOrListL, definitionConstraints);
+        specificationP.add(singleOrListL, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
-        definitionP.add(classQuantityCB, definitionConstraints);
+        specificationP.add(classQuantityCB, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
-
-        // Component(s) for defining the variable
-        paramsP = new javax.swing.JPanel();
-        paramsP.setLayout(new GridBagLayout());
-        scrollPane = new JScrollPane(paramsP);
-        scrollPane.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_AS_NEEDED);
-        definitionP.add(scrollPane, definitionConstraints);
+        specificationP.add(importValueL, definitionConstraints);
+        definitionConstraints.gridy = definitionConstraints.gridy + 1;
+        specificationP.add(importValueB, definitionConstraints);
         definitionConstraints.gridy = definitionConstraints.gridy + 1;
 
-        JPanel buttonsP = new JPanel(new GridBagLayout());
+        //
+        // Scroll pane containing the components used to define the specified variable
+        //
+        definitionSP = new JScrollPane();
+        definitionSP.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        definitionSP.setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        //
+        // Panel containing buttons for finishing/canceling changes
+        //
+        buttonsP = new JPanel(new GridBagLayout());
         GridBagConstraints buttonConstraints = new GridBagConstraints();
         buttonConstraints.gridx = 0;
         buttonConstraints.gridy = 0;
@@ -329,7 +349,7 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         buttonConstraints.weightx = 1.0;
         buttonConstraints.weighty = 1.0;
 
-        okB = new javax.swing.JButton("OK");
+        okB = new JButton("OK");
         okB.addKeyListener(activityListener);
         okB.addFocusListener(activityListener);
         okB.addMouseListener(activityListener);
@@ -342,7 +362,7 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
         buttonsP.add(okB, buttonConstraints);
         buttonConstraints.gridy = buttonConstraints.gridy + 1;
 
-        cancelB = new javax.swing.JButton("Cancel");
+        cancelB = new JButton("Cancel");
         cancelB.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
         cancelB.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -354,13 +374,14 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
 
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(buttonsP, BorderLayout.SOUTH);
-        getContentPane().add(definitionP, BorderLayout.NORTH);
+        getContentPane().add(specificationP, BorderLayout.NORTH);
+        getContentPane().add(definitionSP, BorderLayout.CENTER);
 
         // Adjust dialog size
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         int screenHeight = gd.getDisplayMode().getHeight();
         // Pad width a bit so horizontal scrollbar isn't needed
-        setPreferredSize(new Dimension(getPreferredSize().width + 50, (int) (screenHeight * 0.9)));
+        setPreferredSize(new Dimension(getPreferredSize().width + 100, (int) (screenHeight * 0.9)));
 
         pack();
     }
@@ -411,11 +432,17 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
     }
 
     private void lookForCreationComponents() {
-        paramsP.removeAll();
         addComplexMarkupComponent();
-        paramsP.revalidate();
-        scrollPane.revalidate();
-        validate();
+    }
+
+    private void importValueButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        Object importedValue = ValueImport.getInstance().importValue(selectedClass, selectedClassQuantity);
+        LOGGER.info("Import for " + name + " (" + selectedClassQuantity + " " + selectedClass.getSimpleName() + "): " + importedValue);
+
+        if (importedValue != null) {
+            value = importedValue;
+            componentP.setValue(value);
+        }
     }
 
     private void okButtonActionPerformed(java.awt.event.ActionEvent evt) {
@@ -470,8 +497,6 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
                     }
                 } else {
                     // We had to recurse into this field to get components - so now we recurse to get the values
-                    LOGGER.info("$$$ field " + field);
-                    LOGGER.info("$$$ field.getType() " + field.getType());
                     Object subObject = field.getType().newInstance();
                     field.set(setValue, subObject);
                     boolean success = getSubFieldValues(field, subObject);
@@ -606,7 +631,13 @@ public class EditGlobalVariableD extends javax.swing.JDialog {
     public static void main(String args[]) throws InstantiationException, IllegalAccessException {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                EditGlobalVariableD dialog = new EditGlobalVariableD(new javax.swing.JFrame(), true);
+
+                ArrayList<Location> locations = new ArrayList<Location>();
+                locations.add(Conversion.latLonToLocation(new LatLon(Angle.fromDegreesLatitude(25.3546655923), Angle.fromDegreesLongitude(51.5276736002))));
+                locations.add(Conversion.latLonToLocation(new LatLon(Angle.fromDegreesLatitude(25.3546732688), Angle.fromDegreesLongitude(51.5280512889))));
+                EditGlobalVariableD dialog = new EditGlobalVariableD(new javax.swing.JFrame(), true, "locations", locations);
+
+//                EditGlobalVariableD dialog = new EditGlobalVariableD(new javax.swing.JFrame(), true);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     @Override
                     public void windowClosing(java.awt.event.WindowEvent e) {

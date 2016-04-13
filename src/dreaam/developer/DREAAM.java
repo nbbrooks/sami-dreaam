@@ -443,12 +443,12 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         org.jdesktop.layout.GroupLayout sidePLayout = new org.jdesktop.layout.GroupLayout(sideP);
         sideP.setLayout(sidePLayout);
         sidePLayout.setHorizontalGroup(
-            sidePLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
-            .add(jScrollPane1, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 1102, Short.MAX_VALUE)
+                sidePLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+                .add(jScrollPane1, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 1102, Short.MAX_VALUE)
         );
         sidePLayout.setVerticalGroup(
-            sidePLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
-            .add(jScrollPane1, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 715, Short.MAX_VALUE)
+                sidePLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+                .add(jScrollPane1, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 715, Short.MAX_VALUE)
         );
 
         jSplitPane1.setLeftComponent(sideP);
@@ -458,12 +458,12 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         org.jdesktop.layout.GroupLayout mainPLayout = new org.jdesktop.layout.GroupLayout(mainP);
         mainP.setLayout(mainPLayout);
         mainPLayout.setHorizontalGroup(
-            mainPLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
-            .add(0, 81, Short.MAX_VALUE)
+                mainPLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+                .add(0, 81, Short.MAX_VALUE)
         );
         mainPLayout.setVerticalGroup(
-            mainPLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
-            .add(0, 715, Short.MAX_VALUE)
+                mainPLayout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+                .add(0, 715, Short.MAX_VALUE)
         );
 
         jSplitPane1.setRightComponent(mainP);
@@ -617,12 +617,12 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
         org.jdesktop.layout.GroupLayout layout = new org.jdesktop.layout.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-            layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
-            .add(jSplitPane1)
+                layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+                .add(jSplitPane1)
         );
         layout.setVerticalGroup(
-            layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
-            .add(jSplitPane1)
+                layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+                .add(jSplitPane1)
         );
 
         pack();
@@ -784,8 +784,8 @@ public class DREAAM extends javax.swing.JFrame implements ProjectListenerInt {
     private void runAgentsMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_runAgentsMActionPerformed
         runHelperAgents();
         runCheckerAgents();
-        
-        for(MissionPlanSpecification mSpec : Mediator.getInstance().getProject().getAllMissionPlans()) {
+
+        for (MissionPlanSpecification mSpec : Mediator.getInstance().getProject().getAllMissionPlans()) {
             mSpec.fixGraph();
             mSpec.updateTags();
             //mSpec.printGraph();

@@ -364,18 +364,18 @@ public class TaskModelEditor extends JPanel {
 
         vv.setVertexToolTipTransformer(
                 new Transformer<Vertex, String>() {
-            @Override
-            public String transform(Vertex vertex) {
-                switch (vertex.getVisibilityMode()) {
-                    case Full:
-                        return vertex.getTag();
-                    case Background:
-                    case None:
-                    default:
-                        return null;
-                }
-            }
-        });
+                    @Override
+                    public String transform(Vertex vertex) {
+                        switch (vertex.getVisibilityMode()) {
+                            case Full:
+                                return vertex.getTag();
+                            case Background:
+                            case None:
+                            default:
+                                return null;
+                        }
+                    }
+                });
     }
 
     public TaskModelEditor(MissionPlanSpecification newSpec) {
@@ -402,10 +402,10 @@ public class TaskModelEditor extends JPanel {
 
         plus.addActionListener(
                 new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                scaler.scale(vv, 1.1f, vv.getCenter());
-            }
-        });
+                    public void actionPerformed(ActionEvent e) {
+                        scaler.scale(vv, 1.1f, vv.getCenter());
+                    }
+                });
         JButton minus = new JButton("-");
         minus.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -1428,14 +1428,8 @@ public class TaskModelEditor extends JPanel {
                                 SelectGlobalVariableD variableD = new SelectGlobalVariableD(null, true, mediator.getProject().getGlobalVariableToValue());
                                 variableD.setVisible(true);
                                 if (variableD.confirmedExit()) {
-                                    ArrayList<String> deletedVariables = variableD.getDeletedVariables();
-                                    for (String variable : deletedVariables) {
-                                        mediator.getProject().deleteGlobalVariable(variable);
-                                    }
-                                    HashMap<String, Object> createdVariables = variableD.getCreatedVariables();
-                                    for (String variable : createdVariables.keySet()) {
-                                        mediator.getProject().setGlobalVariableValue(variable, createdVariables.get(variable));
-                                    }
+                                    HashMap<String, Object> variables = variableD.getVariables();
+                                    mediator.getProject().setGlobalVariableToValue(variables);
                                 }
                             }
                         });
